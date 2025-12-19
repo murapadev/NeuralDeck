@@ -95,11 +95,14 @@ graph TD
   - Session persistence (cookies).
   - Collapsible sidebar.
   - Configurable global keyboard shortcuts.
-- [ ] **v0.3.0 (Local AI):**
-  - Ollama integration (local web interface).
+- [x] **v0.3.0 (Local AI):**
+  - Ollama integration with model selection.
+  - Markdown rendering for AI responses.
+  - i18n system with English translations.
 - [ ] **v1.0.0 (Release):**
   - Code signing.
-  - Auto-updates.
+  - Auto-updates with electron-updater.
+  - Installer improvements.
 
 ---
 
