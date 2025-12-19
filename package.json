@@ -45,7 +45,7 @@
         "@vitejs/plugin-react": "^4.2.1",
         "@vitest/ui": "^1.5.0",
         "autoprefixer": "^10.4.16",
-        "electron": "^31.0.0",
+        "electron": "^39.2.7",
         "electron-builder": "^24.9.1",
         "eslint": "^8.57.0",
         "eslint-config-prettier": "^9.1.0",
