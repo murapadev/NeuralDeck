@@ -8,12 +8,15 @@ import Settings from './components/Settings'
 import LoadingScreen from './components/LoadingScreen'
 import { useAppStore } from './store/appStore'
 
+
 function MainContent() {
   const { 
     currentProviderId, 
     setCurrentProvider, 
     setConfig, 
-    isLoading: isStoreLoading, // rename to avoid conflict
+    setNavigationState,
+    openSettings,
+    isLoading: isStoreLoading,
     setLoading
   } = useAppStore()
 
@@ -30,6 +33,41 @@ function MainContent() {
         }
     }
   }, [config, setConfig, setLoading, currentProviderId, setCurrentProvider])
+
+  // Listen for IPC events from main process
+  useEffect(() => {
+    const cleanups: (() => void)[] = []
+
+    if (window.neuralDeck) {
+      // Listen for view changes from main process
+      cleanups.push(
+        window.neuralDeck.onViewChanged((providerId) => {
+          setCurrentProvider(providerId)
+        })
+      )
+
+      // Listen for navigation state changes
+      cleanups.push(
+        window.neuralDeck.onNavigationStateChanged((state) => {
+          setNavigationState({
+            canGoBack: state.canGoBack,
+            canGoForward: state.canGoForward
+          })
+        })
+      )
+
+      // Listen for settings open request
+      cleanups.push(
+        window.neuralDeck.onOpenSettings(() => {
+          openSettings()
+        })
+      )
+    }
+
+    return () => {
+      cleanups.forEach(cleanup => cleanup())
+    }
+  }, [setCurrentProvider, setNavigationState, openSettings])
   
   // Settings check (naive implementation for now)
   const [isSettingsWindow, setIsSettingsWindow] = useState(() => window.location.hash === '#settings')
