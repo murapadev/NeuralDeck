@@ -271,7 +271,7 @@ function Sidebar() {
               ? 'text-neutral-400 hover:text-white hover:bg-neutral-800' 
               : 'text-neutral-700 cursor-not-allowed'
           }`}
-          title="Atrás"
+          title="Back"
         >
           {UIIcons.back}
         </button>
@@ -283,14 +283,14 @@ function Sidebar() {
               ? 'text-neutral-400 hover:text-white hover:bg-neutral-800' 
               : 'text-neutral-700 cursor-not-allowed'
           }`}
-          title="Adelante"
+          title="Forward"
         >
           {UIIcons.forward}
         </button>
         <button
           onClick={() => reloadMutation.mutate()}
           className="p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
-          title="Recargar"
+          title="Reload"
         >
           {UIIcons.reload}
         </button>
@@ -302,7 +302,7 @@ function Sidebar() {
         <button
           onClick={() => openSettings()}
           className="p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
-          title="Configuración"
+          title="Settings"
         >
           {UIIcons.settings}
         </button>
@@ -314,7 +314,7 @@ function Sidebar() {
               ? 'text-neural-500 bg-neural-500/10 hover:bg-neural-500/20'
               : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
           }`}
-          title={isPinned ? 'Desanclar ventana' : 'Mantener siempre visible'}
+          title={isPinned ? 'Unpin window' : 'Always on top'}
         >
           {UIIcons.pin}
         </button>

@@ -245,16 +245,16 @@ const GeneralTab = () => {
   return (
     <div className="space-y-6">
       <section>
-        <h3 className="text-lg font-semibold text-white mb-4">Ventana</h3>
+        <h3 className="text-lg font-semibold text-white mb-4">Window</h3>
         <div className="space-y-1 bg-neutral-800/50 rounded-lg p-4">
           <Select
-            label="Posición de la ventana"
+            label="Window position"
             value={windowConfig.position}
             onChange={(v) => updateWindowConfig({ position: v })}
             options={POSITION_OPTIONS}
           />
           <Slider
-            label="Ancho"
+            label="Width"
             value={windowConfig.width}
             onChange={(v) => updateWindowConfig({ width: v })}
             min={400}
@@ -262,7 +262,7 @@ const GeneralTab = () => {
             suffix="px"
           />
           <Slider
-            label="Alto"
+            label="Height"
             value={windowConfig.height}
             onChange={(v) => updateWindowConfig({ height: v })}
             min={400}
@@ -270,7 +270,7 @@ const GeneralTab = () => {
             suffix="px"
           />
           <Slider
-            label="Opacidad"
+            label="Opacity"
             value={Math.round(windowConfig.opacity * 100)}
             onChange={(v) => updateWindowConfig({ opacity: v / 100 })}
             min={50}
@@ -315,7 +315,7 @@ const AppearanceTab = () => {
         <h3 className="text-lg font-semibold text-white mb-4">Tema</h3>
         <div className="space-y-1 bg-neutral-800/50 rounded-lg p-4">
           <Select
-            label="Tema de la aplicación"
+            label="Application theme"
             value={appearanceConfig.theme}
             onChange={(v) => updateAppearanceConfig({ theme: v })}
             options={THEME_OPTIONS}
@@ -338,7 +338,7 @@ const AppearanceTab = () => {
         <h3 className="text-lg font-semibold text-white mb-4">Texto</h3>
         <div className="space-y-1 bg-neutral-800/50 rounded-lg p-4">
           <Select
-            label="Tamaño de fuente"
+            label="Font size"
             value={appearanceConfig.fontSize}
             onChange={(v) => updateAppearanceConfig({ fontSize: v as 'small' | 'medium' | 'large' })}
             options={FONT_SIZE_OPTIONS as { value: string; label: string }[]}
@@ -394,25 +394,25 @@ const ShortcutsTab = () => {
       </section>
 
       <section>
-        <h3 className="text-lg font-semibold text-white mb-4">Navegación</h3>
+        <h3 className="text-lg font-semibold text-white mb-4">Navigation</h3>
         <div className="space-y-1 bg-neutral-800/50 rounded-lg p-4">
           <ShortcutInput
-            label="Recargar página"
+            label="Reload page"
             value={shortcutsConfig.reload}
             onChange={(v) => updateShortcutsConfig({ reload: v })}
           />
           <ShortcutInput
-            label="Ir atrás"
+            label="Go back"
             value={shortcutsConfig.goBack}
             onChange={(v) => updateShortcutsConfig({ goBack: v })}
           />
           <ShortcutInput
-            label="Ir adelante"
+            label="Go forward"
             value={shortcutsConfig.goForward}
             onChange={(v) => updateShortcutsConfig({ goForward: v })}
           />
           <ShortcutInput
-            label="Abrir ajustes"
+            label="Open settings"
             value={shortcutsConfig.openSettings}
             onChange={(v) => updateShortcutsConfig({ openSettings: v })}
           />
@@ -420,7 +420,7 @@ const ShortcutsTab = () => {
       </section>
 
       <section>
-        <h3 className="text-lg font-semibold text-white mb-4">Cambiar proveedor</h3>
+        <h3 className="text-lg font-semibold text-white mb-4">Switch provider</h3>
         <div className="space-y-1 bg-neutral-800/50 rounded-lg p-4">
           {providers.slice(0, 5).map((provider, index) => (
             <div key={provider.id} className="flex items-center justify-between py-2">
@@ -431,7 +431,7 @@ const ShortcutsTab = () => {
             </div>
           ))}
           <p className="text-xs text-neutral-400 mt-2">
-            Los atajos de proveedores son fijos: Ctrl/Cmd + número
+            Provider shortcuts are fixed: Ctrl/Cmd + number
           </p>
         </div>
       </section>
@@ -476,7 +476,7 @@ const ProvidersTab = () => {
   }
 
   const handleRemoveProvider = (id: string) => {
-    if (confirm('¿Eliminar este proveedor personalizado?')) {
+    if (confirm('Remove this custom provider?')) {
       removeProviderMutation.mutate(id)
     }
   }
@@ -490,13 +490,13 @@ const ProvidersTab = () => {
     <div className="space-y-6">
       <section>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-white">Proveedores de IA</h3>
+          <h3 className="text-lg font-semibold text-white">AI Providers</h3>
           <button
             onClick={() => setShowAddForm(!showAddForm)}
             className="flex items-center gap-2 px-3 py-1.5 bg-neural-500 hover:bg-neural-600 text-white rounded-lg text-sm transition-colors"
           >
             {icons.plus}
-            Añadir
+            Add
           </button>
         </div>
 
@@ -504,14 +504,14 @@ const ProvidersTab = () => {
           <div className="bg-neutral-800/50 rounded-lg p-4 mb-4 space-y-3">
             <input
               type="text"
-              placeholder="ID único (ej: mistral)"
+              placeholder="Unique ID (e.g., mistral)"
               value={newProvider.id}
               onChange={(e) => setNewProvider({ ...newProvider, id: e.target.value.toLowerCase().replace(/\s/g, '-') })}
               className="w-full bg-neutral-700 text-white rounded-lg px-3 py-2 text-sm border border-neutral-600 focus:border-neural-500 focus:outline-none"
             />
             <input
               type="text"
-              placeholder="Nombre (ej: Mistral AI)"
+              placeholder="Name (e.g., Mistral AI)"
               value={newProvider.name}
               onChange={(e) => setNewProvider({ ...newProvider, name: e.target.value })}
               className="w-full bg-neutral-700 text-white rounded-lg px-3 py-2 text-sm border border-neutral-600 focus:border-neural-500 focus:outline-none"
@@ -613,7 +613,7 @@ const PrivacyTab = () => {
   }
 
   const handleClearAllData = () => {
-    if (confirm('¿Borrar todos los datos de navegación? Esto cerrará todas las sesiones.')) {
+    if (confirm('Clear all browsing data? This will close all sessions.')) {
       clearDataMutation.mutate()
     }
   }
@@ -629,15 +629,15 @@ const PrivacyTab = () => {
   return (
     <div className="space-y-6">
       <section>
-        <h3 className="text-lg font-semibold text-white mb-4">Datos de navegación</h3>
+        <h3 className="text-lg font-semibold text-white mb-4">Browsing Data</h3>
         <div className="space-y-1 bg-neutral-800/50 rounded-lg p-4">
           <Toggle
-            label="Limpiar datos al cerrar"
+            label="Clear data on close"
             checked={privacyConfig.clearOnClose}
             onChange={(v) => updatePrivacyConfig({ clearOnClose: v })}
           />
           <Toggle
-            label="Bloquear rastreadores"
+            label="Block trackers"
             checked={privacyConfig.blockTrackers}
             onChange={(v) => updatePrivacyConfig({ blockTrackers: v })}
           />
@@ -646,16 +646,16 @@ const PrivacyTab = () => {
               onClick={handleClearAllData}
               className="w-full py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg text-sm transition-colors"
             >
-              Borrar todos los datos ahora
+              Clear all data now
             </button>
           </div>
         </div>
       </section>
 
       <section>
-        <h3 className="text-lg font-semibold text-white mb-4">Modo incógnito por proveedor</h3>
+        <h3 className="text-lg font-semibold text-white mb-4">Incognito mode per provider</h3>
         <p className="text-sm text-neutral-400 mb-4">
-          Los proveedores en modo incógnito no guardarán cookies ni datos de sesión.
+          Providers in incognito mode will not save cookies or session data.
         </p>
         <div className="space-y-1 bg-neutral-800/50 rounded-lg p-4">
           {providers.map((provider) => (
