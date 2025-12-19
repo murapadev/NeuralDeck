@@ -1,4 +1,4 @@
-// Tipos de configuración (reflejados del main process)
+// Configuration types (mirrored from main process)
 export type WindowPosition =
   | 'near-tray'
   | 'top-left'
@@ -73,7 +73,7 @@ export interface NavigationState {
 
 // API expuesta por el preload
 export interface NeuralDeckAPI {
-  // Configuración
+  // Configuration
   getConfig: () => Promise<AppConfig>
   updateConfig: (section: keyof AppConfig, updates: any) => void
 
@@ -92,7 +92,7 @@ export interface NeuralDeckAPI {
   getProviderIcon: (providerId: string) => Promise<string | null>
   getAllProviderIcons: () => Promise<Record<string, string>>
 
-  // Navegación
+  // Navigation
   reload: () => void
   goBack: () => void
   goForward: () => void

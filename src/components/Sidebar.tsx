@@ -25,7 +25,7 @@ function ProviderIconWithFavicon({
     return IconComponent(color)
   }
 
-  // Último fallback: inicial del nombre
+  // Last fallback: name initial
   return (
     <div 
       className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold text-white"
