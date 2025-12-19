@@ -1,6 +1,6 @@
 {
     "name": "neuraldeck",
-    "version": "0.1.0",
+    "version": "0.3.0",
     "description": "Tu centro de mando de IA invisible - Accede a ChatGPT, Gemini, Claude y más desde una interfaz flotante",
     "type": "module",
     "main": "dist-electron/main.cjs",
