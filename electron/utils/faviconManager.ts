@@ -179,27 +179,6 @@ function processIcon(buffer: Buffer, size: number = 32): NativeImage {
 }
 
 /**
- * Crea un icono circular con el favicon
- */
-function createCircularIcon(
-  buffer: Buffer,
-  size: number = 32,
-  backgroundColor?: string
-): NativeImage {
-  const image = nativeImage.createFromBuffer(buffer)
-
-  // Verificar si la imagen es válida
-  if (image.isEmpty()) {
-    throw new Error('Invalid image buffer')
-  }
-
-  // Redimensionar manteniendo aspecto
-  const resized = image.resize({ width: size, height: size, quality: 'best' })
-
-  return resized
-}
-
-/**
  * Genera un icono fallback con las iniciales del proveedor
  */
 function generateFallbackIcon(provider: ProviderConfig, size: number = 32): NativeImage {

@@ -8,7 +8,7 @@ import configManager from './config/configManager.js'
 
 let windowManager: WindowManager
 let viewManager: ViewManager
-let trayManager: TrayManager
+let _trayManager: TrayManager
 
 const gotTheLock = app.requestSingleInstanceLock()
 
@@ -32,7 +32,7 @@ if (!gotTheLock) {
       // Note: WindowManager creates window in constructor, but it's synchronous logic.
 
       viewManager = new ViewManager(windowManager)
-      trayManager = new TrayManager(windowManager, viewManager)
+      _trayManager = new TrayManager(windowManager, viewManager)
 
       // 3. Setup tRPC
       const router = createRouter(windowManager, viewManager)

@@ -16,7 +16,6 @@ console.log('🎨 Generating icons...\n')
 
 for (const icon of icons) {
   const inputPath = path.join(PUBLIC_DIR, icon.input)
-  const outputPath = path.join(PUBLIC_DIR, icon.output)
 
   if (!existsSync(inputPath)) {
     console.log(`⚠️  Skipping ${icon.input} (file not found)`)

@@ -50,10 +50,14 @@ export default function ChatInterface() {
       const reader = response.body.getReader()
       const decoder = new TextDecoder()
       let assistantMessage = ''
+      let streamDone = false
 
-      while (true) {
+      while (!streamDone) {
         const { done, value } = await reader.read()
-        if (done) break
+        if (done) {
+          streamDone = true
+          continue
+        }
 
         const chunk = decoder.decode(value, { stream: true })
         // Parse JSON objects from the stream (each line is a JSON object)
