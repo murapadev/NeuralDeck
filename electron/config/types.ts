@@ -142,7 +142,7 @@ export const DEFAULT_PROVIDERS: ProviderConfig[] = [
 
 // Configuración por defecto
 export const DEFAULT_CONFIG: AppConfig = {
-  version: '0.2.0',
+  version: '0.3.0',
   firstRun: true,
   lastProvider: 'chatgpt',
 

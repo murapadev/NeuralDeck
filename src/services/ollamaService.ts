@@ -1,8 +1,10 @@
 /**
  * Ollama Service - API integration for local LLM
+ * Supports configurable URL for Docker/remote Ollama instances
  */
 
-const OLLAMA_BASE_URL = 'http://localhost:11434'
+// Default URL, can be overridden
+let ollamaBaseUrl = 'http://localhost:11434'
 
 export interface OllamaModel {
   name: string
@@ -21,11 +23,26 @@ export interface ChatMessage {
 }
 
 /**
+ * Set the Ollama base URL (for Docker/remote instances)
+ */
+export function setBaseUrl(url: string): void {
+  ollamaBaseUrl = url.replace(/\/$/, '') // Remove trailing slash
+}
+
+/**
+ * Get the current Ollama base URL
+ */
+export function getBaseUrl(): string {
+  return ollamaBaseUrl
+}
+
+/**
  * Check if Ollama is running and accessible
  */
-export async function healthCheck(): Promise<boolean> {
+export async function healthCheck(url?: string): Promise<boolean> {
+  const baseUrl = url || ollamaBaseUrl
   try {
-    const response = await fetch(`${OLLAMA_BASE_URL}/api/tags`, {
+    const response = await fetch(`${baseUrl}/api/tags`, {
       method: 'GET',
       signal: AbortSignal.timeout(3000),
     })
@@ -38,9 +55,10 @@ export async function healthCheck(): Promise<boolean> {
 /**
  * Get list of available models
  */
-export async function getModels(): Promise<OllamaModel[]> {
+export async function getModels(url?: string): Promise<OllamaModel[]> {
+  const baseUrl = url || ollamaBaseUrl
   try {
-    const response = await fetch(`${OLLAMA_BASE_URL}/api/tags`)
+    const response = await fetch(`${baseUrl}/api/tags`)
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`)
     }
@@ -72,7 +90,11 @@ export const ollamaService = {
   getModels,
   formatModelSize,
   getModelDisplayName,
-  baseUrl: OLLAMA_BASE_URL,
+  setBaseUrl,
+  getBaseUrl,
+  get baseUrl() {
+    return ollamaBaseUrl
+  },
 }
 
 export default ollamaService

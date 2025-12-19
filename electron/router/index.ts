@@ -2,9 +2,14 @@ import { initTRPC } from '@trpc/server'
 import { z } from 'zod'
 import { WindowManager } from '../services/WindowManager.js'
 import { ViewManager } from '../services/ViewManager.js'
+import { ShortcutManager } from '../services/ShortcutManager.js'
 import configManager from '../config/configManager.js'
 
-export const createRouter = (windowManager: WindowManager, viewManager: ViewManager) => {
+export const createRouter = (
+  windowManager: WindowManager,
+  viewManager: ViewManager,
+  shortcutManager: ShortcutManager
+) => {
   const t = initTRPC.create()
 
   return t.router({
@@ -95,13 +100,26 @@ export const createRouter = (windowManager: WindowManager, viewManager: ViewMana
       )
       .mutation(({ input }) => {
         configManager.updateShortcuts(input)
-        // TODO: Re-register global shortcuts if changed
+        // Re-register global shortcuts with new config
+        shortcutManager.refresh()
         return configManager.getAll()
       }),
 
     // Providers Management
     addCustomProvider: t.procedure
-      .input(z.any()) // TODO: define schema
+      .input(
+        z.object({
+          id: z.string().min(1),
+          name: z.string().min(1),
+          url: z.string().url(),
+          icon: z.string().default('custom'),
+          color: z
+            .string()
+            .regex(/^#[0-9A-Fa-f]{6}$/)
+            .default('#6366f1'),
+          enabled: z.boolean().default(true),
+        })
+      )
       .mutation(({ input }) => {
         configManager.addCustomProvider(input)
         return configManager.getAll()

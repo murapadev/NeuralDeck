@@ -73,14 +73,15 @@ export default function ChatInterface() {
       const availableModels = await ollamaService.getModels()
       setModels(availableModels)
       
-      // Auto-select first model if none selected
-      if (!selectedModel && availableModels.length > 0) {
+      // Auto-select first model if none selected (check localStorage directly)
+      const savedModel = loadModel()
+      if (!savedModel && availableModels.length > 0) {
         setSelectedModel(availableModels[0].name)
         saveModel(availableModels[0].name)
       }
     }
     setIsLoadingModels(false)
-  }, [selectedModel])
+  }, []) // Empty deps - uses loadModel() directly instead of selectedModel state
 
   useEffect(() => {
     checkConnection()

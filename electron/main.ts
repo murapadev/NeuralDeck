@@ -3,12 +3,14 @@ import { createIPCHandler } from 'electron-trpc/main'
 import { WindowManager } from './services/WindowManager.js'
 import { ViewManager } from './services/ViewManager.js'
 import { TrayManager } from './services/TrayManager.js'
+import { ShortcutManager } from './services/ShortcutManager.js'
 import { createRouter } from './router/index.js'
 import configManager from './config/configManager.js'
 
 let windowManager: WindowManager
 let viewManager: ViewManager
 let _trayManager: TrayManager
+let shortcutManager: ShortcutManager
 
 const gotTheLock = app.requestSingleInstanceLock()
 
@@ -33,9 +35,10 @@ if (!gotTheLock) {
 
       viewManager = new ViewManager(windowManager)
       _trayManager = new TrayManager(windowManager, viewManager)
+      shortcutManager = new ShortcutManager(windowManager, viewManager)
 
       // 3. Setup tRPC
-      const router = createRouter(windowManager, viewManager)
+      const router = createRouter(windowManager, viewManager, shortcutManager)
 
       if (windowManager.mainWindow) {
         createIPCHandler({ router, windows: [windowManager.mainWindow] })
