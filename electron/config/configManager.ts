@@ -1,10 +1,10 @@
 /**
- * Gestor de configuración persistente usando electron-store
+ * Persistent configuration manager using electron-store
  */
 import Store from 'electron-store'
 import { AppConfig, DEFAULT_CONFIG, ProviderConfig } from './types.js'
 
-// Interfaz para el store tipado
+// Typed store interface
 interface TypedStore {
   store: AppConfig
   get<K extends keyof AppConfig>(key: K): AppConfig[K]
@@ -12,7 +12,7 @@ interface TypedStore {
   clear(): void
 }
 
-// Esquema de validación para electron-store
+// Validation schema for electron-store
 const schema = {
   version: { type: 'string' as const },
   firstRun: { type: 'boolean' as const },
@@ -87,46 +87,46 @@ class ConfigManager {
       clearInvalidConfig: true,
     }) as TypedStore
 
-    // Migrar configuración si es necesario
+    // Migrate configuration if needed
     this.migrateIfNeeded()
   }
 
   /**
-   * Migrar configuración de versiones anteriores
+   * Migrate configuration from previous versions
    */
   private migrateIfNeeded(): void {
     const currentVersion = this.store.get('version')
 
     if (currentVersion !== DEFAULT_CONFIG.version) {
-      // Aquí añadiremos migraciones según sea necesario
+      // Add migrations here as needed
       console.log(`Migrating config from ${currentVersion} to ${DEFAULT_CONFIG.version}`)
       this.store.set('version', DEFAULT_CONFIG.version)
     }
   }
 
   /**
-   * Obtener toda la configuración
+   * Get the complete configuration
    */
   getAll(): AppConfig {
     return this.store.store
   }
 
   /**
-   * Obtener un valor específico
+   * Get a specific value
    */
   get<K extends keyof AppConfig>(key: K): AppConfig[K] {
     return this.store.get(key)
   }
 
   /**
-   * Establecer un valor
+   * Set a value
    */
   set<K extends keyof AppConfig>(key: K, value: AppConfig[K]): void {
     this.store.set(key, value)
   }
 
   /**
-   * Actualizar configuración de ventana
+   * Update window configuration
    */
   updateWindow(updates: Partial<AppConfig['window']>): void {
     const current = this.store.get('window')
@@ -134,7 +134,7 @@ class ConfigManager {
   }
 
   /**
-   * Actualizar configuración de apariencia
+   * Update appearance configuration
    */
   updateAppearance(updates: Partial<AppConfig['appearance']>): void {
     const current = this.store.get('appearance')
@@ -142,7 +142,7 @@ class ConfigManager {
   }
 
   /**
-   * Actualizar configuración de privacidad
+   * Update privacy configuration
    */
   updatePrivacy(updates: Partial<AppConfig['privacy']>): void {
     const current = this.store.get('privacy')
@@ -150,7 +150,7 @@ class ConfigManager {
   }
 
   /**
-   * Actualizar atajos de teclado
+   * Update keyboard shortcuts
    */
   updateShortcuts(updates: Partial<AppConfig['shortcuts']>): void {
     const current = this.store.get('shortcuts')
@@ -158,7 +158,7 @@ class ConfigManager {
   }
 
   /**
-   * Obtener proveedores habilitados ordenados
+   * Get enabled providers sorted by order
    */
   getEnabledProviders(): ProviderConfig[] {
     const providers = this.store.get('providers')
@@ -168,7 +168,7 @@ class ConfigManager {
   }
 
   /**
-   * Actualizar un proveedor específico
+   * Update a specific provider
    */
   updateProvider(id: string, updates: Partial<ProviderConfig>): void {
     const providers = this.store.get('providers')
@@ -181,7 +181,7 @@ class ConfigManager {
   }
 
   /**
-   * Añadir un proveedor personalizado
+   * Add a custom provider
    */
   addCustomProvider(provider: Omit<ProviderConfig, 'order' | 'isCustom'>): void {
     const providers = this.store.get('providers')
@@ -197,7 +197,7 @@ class ConfigManager {
   }
 
   /**
-   * Eliminar un proveedor personalizado
+   * Remove a custom provider
    */
   removeCustomProvider(id: string): boolean {
     const providers = this.store.get('providers')
@@ -215,7 +215,7 @@ class ConfigManager {
   }
 
   /**
-   * Reordenar proveedores
+   * Reorder providers
    */
   reorderProviders(orderedIds: string[]): void {
     const providers = this.store.get('providers')
@@ -231,36 +231,36 @@ class ConfigManager {
   }
 
   /**
-   * Guardar posición de ventana
+   * Save window position
    */
   saveWindowPosition(x: number, y: number): void {
     this.updateWindow({ lastX: x, lastY: y })
   }
 
   /**
-   * Guardar tamaño de ventana
+   * Save window size
    */
   saveWindowSize(width: number, height: number): void {
     this.updateWindow({ width, height })
   }
 
   /**
-   * Resetear a configuración por defecto
+   * Reset to default configuration
    */
   reset(): void {
     this.store.clear()
-    // Los defaults se aplicarán automáticamente
+    // Defaults will be applied automatically
   }
 
   /**
-   * Marcar que ya no es primera ejecución
+   * Mark first run as complete
    */
   markFirstRunComplete(): void {
     this.store.set('firstRun', false)
   }
 }
 
-// Exportar instancia única (lazy initialization)
+// Export singleton instance (lazy initialization)
 let _configManager: ConfigManager | null = null
 
 export function getConfigManager(): ConfigManager {

@@ -1,22 +1,22 @@
 /**
- * Configuración y tipos para NeuralDeck
- * Sistema de persistencia de preferencias de usuario
+ * Configuration and types for NeuralDeck
+ * User preference persistence system
  */
 
-// Posiciones predefinidas de la ventana
+// Predefined window positions
 export type WindowPosition =
-  | 'near-tray' // Cerca del icono del tray
-  | 'top-left' // Esquina superior izquierda
-  | 'top-right' // Esquina superior derecha
-  | 'bottom-left' // Esquina inferior izquierda
-  | 'bottom-right' // Esquina inferior derecha
-  | 'center' // Centro de la pantalla
-  | 'remember' // Recordar última posición
+  | 'near-tray' // Near the tray icon
+  | 'top-left' // Top-left corner
+  | 'top-right' // Top-right corner
+  | 'bottom-left' // Bottom-left corner
+  | 'bottom-right' // Bottom-right corner
+  | 'center' // Center of the screen
+  | 'remember' // Remember last position
 
-// Tema de la aplicación
+// Application theme
 export type AppTheme = 'dark' | 'light' | 'system'
 
-// Configuración de un proveedor de IA
+// AI provider configuration
 export interface ProviderConfig {
   id: string
   name: string
@@ -28,19 +28,19 @@ export interface ProviderConfig {
   isCustom?: boolean
 }
 
-// Configuración de atajos de teclado
+// Keyboard shortcut configuration
 export interface ShortcutConfig {
   toggleWindow: string
-  // Atajos por proveedor (índice)
+  // Shortcuts per provider (by index)
   providers: string[]
-  // Otros atajos
+  // Other shortcuts
   reload: string
   goBack: string
   goForward: string
   openSettings: string
 }
 
-// Configuración de la ventana
+// Window configuration
 export interface WindowConfig {
   width: number
   height: number
@@ -52,15 +52,15 @@ export interface WindowConfig {
   opacity: number
 }
 
-// Configuración de privacidad
+// Privacy configuration
 export interface PrivacyConfig {
   clearOnClose: boolean
   blockTrackers: boolean
-  // Proveedores en modo incógnito
+  // Providers in incognito mode
   incognitoProviders: string[]
 }
 
-// Configuración de apariencia
+// Appearance configuration
 export interface AppearanceConfig {
   theme: AppTheme
   showProviderNames: boolean
@@ -68,7 +68,7 @@ export interface AppearanceConfig {
   accentColor: string
 }
 
-// Configuración completa de la aplicación
+// Complete application configuration
 export interface AppConfig {
   version: string
   firstRun: boolean
@@ -81,7 +81,7 @@ export interface AppConfig {
   appearance: AppearanceConfig
 }
 
-// Proveedores por defecto
+// Default providers
 export const DEFAULT_PROVIDERS: ProviderConfig[] = [
   {
     id: 'chatgpt',
@@ -140,7 +140,7 @@ export const DEFAULT_PROVIDERS: ProviderConfig[] = [
   },
 ]
 
-// Configuración por defecto
+// Default configuration
 export const DEFAULT_CONFIG: AppConfig = {
   version: '0.3.0',
   firstRun: true,
