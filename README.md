@@ -1,158 +1,207 @@
 # 🧠 NeuralDeck
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg) ![Platform](https://img.shields.io/badge/platform-win%20%7C%20mac%20%7C%20linux-lightgrey) ![Status](https://img.shields.io/badge/status-pre--alpha-orange) ![Electron](https://img.shields.io/badge/built%20with-Electron-blueviolet)
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Platform](https://img.shields.io/badge/platform-win%20%7C%20mac%20%7C%20linux-lightgrey)
+![Status](https://img.shields.io/badge/status-pre--alpha-orange)
+![Electron](https://img.shields.io/badge/built%20with-Electron-blueviolet)
+![CI](https://github.com/murapadev/NeuralDeck/workflows/CI/badge.svg)
+![Release](https://github.com/murapadev/NeuralDeck/workflows/Release/badge.svg)
 
-> **Tu centro de mando de IA invisible.**
+> **Your invisible AI command center.**
 >
-> Accede a ChatGPT, Gemini, Claude, DeepSeek y modelos locales desde una única interfaz flotante en tu bandeja del sistema, diseñada para no interrumpir tu flujo.
+> Access ChatGPT, Gemini, Claude, DeepSeek, and local models from a single floating interface in your system tray, designed to keep your workflow uninterrupted.
 
 ---
 
-## 📖 Sobre el Proyecto
+## 📖 About the Project
 
-**NeuralDeck** no es solo otro navegador; es una capa de utilidad ("utility layer") para tu sistema operativo. Resuelve el problema de tener 50 pestañas abiertas buscando dónde dejaste la conversación con la IA.
+**NeuralDeck** is not just another browser; it's a utility layer for your operating system. It solves the problem of having 50 tabs open trying to find where you left your AI conversation.
 
-Funciona como una **"Ventana Fantasma"**: siempre está ahí, cargada en memoria, pero solo aparece cuando la necesitas y desaparece cuando vuelves a tu código o documento.
+It works as a **"Ghost Window"**: always there, loaded in memory, but only appears when you need it and disappears when you return to your code or document.
 
-### ✨ Características Principales
+### ✨ Key Features
 
-* **⚡ Acceso Instantáneo:** Vive en el System Tray. Un clic (o `Ctrl+Space`) y aparece; pierde el foco y desaparece.
-* **🌐 Hub Multi-IA:**
-    * OpenAI ChatGPT
-    * Google Gemini
-    * Anthropic Claude
-    * DeepSeek
-    * Perplexity
-* **🧠 Motor Chromium:** Construido sobre Electron para garantizar compatibilidad 1:1 con las webs modernas y gestión de autenticación robusta (Google Auth, etc).
-* **🛡️ Modo Stealth:** Opciones de privacidad, borrado de caché al cerrar y bloqueo de rastreadores.
-* **💻 Cross-Platform Real:** Funciona en Windows 10/11, macOS (Intel/Silicon) y Linux (X11/Wayland*).
+- **⚡ Instant Access:** Lives in the System Tray. One click (or `Ctrl+Space`) and it appears; lose focus and it disappears.
+- **🌐 Multi-AI Hub:**
+  - OpenAI ChatGPT
+  - Google Gemini
+  - Anthropic Claude
+  - DeepSeek
+  - Perplexity
+  - Custom providers
+- **🧠 Chromium Engine:** Built on Electron to ensure 1:1 compatibility with modern web apps and robust authentication management (Google Auth, etc).
+- **🛡️ Stealth Mode:** Privacy options, cache clearing on close, and tracker blocking.
+- **💻 True Cross-Platform:** Works on Windows 10/11, macOS (Intel/Silicon), and Linux (X11/Wayland\*).
 
 ---
 
-## 🏗️ Arquitectura Técnica
+## 🏗️ Technical Architecture
 
-NeuralDeck utiliza una arquitectura híbrida para minimizar el consumo de recursos mientras mantiene la compatibilidad web.
+NeuralDeck uses a hybrid architecture to minimize resource consumption while maintaining web compatibility.
 
 ```mermaid
 graph TD
-    User((Usuario)) -->|Click Icono/Atajo| Main[Main Process - Electron]
-    Main -->|Calcula Posición| Window[BrowserWindow - Contenedor UI]
-    
+    User((User)) -->|Click Icon/Shortcut| Main[Main Process - Electron]
+    Main -->|Calculate Position| Window[BrowserWindow - UI Container]
+
     subgraph "Renderer UI (React)"
-        Sidebar[Barra Lateral - Selector]
-        Settings[Panel de Configuración]
+        Sidebar[Sidebar - Provider Selector]
+        Settings[Settings Panel]
     end
-    
+
     Window --> Sidebar
-    
-    subgraph "Gestor de Vistas (BrowserViews)"
+
+    subgraph "View Manager (BrowserViews)"
         ChatGPT[View: ChatGPT]
         Gemini[View: Gemini]
         Claude[View: Claude]
     end
-    
-    Main -->|Intercambia View Activa| ChatGPT
-    Main -->|Intercambia View Activa| Gemini
-    Main -->|Intercambia View Activa| Claude
-    
+
+    Main -->|Switch Active View| ChatGPT
+    Main -->|Switch Active View| Gemini
+    Main -->|Switch Active View| Claude
+
     style Main fill:#f9f,stroke:#333,stroke-width:2px
     style Window fill:#bbf,stroke:#333,stroke-width:2px
 ```
 
-  * **Main Process:** Gestiona el ciclo de vida, el icono del tray y la posición de la ventana.
-  * **UI Renderer:** Una aplicación React ligera que pinta la barra lateral y los controles.
-  * **BrowserViews:** Cada IA se carga en una vista independiente acelerada por hardware, aislada del proceso principal UI.
+- **Main Process:** Manages lifecycle, tray icon, and window positioning.
+- **UI Renderer:** A lightweight React application that renders the sidebar and controls.
+- **BrowserViews:** Each AI loads in an independent hardware-accelerated view, isolated from the main UI process.
 
------
+---
 
-## 🛠️ Stack Tecnológico
+## 🛠️ Technology Stack
 
-| Área | Tecnología | Propósito |
-| :--- | :--- | :--- |
-| **Core** | **Electron** | Runtime multiplataforma estable. |
-| **Frontend** | **React + Vite** | Interfaz de usuario rápida y modular. |
-| **Estilos** | **TailwindCSS** | Diseño moderno y responsive. |
-| **Lenguaje** | **TypeScript** | Tipado estático para robustez a largo plazo. |
-| **Estado** | **Zustand** | Gestión de estado global minimalista. |
-| **Build** | **Electron-Builder** | Empaquetado y distribución (.exe, .dmg, .AppImage). |
+| Area         | Technology           | Purpose                                             |
+| :----------- | :------------------- | :-------------------------------------------------- |
+| **Core**     | **Electron**         | Stable cross-platform runtime.                      |
+| **Frontend** | **React + Vite**     | Fast and modular user interface.                    |
+| **Styling**  | **TailwindCSS**      | Modern and responsive design.                       |
+| **Language** | **TypeScript**       | Static typing for long-term robustness.             |
+| **State**    | **Zustand**          | Minimalist global state management.                 |
+| **Build**    | **Electron-Builder** | Packaging and distribution (.exe, .dmg, .AppImage). |
 
------
+---
 
 ## 🚀 Roadmap
 
-  - [ ] **v0.1.0 (MVP):**
-      - Estructura base Electron + React.
-      - Soporte para System Tray (Windows/Linux/Mac).
-      - Lógica de ocultar/mostrar ventana (Show/Hide/Blur).
-      - Integración básica de ChatGPT y Gemini via `BrowserView`.
-  - [ ] **v0.2.0 (UI & Config):**
-      - Persistencia de sesión (cookies).
-      - Barra lateral colapsable.
-      - Atajos de teclado globales configurables.
-  - [ ] **v0.3.0 (Local AI):**
-      - Integración con Ollama (interfaz web local).
-  - [ ] **v1.0.0 (Release):**
-      - Firma de código.
-      - Actualizaciones automáticas.
+- [x] **v0.1.0 (MVP):**
+  - Base Electron + React structure.
+  - System Tray support (Windows/Linux/Mac).
+  - Show/Hide/Blur window logic.
+  - Basic ChatGPT and Gemini integration via `BrowserView`.
+- [x] **v0.2.0 (UI & Config):**
+  - Session persistence (cookies).
+  - Collapsible sidebar.
+  - Configurable global keyboard shortcuts.
+- [ ] **v0.3.0 (Local AI):**
+  - Ollama integration (local web interface).
+- [ ] **v1.0.0 (Release):**
+  - Code signing.
+  - Auto-updates.
 
------
+---
 
-## 🔧 Instalación y Desarrollo
+## 🔧 Installation and Development
 
-Sigue estos pasos para levantar el entorno de desarrollo local.
+Follow these steps to set up the local development environment.
 
-### Prerrequisitos
+### Prerequisites
 
-  * Node.js (v18 o superior)
-  * npm o yarn
+- Node.js (v18 or higher)
+- npm or yarn
 
-### Pasos
+### Steps
 
-1.  **Clonar el repositorio:**
+1.  **Clone the repository:**
 
     ```bash
-    git clone [https://github.com/tu-usuario/NeuralDeck.git](https://github.com/tu-usuario/NeuralDeck.git)
+    git clone https://github.com/murapadev/NeuralDeck.git
     cd NeuralDeck
     ```
 
-2.  **Instalar dependencias:**
+2.  **Install dependencies:**
 
     ```bash
     npm install
     ```
 
-3.  **Iniciar en modo desarrollo:**
+3.  **Start in development mode:**
 
     ```bash
     npm run dev
     ```
 
-    *Esto iniciará el servidor Vite y lanzará la ventana de Electron.*
+    _This will start the Vite server and launch the Electron window._
 
-4.  **Construir binario:**
+4.  **Build binary:**
 
     ```bash
-    npm run build:win   # Para Windows
-    npm run build:linux # Para Linux
-    npm run build:mac   # Para macOS
+    npm run build:win   # For Windows
+    npm run build:linux # For Linux
+    npm run build:mac   # For macOS
     ```
 
------
+---
 
-## 🤝 Contribuyendo
+## 🚀 Release Process
 
-Las Pull Requests son bienvenidas. Para cambios importantes, por favor abre primero un issue para discutir lo que te gustaría cambiar.
+NeuralDeck uses automated CI/CD for testing and releases:
 
-1.  Haz un Fork del proyecto
-2.  Crea tu rama de feature (`git checkout -b feature/AmazingFeature`)
-3.  Haz Commit de tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4.  Haz Push a la rama (`git push origin feature/AmazingFeature`)
-5.  Abre un Pull Request
+### Automated Testing
 
------
+Every push and pull request triggers automated tests:
 
-## 📄 Licencia
+- Linting and code style checks
+- TypeScript type checking
+- Unit and integration tests
+- Multi-platform build verification
 
-Distribuido bajo la licencia MIT. Ver `LICENSE` para más información.
+### Creating a Release
 
+To create a new release:
 
+1. **Update version** in `package.json`:
+
+   ```bash
+   npm version patch  # or minor, major
+   ```
+
+2. **Push the tag**:
+
+   ```bash
+   git push origin main --tags
+   ```
+
+3. **GitHub Actions will automatically**:
+   - Run all tests
+   - Build binaries for Windows, macOS, and Linux
+   - Create a GitHub Release
+   - Upload all artifacts
+
+### Download Releases
+
+Download the latest release from the [Releases page](https://github.com/murapadev/NeuralDeck/releases):
+
+- **Windows**: `.exe` installer or portable version
+- **Linux**: `.AppImage` (universal) or `.deb` (Debian/Ubuntu)
+- **macOS**: `.dmg` installer
+
+---
+
+## 🤝 Contributing
+
+Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+
+1.  Fork the project
+2.  Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3.  Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4.  Push to the branch (`git push origin feature/AmazingFeature`)
+5.  Open a Pull Request
+
+---
+
+## 📄 License
+
+Distributed under the MIT License. See `LICENSE` for more information.

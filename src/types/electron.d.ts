@@ -1,5 +1,5 @@
 // Tipos de configuración (reflejados del main process)
-export type WindowPosition = 
+export type WindowPosition =
   | 'near-tray'
   | 'top-left'
   | 'top-right'
@@ -49,7 +49,6 @@ export interface PrivacyConfig {
 
 export interface AppearanceConfig {
   theme: AppTheme
-  sidebarCollapsed: boolean
   showProviderNames: boolean
   fontSize: 'small' | 'medium' | 'large'
   accentColor: string
@@ -77,7 +76,7 @@ export interface NeuralDeckAPI {
   // Configuración
   getConfig: () => Promise<AppConfig>
   updateConfig: (section: keyof AppConfig, updates: any) => void
-  
+
   // Proveedores
   getProviders: () => Promise<ProviderConfig[]>
   getAllProviders: () => Promise<ProviderConfig[]>
@@ -88,33 +87,34 @@ export interface NeuralDeckAPI {
   addCustomProvider: (provider: Omit<ProviderConfig, 'order' | 'isCustom'>) => void
   removeCustomProvider: (id: string) => void
   reorderProviders: (orderedIds: string[]) => void
-  
+
   // Iconos de proveedores (favicons)
   getProviderIcon: (providerId: string) => Promise<string | null>
   getAllProviderIcons: () => Promise<Record<string, string>>
-  
+
   // Navegación
   reload: () => void
   goBack: () => void
   goForward: () => void
-  
+
   // Privacidad
   clearCache: (providerId: string) => void
   clearAllData: () => void
-  
+
   // Ventana
   hideWindow: () => void
   minimizeWindow: () => void
   toggleAlwaysOnTop: (value: boolean) => void
+  toggleSidebar: () => void
   showBrowserView: () => void
   hideBrowserView: () => void
   openSettingsWindow: () => void
   closeSettingsWindow: () => void
-  
+
   // Utilidades
   openExternal: (url: string) => void
   getPlatform: () => Promise<NodeJS.Platform>
-  
+
   // Eventos
   onViewChanged: (callback: (providerId: string) => void) => () => void
   onOpenSettings: (callback: () => void) => () => void
@@ -130,5 +130,4 @@ declare global {
   }
 }
 
-export { }
-
+export {}

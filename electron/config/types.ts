@@ -4,14 +4,14 @@
  */
 
 // Posiciones predefinidas de la ventana
-export type WindowPosition = 
-  | 'near-tray'      // Cerca del icono del tray
-  | 'top-left'       // Esquina superior izquierda
-  | 'top-right'      // Esquina superior derecha
-  | 'bottom-left'    // Esquina inferior izquierda
-  | 'bottom-right'   // Esquina inferior derecha
-  | 'center'         // Centro de la pantalla
-  | 'remember'       // Recordar última posición
+export type WindowPosition =
+  | 'near-tray' // Cerca del icono del tray
+  | 'top-left' // Esquina superior izquierda
+  | 'top-right' // Esquina superior derecha
+  | 'bottom-left' // Esquina inferior izquierda
+  | 'bottom-right' // Esquina inferior derecha
+  | 'center' // Centro de la pantalla
+  | 'remember' // Recordar última posición
 
 // Tema de la aplicación
 export type AppTheme = 'dark' | 'light' | 'system'
@@ -63,7 +63,6 @@ export interface PrivacyConfig {
 // Configuración de apariencia
 export interface AppearanceConfig {
   theme: AppTheme
-  sidebarCollapsed: boolean
   showProviderNames: boolean
   fontSize: 'small' | 'medium' | 'large'
   accentColor: string
@@ -74,7 +73,7 @@ export interface AppConfig {
   version: string
   firstRun: boolean
   lastProvider: string | null
-  
+
   window: WindowConfig
   shortcuts: ShortcutConfig
   providers: ProviderConfig[]
@@ -91,7 +90,7 @@ export const DEFAULT_PROVIDERS: ProviderConfig[] = [
     icon: 'chatgpt',
     color: '#10a37f',
     enabled: true,
-    order: 0
+    order: 0,
   },
   {
     id: 'gemini',
@@ -100,7 +99,7 @@ export const DEFAULT_PROVIDERS: ProviderConfig[] = [
     icon: 'gemini',
     color: '#8e44ef',
     enabled: true,
-    order: 1
+    order: 1,
   },
   {
     id: 'claude',
@@ -109,7 +108,7 @@ export const DEFAULT_PROVIDERS: ProviderConfig[] = [
     icon: 'claude',
     color: '#d97706',
     enabled: true,
-    order: 2
+    order: 2,
   },
   {
     id: 'deepseek',
@@ -118,7 +117,7 @@ export const DEFAULT_PROVIDERS: ProviderConfig[] = [
     icon: 'deepseek',
     color: '#3b82f6',
     enabled: true,
-    order: 3
+    order: 3,
   },
   {
     id: 'perplexity',
@@ -127,7 +126,7 @@ export const DEFAULT_PROVIDERS: ProviderConfig[] = [
     icon: 'perplexity',
     color: '#22c55e',
     enabled: true,
-    order: 4
+    order: 4,
   },
   {
     id: 'ollama',
@@ -135,10 +134,10 @@ export const DEFAULT_PROVIDERS: ProviderConfig[] = [
     url: 'http://localhost:11434',
     icon: 'ollama',
     color: '#ffffff',
-    enabled: false,
+    enabled: true,
     order: 5,
-    isCustom: false
-  }
+    isCustom: false,
+  },
 ]
 
 // Configuración por defecto
@@ -146,16 +145,16 @@ export const DEFAULT_CONFIG: AppConfig = {
   version: '0.2.0',
   firstRun: true,
   lastProvider: 'chatgpt',
-  
+
   window: {
     width: 420,
     height: 700,
     position: 'near-tray',
     alwaysOnTop: true,
     hideOnBlur: true,
-    opacity: 1.0
+    opacity: 1.0,
   },
-  
+
   shortcuts: {
     toggleWindow: 'CommandOrControl+Space',
     providers: [
@@ -163,27 +162,26 @@ export const DEFAULT_CONFIG: AppConfig = {
       'CommandOrControl+Shift+2',
       'CommandOrControl+Shift+3',
       'CommandOrControl+Shift+4',
-      'CommandOrControl+Shift+5'
+      'CommandOrControl+Shift+5',
     ],
     reload: 'CommandOrControl+R',
     goBack: 'CommandOrControl+Left',
     goForward: 'CommandOrControl+Right',
-    openSettings: 'CommandOrControl+,'
+    openSettings: 'CommandOrControl+,',
   },
-  
+
   providers: DEFAULT_PROVIDERS,
-  
+
   privacy: {
     clearOnClose: false,
     blockTrackers: false,
-    incognitoProviders: []
+    incognitoProviders: [],
   },
-  
+
   appearance: {
     theme: 'dark',
-    sidebarCollapsed: false,
     showProviderNames: false,
     fontSize: 'medium',
-    accentColor: '#6366f1'
-  }
+    accentColor: '#6366f1',
+  },
 }

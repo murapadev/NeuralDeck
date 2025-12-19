@@ -6,6 +6,7 @@ import {
     useShortcutsConfig,
     useWindowConfig
 } from '../store/appStore'
+import { trpc } from '../utils/trpc'
 import type { AppTheme, WindowPosition } from '../types/electron'
 
 // Iconos SVG inline para el panel de settings
@@ -232,9 +233,13 @@ const ShortcutInput = ({
 // Paneles de contenido
 const GeneralTab = () => {
   const windowConfig = useWindowConfig()
-  const updateWindowConfig = useAppStore((s) => s.updateWindowConfig)
+  const windowMutation = trpc.updateWindow.useMutation()
 
   if (!windowConfig) return null
+
+  const updateWindowConfig = (updates: any) => {
+      windowMutation.mutate(updates)
+  }
 
   return (
     <div className="space-y-6">
@@ -280,10 +285,7 @@ const GeneralTab = () => {
           <Toggle
             label="Siempre visible"
             checked={windowConfig.alwaysOnTop}
-            onChange={(v) => {
-              updateWindowConfig({ alwaysOnTop: v })
-              window.neuralDeck?.toggleAlwaysOnTop(v)
-            }}
+            onChange={(v) => updateWindowConfig({ alwaysOnTop: v })}
           />
           <Toggle
             label="Ocultar al perder foco"
@@ -298,9 +300,13 @@ const GeneralTab = () => {
 
 const AppearanceTab = () => {
   const appearanceConfig = useAppearanceConfig()
-  const updateAppearanceConfig = useAppStore((s) => s.updateAppearanceConfig)
+  const appearanceMutation = trpc.updateAppearance.useMutation()
 
   if (!appearanceConfig) return null
+
+  const updateAppearanceConfig = (updates: any) => {
+      appearanceMutation.mutate(updates)
+  }
 
   return (
     <div className="space-y-6">
@@ -319,11 +325,6 @@ const AppearanceTab = () => {
       <section>
         <h3 className="text-lg font-semibold text-white mb-4">Barra lateral</h3>
         <div className="space-y-1 bg-neutral-800/50 rounded-lg p-4">
-          <Toggle
-            label="Contraer barra lateral"
-            checked={appearanceConfig.sidebarCollapsed}
-            onChange={(v) => updateAppearanceConfig({ sidebarCollapsed: v })}
-          />
           <Toggle
             label="Mostrar nombres de proveedores"
             checked={appearanceConfig.showProviderNames}
@@ -369,10 +370,14 @@ const AppearanceTab = () => {
 
 const ShortcutsTab = () => {
   const shortcutsConfig = useShortcutsConfig()
-  const updateShortcutsConfig = useAppStore((s) => s.updateShortcutsConfig)
   const providers = useAppStore((s) => s.providers)
+  const shortcutsMutation = trpc.updateShortcuts.useMutation()
 
   if (!shortcutsConfig) return null
+
+  const updateShortcutsConfig = (updates: any) => {
+      shortcutsMutation.mutate(updates)
+  }
 
   return (
     <div className="space-y-6">
@@ -443,20 +448,26 @@ const ProvidersTab = () => {
     url: '',
     color: '#6366f1',
   })
+  
+  const updateProviderMutation = trpc.updateProvider.useMutation()
+  const addProviderMutation = trpc.addCustomProvider.useMutation()
+  const removeProviderMutation = trpc.removeCustomProvider.useMutation()
+  // const detachMutation = trpc.detachView.useMutation()
 
   const handleToggleProvider = (id: string, enabled: boolean) => {
-    window.neuralDeck?.updateProvider(id, { enabled })
+    updateProviderMutation.mutate({ id, data: { enabled } })
   }
 
   const handleAddProvider = () => {
     if (newProvider.id && newProvider.name && newProvider.url) {
-      window.neuralDeck?.addCustomProvider({
+      addProviderMutation.mutate({
         id: newProvider.id,
         name: newProvider.name,
         url: newProvider.url,
         icon: 'custom',
         color: newProvider.color,
         enabled: true,
+        isCustom: true
       })
       setNewProvider({ id: '', name: '', url: '', color: '#6366f1' })
       setShowAddForm(false)
@@ -465,12 +476,13 @@ const ProvidersTab = () => {
 
   const handleRemoveProvider = (id: string) => {
     if (confirm('¿Eliminar este proveedor personalizado?')) {
-      window.neuralDeck?.removeCustomProvider(id)
+      removeProviderMutation.mutate(id)
     }
   }
 
   const handleDetach = (id: string) => {
-    window.neuralDeck?.detachView(id)
+    // detachMutation.mutate(id) 
+    console.log('Detach not implemented', id)
   }
 
   return (
@@ -588,14 +600,20 @@ const ProvidersTab = () => {
 
 const PrivacyTab = () => {
   const privacyConfig = usePrivacyConfig()
-  const updatePrivacyConfig = useAppStore((s) => s.updatePrivacyConfig)
   const providers = useAppStore((s) => s.providers)
+  
+  const privacyMutation = trpc.updatePrivacy.useMutation()
+  const clearDataMutation = trpc.clearAllData.useMutation()
 
   if (!privacyConfig) return null
 
+  const updatePrivacyConfig = (updates: any) => {
+      privacyMutation.mutate(updates)
+  }
+
   const handleClearAllData = () => {
     if (confirm('¿Borrar todos los datos de navegación? Esto cerrará todas las sesiones.')) {
-      window.neuralDeck?.clearAllData()
+      clearDataMutation.mutate()
     }
   }
 
@@ -656,13 +674,16 @@ const PrivacyTab = () => {
 // Componente principal
 function Settings({ isWindow = false }: { isWindow?: boolean }) {
   const { isSettingsOpen, closeSettings, settingsTab, setSettingsTab } = useAppStore()
+  const openExternalMutation = trpc.openExternal.useMutation()
+  // const closeSettingsWindowMutation = trpc.closeSettingsWindow.useMutation()
 
   // Si no es ventana y no está abierto, no renderizar
   if (!isWindow && !isSettingsOpen) return null
 
   const handleClose = () => {
     if (isWindow) {
-      window.neuralDeck?.closeSettingsWindow()
+      // closeSettingsWindowMutation.mutate()
+      window.close() // Fallback normal electron window close
     } else {
       closeSettings()
     }
@@ -732,7 +753,7 @@ function Settings({ isWindow = false }: { isWindow?: boolean }) {
         <div className="px-6 py-3 border-t border-neutral-800 flex items-center justify-between">
           <span className="text-xs text-neutral-500">NeuralDeck v1.0.0</span>
           <button
-            onClick={() => window.neuralDeck?.openExternal('https://github.com/murapadev/neuraldeck')}
+            onClick={() => openExternalMutation.mutate('https://github.com/murapadev/neuraldeck')}
             className="text-xs text-neural-400 hover:text-neural-300 transition-colors"
           >
             Ver en GitHub
@@ -787,7 +808,7 @@ function Settings({ isWindow = false }: { isWindow?: boolean }) {
         <div className="px-6 py-3 border-t border-neutral-800 flex items-center justify-between">
           <span className="text-xs text-neutral-500">NeuralDeck v1.0.0</span>
           <button
-            onClick={() => window.neuralDeck?.openExternal('https://github.com/murapadev/neuraldeck')}
+            onClick={() => openExternalMutation.mutate('https://github.com/murapadev/neuraldeck')}
             className="text-xs text-neural-400 hover:text-neural-300 transition-colors"
           >
             Ver en GitHub

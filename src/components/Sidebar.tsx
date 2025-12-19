@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
-import { useAppStore, useAppearanceConfig } from '../store/appStore'
+import { useAppStore, useAppearanceConfig, useWindowConfig } from '../store/appStore'
+import { trpc } from '../utils/trpc'
 
 // Cache de iconos cargados
-const iconCache: Map<string, string> = new Map()
+// const iconCache: Map<string, string> = new Map()
 
 // Componente de icono con favicon
 function ProviderIconWithFavicon({ 
@@ -16,46 +16,8 @@ function ProviderIconWithFavicon({
   providerName: string
   color: string 
 }) {
-  const [faviconUrl, setFaviconUrl] = useState<string | null>(iconCache.get(providerId) || null)
-  const [loadError, setLoadError] = useState(false)
-
-  useEffect(() => {
-    // Si ya tenemos el icono en caché, no hacer nada
-    if (iconCache.has(providerId)) {
-      setFaviconUrl(iconCache.get(providerId)!)
-      return
-    }
-
-    // Intentar cargar el favicon
-    const loadFavicon = async () => {
-      try {
-        const iconUrl = await window.neuralDeck?.getProviderIcon(providerId)
-        if (iconUrl) {
-          iconCache.set(providerId, iconUrl)
-          setFaviconUrl(iconUrl)
-        } else {
-          setLoadError(true)
-        }
-      } catch (error) {
-        console.warn(`Failed to load favicon for ${providerId}:`, error)
-        setLoadError(true)
-      }
-    }
-
-    loadFavicon()
-  }, [providerId])
-
-  // Si tenemos favicon cargado, mostrarlo
-  if (faviconUrl && !loadError) {
-    return (
-      <img 
-        src={faviconUrl} 
-        alt={providerName} 
-        className="w-6 h-6 rounded"
-        onError={() => setLoadError(true)}
-      />
-    )
-  }
+  // TODO: Re-implement favicon fetching via tRPC if needed
+  // For now, relying on static icons
 
   // Fallback: usar icono SVG o inicial
   const IconComponent = ProviderIcons[providerIcon] || ProviderIcons[providerId]
@@ -138,19 +100,15 @@ const UIIcons = {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
     </svg>
   ),
-  collapse: (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-    </svg>
-  ),
-  expand: (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-    </svg>
-  ),
+
   popout: (
     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+    </svg>
+  ),
+  pin: (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
     </svg>
   ),
 }
@@ -159,66 +117,56 @@ function Sidebar() {
   const { 
     providers, 
     currentProviderId, 
-    isSidebarCollapsed, 
-    toggleSidebar, 
     navigationState,
-    openSettings 
+    openSettings,
   } = useAppStore()
+  
+  const windowConfig = useWindowConfig()
+  const isPinned = windowConfig?.alwaysOnTop ?? false
   const appearanceConfig = useAppearanceConfig()
   const showNames = appearanceConfig?.showProviderNames ?? false
+
+  // Mutations
+  const switchViewMutation = trpc.switchView.useMutation()
+  const togglePinMutation = trpc.setAlwaysOnTop.useMutation()
+  const reloadMutation = trpc.reload.useMutation()
+  const backMutation = trpc.goBack.useMutation()
+  const forwardMutation = trpc.goForward.useMutation()
+  // const detachMutation = trpc.detachView.useMutation() // Not yet implemented
 
   const handleProviderClick = (providerId: string, e: React.MouseEvent) => {
     // Ctrl+click (o Cmd+click en macOS) abre en ventana separada
     if (e.ctrlKey || e.metaKey) {
-      window.neuralDeck?.detachView(providerId)
+       // TODO: Implement detach
+       console.log('Detach not implemented yet')
     } else {
-      window.neuralDeck?.switchView(providerId)
+      switchViewMutation.mutate(providerId)
     }
   }
 
   const handleDetach = (providerId: string, e: React.MouseEvent) => {
     e.stopPropagation()
     e.preventDefault()
-    window.neuralDeck?.detachView(providerId)
+    // TODO: Implement detach
+    console.log('Detach requested for', providerId)
   }
 
-  const handleClose = () => {
-    window.neuralDeck?.hideWindow()
+  const handleTogglePin = () => {
+    togglePinMutation.mutate(!isPinned)
   }
 
-  // Debug: mostrar estado de providers
-  console.log('Sidebar providers:', providers, 'currentProviderId:', currentProviderId)
+
 
   return (
     <aside 
       className={`
         flex flex-col h-full bg-neutral-900 border-r border-neutral-800
-        transition-all duration-300 ease-out
-        ${isSidebarCollapsed ? 'w-0 overflow-hidden' : showNames ? 'w-[140px]' : 'w-[60px]'}
+        transition-all duration-300 ease-out app-drag
+        ${showNames ? 'w-[140px]' : 'w-[60px]'}
       `}
     >
-      {/* Header con controles de ventana */}
-      <div className="flex items-center justify-center pt-3 pb-2 app-drag gap-2">
-        {/* macOS style window controls */}
-        <button
-          onClick={handleClose}
-          className="w-3 h-3 rounded-full bg-red-500 hover:bg-red-400 transition-colors app-no-drag"
-          title="Cerrar"
-        />
-        <button
-          onClick={() => window.neuralDeck?.minimizeWindow()}
-          className="w-3 h-3 rounded-full bg-yellow-500 hover:bg-yellow-400 transition-colors app-no-drag"
-          title="Minimizar"
-        />
-        <button
-          onClick={toggleSidebar}
-          className="w-3 h-3 rounded-full bg-green-500 hover:bg-green-400 transition-colors app-no-drag"
-          title="Colapsar"
-        />
-      </div>
-
       {/* Logo */}
-      <div className="flex items-center justify-center py-4 border-b border-neutral-800">
+      <div className="flex items-center justify-center py-4 border-b border-neutral-800 app-drag">
         <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-neural-500 to-neural-700 flex items-center justify-center shadow-lg shadow-neural-500/20">
           <span className="text-white font-bold text-sm">N</span>
         </div>
@@ -228,7 +176,18 @@ function Sidebar() {
       </div>
 
       {/* Provider buttons */}
-      <nav className="flex-1 flex flex-col gap-1 py-4 px-2 overflow-y-auto">
+      <nav className="flex-1 flex flex-col gap-1 py-4 px-2 overflow-y-auto app-no-drag">
+        {providers.length === 0 && (
+          <div className="flex flex-col items-center justify-center h-full text-center px-2">
+            <span className="text-xs text-neutral-500 mb-2">No active providers</span>
+            <button 
+              onClick={() => openSettings('providers')}
+              className="text-xs text-indigo-400 hover:text-indigo-300 underline"
+            >
+              Configure
+            </button>
+          </div>
+        )}
         {providers.map((provider, index) => (
           <div key={provider.id} className="tooltip-trigger relative group">
             {/* Provider button */}
@@ -303,9 +262,9 @@ function Sidebar() {
       </nav>
 
       {/* Navigation controls */}
-      <div className="flex items-center justify-center gap-1 py-2 px-2 border-t border-neutral-800">
+      <div className="flex items-center justify-center gap-1 py-2 px-2 border-t border-neutral-800 app-no-drag">
         <button
-          onClick={() => window.neuralDeck?.goBack()}
+          onClick={() => backMutation.mutate()}
           disabled={!navigationState.canGoBack}
           className={`p-2 rounded-lg transition-colors ${
             navigationState.canGoBack 
@@ -317,7 +276,7 @@ function Sidebar() {
           {UIIcons.back}
         </button>
         <button
-          onClick={() => window.neuralDeck?.goForward()}
+          onClick={() => forwardMutation.mutate()}
           disabled={!navigationState.canGoForward}
           className={`p-2 rounded-lg transition-colors ${
             navigationState.canGoForward 
@@ -329,7 +288,7 @@ function Sidebar() {
           {UIIcons.forward}
         </button>
         <button
-          onClick={() => window.neuralDeck?.reload()}
+          onClick={() => reloadMutation.mutate()}
           className="p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
           title="Recargar"
         >
@@ -338,7 +297,7 @@ function Sidebar() {
       </div>
 
       {/* Footer actions */}
-      <div className="flex items-center justify-center gap-1 py-3 px-2 border-t border-neutral-800">
+      <div className="flex items-center justify-center gap-1 py-3 px-2 border-t border-neutral-800 app-no-drag">
         {/* Settings button */}
         <button
           onClick={() => openSettings()}
@@ -347,14 +306,17 @@ function Sidebar() {
         >
           {UIIcons.settings}
         </button>
-
-        {/* Collapse toggle */}
-        <button
-          onClick={toggleSidebar}
-          className="p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
-          title={isSidebarCollapsed ? 'Expandir' : 'Colapsar'}
+         {/* Pin button */}
+         <button
+          onClick={handleTogglePin}
+          className={`p-2 rounded-lg transition-colors ${
+            isPinned
+              ? 'text-neural-500 bg-neural-500/10 hover:bg-neural-500/20'
+              : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
+          }`}
+          title={isPinned ? 'Desanclar ventana' : 'Mantener siempre visible'}
         >
-          {isSidebarCollapsed ? UIIcons.expand : UIIcons.collapse}
+          {UIIcons.pin}
         </button>
       </div>
     </aside>

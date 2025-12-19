@@ -1,0 +1,182 @@
+import { initTRPC } from '@trpc/server'
+import { z } from 'zod'
+import { WindowManager } from '../services/WindowManager.js'
+import { ViewManager } from '../services/ViewManager.js'
+import configManager from '../config/configManager.js'
+
+export const createRouter = (windowManager: WindowManager, viewManager: ViewManager) => {
+  const t = initTRPC.create()
+
+  return t.router({
+    // Config
+    getConfig: t.procedure.query(() => {
+      return configManager.getAll()
+    }),
+
+    updateAppearance: t.procedure
+      .input(
+        z.object({
+          theme: z.enum(['dark', 'light', 'system']).optional(),
+          showProviderNames: z.boolean().optional(),
+          fontSize: z.enum(['small', 'medium', 'large']).optional(),
+          accentColor: z.string().optional(),
+        })
+      )
+      .mutation(({ input }) => {
+        configManager.updateAppearance(input)
+        // Trigger resize if sidebar changed
+        if (input.showProviderNames !== undefined) {
+          viewManager.handleResize()
+        }
+        return configManager.getAll()
+      }),
+
+    updateWindow: t.procedure
+      .input(
+        z.object({
+          width: z.number().optional(),
+          height: z.number().optional(),
+          opacity: z.number().optional(),
+          alwaysOnTop: z.boolean().optional(),
+          hideOnBlur: z.boolean().optional(),
+          position: z
+            .enum([
+              'center',
+              'top-right',
+              'top-left',
+              'bottom-right',
+              'bottom-left',
+              'remember',
+              'near-tray',
+            ])
+            .optional(),
+        })
+      )
+      .mutation(({ input }) => {
+        if (input.alwaysOnTop !== undefined)
+          windowManager.mainWindow?.setAlwaysOnTop(input.alwaysOnTop)
+        if (input.opacity !== undefined) windowManager.mainWindow?.setOpacity(input.opacity)
+        // Helper to apply other window props if needed, or mostly config sync
+        if (input.width || input.height) {
+          const bounds = windowManager.mainWindow?.getBounds()
+          if (bounds) {
+            windowManager.mainWindow?.setSize(
+              input.width ?? bounds.width,
+              input.height ?? bounds.height
+            )
+          }
+        }
+        configManager.updateWindow(input)
+        return configManager.getAll()
+      }),
+
+    updatePrivacy: t.procedure
+      .input(
+        z.object({
+          clearOnClose: z.boolean().optional(),
+          blockTrackers: z.boolean().optional(),
+          incognitoProviders: z.array(z.string()).optional(),
+        })
+      )
+      .mutation(({ input }) => {
+        configManager.updatePrivacy(input)
+        return configManager.getAll()
+      }),
+
+    updateShortcuts: t.procedure
+      .input(
+        z.object({
+          toggleWindow: z.string().optional(),
+          reload: z.string().optional(),
+          goBack: z.string().optional(),
+          goForward: z.string().optional(),
+          openSettings: z.string().optional(),
+        })
+      )
+      .mutation(({ input }) => {
+        configManager.updateShortcuts(input)
+        // TODO: Re-register global shortcuts if changed
+        return configManager.getAll()
+      }),
+
+    // Providers Management
+    addCustomProvider: t.procedure
+      .input(z.any()) // TODO: define schema
+      .mutation(({ input }) => {
+        configManager.addCustomProvider(input)
+        return configManager.getAll()
+      }),
+
+    removeCustomProvider: t.procedure.input(z.string()).mutation(({ input }) => {
+      configManager.removeCustomProvider(input)
+      return configManager.getAll()
+    }),
+
+    updateProvider: t.procedure
+      .input(
+        z.object({
+          id: z.string(),
+          data: z.object({
+            enabled: z.boolean().optional(),
+          }),
+        })
+      )
+      .mutation(({ input }) => {
+        configManager.updateProvider(input.id, input.data)
+        return configManager.getAll()
+      }),
+
+    clearAllData: t.procedure.mutation(async () => {
+      const ses = windowManager.mainWindow?.webContents.session
+      if (ses) {
+        await ses.clearStorageData()
+        await ses.clearCache()
+      }
+    }),
+
+    openExternal: t.procedure.input(z.string()).mutation(async ({ input }) => {
+      const { shell } = await import('electron')
+      await shell.openExternal(input)
+    }),
+
+    closeSettingsWindow: t.procedure.mutation(() => {
+      // Implement if settings is a separate window managed by WindowManager
+      // For now, assuming it might be a view or valid IPC
+    }),
+
+    // Window
+    toggleWindow: t.procedure.mutation(() => {
+      windowManager.toggleWindow()
+    }),
+
+    setAlwaysOnTop: t.procedure.input(z.boolean()).mutation(({ input }) => {
+      windowManager.mainWindow?.setAlwaysOnTop(input)
+      configManager.updateWindow({ alwaysOnTop: input })
+      return input
+    }),
+
+    // Views/Providers
+    getProviders: t.procedure.query(() => {
+      return configManager.getEnabledProviders()
+    }),
+
+    switchView: t.procedure.input(z.string()).mutation(({ input }) => {
+      viewManager.switchView(input)
+    }),
+
+    // Navigation
+    goBack: t.procedure.mutation(() => {
+      viewManager.goBack()
+    }),
+
+    goForward: t.procedure.mutation(() => {
+      viewManager.goForward()
+    }),
+
+    reload: t.procedure.mutation(() => {
+      viewManager.reloadCurrent()
+    }),
+  })
+}
+
+export type AppRouter = ReturnType<typeof createRouter>

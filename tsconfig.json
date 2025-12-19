@@ -27,5 +27,6 @@
     }
   },
   "include": ["src"],
+  "exclude": ["dist-electron", "node_modules", "release"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
