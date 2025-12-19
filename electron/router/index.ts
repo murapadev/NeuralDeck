@@ -4,6 +4,7 @@ import { WindowManager } from '../services/WindowManager.js'
 import { ViewManager } from '../services/ViewManager.js'
 import { ShortcutManager } from '../services/ShortcutManager.js'
 import configManager from '../config/configManager.js'
+import faviconManager from '../utils/faviconManager.js'
 
 export const createRouter = (
   windowManager: WindowManager,
@@ -194,6 +195,23 @@ export const createRouter = (
     reload: t.procedure.mutation(() => {
       viewManager.reloadCurrent()
     }),
+
+    // Favicon
+    getProviderIcon: t.procedure
+      .input(z.object({ providerId: z.string(), size: z.number().optional() }))
+      .query(async ({ input }) => {
+        const config = configManager.getAll()
+        const provider = config.providers.find((p) => p.id === input.providerId)
+        if (!provider) {
+          return null
+        }
+        try {
+          const dataUrl = await faviconManager.getProviderIconDataURL(provider, input.size || 32)
+          return dataUrl
+        } catch {
+          return null
+        }
+      }),
   })
 }
 

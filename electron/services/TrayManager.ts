@@ -45,7 +45,7 @@ export class TrayManager {
 
     this.contextMenu = Menu.buildFromTemplate([
       {
-        label: 'Mostrar/Ocultar',
+        label: 'Show/Hide',
         click: () => this.windowManager.toggleWindow(),
       },
       { type: 'separator' },
@@ -55,14 +55,14 @@ export class TrayManager {
         label: provider.name,
         submenu: [
           {
-            label: 'Abrir aquí',
+            label: 'Open here',
             click: () => {
               this.windowManager.showWindow()
               this.viewManager.switchView(provider.id)
             },
           },
           {
-            label: 'Abrir en ventana separada',
+            label: 'Open in separate window',
             click: () => {
               console.log('Detach requested for', provider.id)
               // TODO: Re-implement detach logic
@@ -72,7 +72,7 @@ export class TrayManager {
       })),
       { type: 'separator' },
       {
-        label: '⚙️ Configuración',
+        label: '⚙️ Settings',
         click: () => {
           this.windowManager.showWindow()
           this.windowManager.mainWindow?.webContents.send('open-settings')
@@ -80,7 +80,7 @@ export class TrayManager {
       },
       { type: 'separator' },
       {
-        label: '🚪 Salir',
+        label: '🚪 Quit',
         click: () => {
           app.quit()
         },

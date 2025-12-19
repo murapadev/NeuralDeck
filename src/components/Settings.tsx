@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { t } from '../i18n'
 import {
     useAppearanceConfig,
     useAppStore,
@@ -72,33 +73,33 @@ const icons = {
 type TabId = 'general' | 'appearance' | 'shortcuts' | 'providers' | 'privacy'
 
 const TABS: { id: TabId; label: string; icon: JSX.Element }[] = [
-  { id: 'general', label: 'General', icon: icons.general },
-  { id: 'appearance', label: 'Apariencia', icon: icons.appearance },
-  { id: 'shortcuts', label: 'Atajos', icon: icons.keyboard },
-  { id: 'providers', label: 'Proveedores', icon: icons.providers },
-  { id: 'privacy', label: 'Privacidad', icon: icons.privacy },
+  { id: 'general', label: t('settings.general'), icon: icons.general },
+  { id: 'appearance', label: t('settings.appearance'), icon: icons.appearance },
+  { id: 'shortcuts', label: t('settings.shortcuts'), icon: icons.keyboard },
+  { id: 'providers', label: t('settings.providers'), icon: icons.providers },
+  { id: 'privacy', label: t('settings.privacy'), icon: icons.privacy },
 ]
 
 const POSITION_OPTIONS: { value: WindowPosition; label: string }[] = [
-  { value: 'near-tray', label: 'Cerca del tray' },
-  { value: 'top-left', label: 'Arriba izquierda' },
-  { value: 'top-right', label: 'Arriba derecha' },
-  { value: 'bottom-left', label: 'Abajo izquierda' },
-  { value: 'bottom-right', label: 'Abajo derecha' },
-  { value: 'center', label: 'Centro' },
-  { value: 'remember', label: 'Recordar posición' },
+  { value: 'near-tray', label: t('position.nearTray') },
+  { value: 'top-left', label: t('position.topLeft') },
+  { value: 'top-right', label: t('position.topRight') },
+  { value: 'bottom-left', label: t('position.bottomLeft') },
+  { value: 'bottom-right', label: t('position.bottomRight') },
+  { value: 'center', label: t('position.center') },
+  { value: 'remember', label: t('position.remember') },
 ]
 
 const THEME_OPTIONS: { value: AppTheme; label: string }[] = [
-  { value: 'dark', label: 'Oscuro' },
-  { value: 'light', label: 'Claro' },
-  { value: 'system', label: 'Sistema' },
+  { value: 'dark', label: t('settings.appearance.dark') },
+  { value: 'light', label: t('settings.appearance.light') },
+  { value: 'system', label: t('settings.appearance.system') },
 ]
 
 const FONT_SIZE_OPTIONS = [
-  { value: 'small', label: 'Pequeño' },
-  { value: 'medium', label: 'Mediano' },
-  { value: 'large', label: 'Grande' },
+  { value: 'small', label: t('settings.appearance.small') },
+  { value: 'medium', label: t('settings.appearance.medium') },
+  { value: 'large', label: t('settings.appearance.large') },
 ]
 
 // Componentes de UI reutilizables
