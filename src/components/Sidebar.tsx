@@ -1,10 +1,8 @@
 import { useAppStore, useAppearanceConfig, useWindowConfig } from '../store/appStore'
 import { trpc } from '../utils/trpc'
+import { ProviderIcons, UIIcons } from './icons'
 
-// Cache de iconos cargados
-// const iconCache: Map<string, string> = new Map()
-
-// Componente de icono con favicon
+// Provider icon component with fallback
 function ProviderIconWithFavicon({ 
   providerId, 
   providerIcon,
@@ -16,10 +14,7 @@ function ProviderIconWithFavicon({
   providerName: string
   color: string 
 }) {
-  // TODO: Re-implement favicon fetching via tRPC if needed
-  // For now, relying on static icons
-
-  // Fallback: usar icono SVG o inicial
+  // Try to get icon by icon name or provider id
   const IconComponent = ProviderIcons[providerIcon] || ProviderIcons[providerId]
   if (IconComponent) {
     return IconComponent(color)
@@ -34,83 +29,6 @@ function ProviderIconWithFavicon({
       {providerName[0]}
     </div>
   )
-}
-
-// Iconos SVG para cada proveedor (iconos profesionales)
-const ProviderIcons: Record<string, (color: string) => JSX.Element> = {
-  chatgpt: (color) => (
-    <svg viewBox="0 0 24 24" fill={color} className="w-6 h-6">
-      <path d="M22.282 9.821a5.985 5.985 0 0 0-.516-4.91 6.046 6.046 0 0 0-6.51-2.9A6.065 6.065 0 0 0 4.981 4.18a5.985 5.985 0 0 0-3.998 2.9 6.046 6.046 0 0 0 .743 7.097 5.98 5.98 0 0 0 .51 4.911 6.051 6.051 0 0 0 6.515 2.9A5.985 5.985 0 0 0 13.26 24a6.056 6.056 0 0 0 5.772-4.206 5.99 5.99 0 0 0 3.997-2.9 6.056 6.056 0 0 0-.747-7.073zM13.26 22.43a4.476 4.476 0 0 1-2.876-1.04l.141-.081 4.779-2.758a.795.795 0 0 0 .392-.681v-6.737l2.02 1.168a.071.071 0 0 1 .038.052v5.583a4.504 4.504 0 0 1-4.494 4.494zM3.6 18.304a4.47 4.47 0 0 1-.535-3.014l.142.085 4.783 2.759a.771.771 0 0 0 .78 0l5.843-3.369v2.332a.08.08 0 0 1-.033.062L9.74 19.95a4.5 4.5 0 0 1-6.14-1.646zM2.34 7.896a4.485 4.485 0 0 1 2.366-1.973V11.6a.766.766 0 0 0 .388.676l5.815 3.355-2.02 1.168a.076.076 0 0 1-.071 0l-4.83-2.786A4.504 4.504 0 0 1 2.34 7.896zm16.597 3.855l-5.833-3.387L15.119 7.2a.076.076 0 0 1 .071 0l4.83 2.791a4.494 4.494 0 0 1-.676 8.105v-5.678a.79.79 0 0 0-.407-.667zm2.01-3.023l-.141-.085-4.774-2.782a.776.776 0 0 0-.785 0L9.409 9.23V6.897a.066.066 0 0 1 .028-.061l4.83-2.787a4.5 4.5 0 0 1 6.68 4.66zm-12.64 4.135l-2.02-1.164a.08.08 0 0 1-.038-.057V6.075a4.5 4.5 0 0 1 7.375-3.453l-.142.08-4.778 2.758a.795.795 0 0 0-.393.681zm1.097-2.365l2.602-1.5 2.607 1.5v2.999l-2.597 1.5-2.607-1.5z"/>
-    </svg>
-  ),
-  gemini: (color) => (
-    <svg viewBox="0 0 24 24" fill={color} className="w-6 h-6">
-      <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.6 0 12 0zm0 3.6c2.2 0 4.2.9 5.7 2.4L12 12 6.3 6c1.5-1.5 3.5-2.4 5.7-2.4zm-8.4 8.4c0-2.2.9-4.2 2.4-5.7L12 12l-6 5.7c-1.5-1.5-2.4-3.5-2.4-5.7zm8.4 8.4c-2.2 0-4.2-.9-5.7-2.4L12 12l5.7 6c-1.5 1.5-3.5 2.4-5.7 2.4zm8.4-8.4c0 2.2-.9 4.2-2.4 5.7L12 12l6-5.7c1.5 1.5 2.4 3.5 2.4 5.7z"/>
-    </svg>
-  ),
-  claude: (color) => (
-    <svg viewBox="0 0 24 24" fill={color} className="w-6 h-6">
-      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h-2v-6h2v6zm4 0h-2V7h2v10z"/>
-    </svg>
-  ),
-  deepseek: (color) => (
-    <svg viewBox="0 0 24 24" fill={color} className="w-6 h-6">
-      <path d="M12 2L4 7v10l8 5 8-5V7l-8-5zm0 2.5L17.5 8 12 11.5 6.5 8 12 4.5zM6 9.5l5 3v6l-5-3v-6zm7 9v-6l5-3v6l-5 3z"/>
-    </svg>
-  ),
-  perplexity: (color) => (
-    <svg viewBox="0 0 24 24" fill={color} className="w-6 h-6">
-      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-      <circle cx="12" cy="12" r="3" fill={color}/>
-    </svg>
-  ),
-  ollama: (color) => (
-    <svg viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" className="w-6 h-6">
-      <circle cx="12" cy="12" r="10"/>
-      <circle cx="12" cy="12" r="4" fill={color}/>
-    </svg>
-  ),
-  custom: (color) => (
-    <svg viewBox="0 0 24 24" fill={color} className="w-6 h-6">
-      <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-    </svg>
-  ),
-}
-
-// Iconos de UI
-const UIIcons = {
-  reload: (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-    </svg>
-  ),
-  back: (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-    </svg>
-  ),
-  forward: (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-    </svg>
-  ),
-  settings: (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-    </svg>
-  ),
-
-  popout: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-    </svg>
-  ),
-  pin: (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-    </svg>
-  ),
 }
 
 function Sidebar() {
@@ -132,10 +50,9 @@ function Sidebar() {
   const reloadMutation = trpc.reload.useMutation()
   const backMutation = trpc.goBack.useMutation()
   const forwardMutation = trpc.goForward.useMutation()
-  // const detachMutation = trpc.detachView.useMutation() // Not yet implemented
 
   const handleProviderClick = (providerId: string, e: React.MouseEvent) => {
-    // Ctrl+click (o Cmd+click en macOS) abre en ventana separada
+    // Ctrl+click (or Cmd+click on macOS) opens in separate window
     if (e.ctrlKey || e.metaKey) {
        // TODO: Implement detach
        console.log('Detach not implemented yet')
@@ -154,8 +71,6 @@ function Sidebar() {
   const handleTogglePin = () => {
     togglePinMutation.mutate(!isPinned)
   }
-
-
 
   return (
     <aside 
@@ -233,16 +148,16 @@ function Sidebar() {
               )}
             </div>
             
-            {/* Pop-out button - separate from provider button */}
+            {/* Pop-out button */}
             <button
               onClick={(e) => handleDetach(provider.id, e)}
               className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-neutral-700 text-neutral-400 hover:text-white transition-all z-10"
-              title="Abrir en ventana separada (Ctrl+click)"
+              title="Open in separate window (Ctrl+click)"
             >
               {UIIcons.popout}
             </button>
             
-            {/* Tooltip (solo si no mostramos nombres) */}
+            {/* Tooltip (only if not showing names) */}
             {!showNames && (
               <span className="tooltip">
                 {provider.name}
@@ -250,7 +165,7 @@ function Sidebar() {
               </span>
             )}
             
-            {/* Indicador activo */}
+            {/* Active indicator */}
             {currentProviderId === provider.id && (
               <div 
                 className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full"
