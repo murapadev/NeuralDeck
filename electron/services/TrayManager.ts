@@ -2,6 +2,7 @@ import { Tray, Menu, nativeImage, app, NativeImage } from 'electron'
 import { WindowManager } from './WindowManager.js'
 import { ViewManager } from './ViewManager.js'
 import configManager from '../config/configManager.js'
+import { logger } from './LoggerService.js'
 
 export class TrayManager {
   private tray: Tray | null = null
@@ -64,8 +65,13 @@ export class TrayManager {
           {
             label: 'Open in separate window',
             click: () => {
-              console.log('Detach requested for', provider.id)
-              // TODO: Re-implement detach logic
+              logger.info('Detach requested for ' + provider.id)
+              // Resolve URL from provider config if needed (though here we have provider object)
+              if (provider.url) {
+                this.windowManager.createDetachedWindow(provider.url)
+              } else {
+                logger.warn(`Cannot detach ${provider.id}: No URL found`)
+              }
             },
           },
         ],
@@ -74,8 +80,7 @@ export class TrayManager {
       {
         label: '⚙️ Settings',
         click: () => {
-          this.windowManager.showWindow()
-          this.windowManager.mainWindow?.webContents.send('open-settings')
+          this.windowManager.openSettingsWindow()
         },
       },
       { type: 'separator' },

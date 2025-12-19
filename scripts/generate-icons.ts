@@ -3,6 +3,8 @@
  * Run: npx tsx scripts/generate-icons.ts
  */
 
+/* eslint-disable no-console */
+
 import sharp from 'sharp'
 import fs from 'fs'
 import path from 'path'

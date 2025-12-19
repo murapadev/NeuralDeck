@@ -1,6 +1,7 @@
 import { BrowserView, shell } from 'electron'
 import configManager from '../config/configManager.js'
 import { WindowManager } from './WindowManager.js'
+import { logger } from './LoggerService.js'
 
 export class ViewManager {
   private browserViews: Map<string, BrowserView> = new Map()
@@ -175,11 +176,12 @@ export class ViewManager {
             mainWindow.removeBrowserView(view)
           }
           // Type cast since destroy is not in definition but present in runtime
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           ;(view.webContents as any).destroy()
           this.browserViews.delete(id)
-          console.warn('Destroyed unused view:', id)
+          logger.warn(`Destroyed unused view: ${id}`)
         } catch (error) {
-          console.error(`Failed to destroy view ${id}:`, error)
+          logger.error(`Failed to destroy view ${id}:`, error)
         }
       }
     }

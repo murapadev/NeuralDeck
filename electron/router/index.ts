@@ -1,28 +1,32 @@
 import { initTRPC } from '@trpc/server'
 import { z } from 'zod'
+import { shell } from 'electron'
 import { WindowManager } from '../services/WindowManager.js'
 import { ViewManager } from '../services/ViewManager.js'
 import { ShortcutManager } from '../services/ShortcutManager.js'
 import configManager from '../config/configManager.js'
 import faviconManager from '../utils/faviconManager.js'
+// import type { AppConfig, ProviderConfig } from '../config/types.js' // unused
+
+const t = initTRPC.create()
 
 export const createRouter = (
   windowManager: WindowManager,
   viewManager: ViewManager,
   shortcutManager: ShortcutManager
 ) => {
-  const t = initTRPC.create()
-
   return t.router({
-    // Config
+    // Configuration
     getConfig: t.procedure.query(() => {
-      return configManager.getAll()
+      // Return a copy to avoid mutation
+      return { ...configManager.getAll() }
     }),
 
     updateAppearance: t.procedure
       .input(
         z.object({
           theme: z.enum(['dark', 'light', 'system']).optional(),
+          language: z.enum(['en', 'es']).optional(),
           showProviderNames: z.boolean().optional(),
           fontSize: z.enum(['small', 'medium', 'large']).optional(),
           accentColor: z.string().optional(),
@@ -119,6 +123,7 @@ export const createRouter = (
             .regex(/^#[0-9A-Fa-f]{6}$/)
             .default('#6366f1'),
           enabled: z.boolean().default(true),
+          isCustom: z.boolean().optional(),
         })
       )
       .mutation(({ input }) => {
@@ -154,8 +159,19 @@ export const createRouter = (
     }),
 
     openExternal: t.procedure.input(z.string()).mutation(async ({ input }) => {
-      const { shell } = await import('electron')
-      await shell.openExternal(input)
+      // Check if it's a valid URL, if not try to fix or fall back
+      let url = input
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'https://' + url
+      }
+
+      try {
+        windowManager.createDetachedWindow(url)
+      } catch (e) {
+        console.error('Backend failed to create detached window:', e)
+        // Fallback to shell if window creation fails specific to URL
+        await shell.openExternal(url)
+      }
     }),
 
     closeSettingsWindow: t.procedure.mutation(() => {
@@ -168,10 +184,10 @@ export const createRouter = (
       windowManager.toggleWindow()
     }),
 
-    setAlwaysOnTop: t.procedure.input(z.boolean()).mutation(({ input }) => {
-      windowManager.mainWindow?.setAlwaysOnTop(input)
-      configManager.updateWindow({ alwaysOnTop: input })
-      return input
+    setAlwaysOnTop: t.procedure.input(z.object({ value: z.boolean() })).mutation(({ input }) => {
+      windowManager.mainWindow?.setAlwaysOnTop(input.value)
+      configManager.updateWindow({ alwaysOnTop: input.value })
+      return input.value
     }),
 
     // Views/Providers
@@ -181,6 +197,16 @@ export const createRouter = (
 
     switchView: t.procedure.input(z.string()).mutation(({ input }) => {
       viewManager.switchView(input)
+    }),
+
+    detachView: t.procedure.input(z.string()).mutation(({ input }) => {
+      const config = configManager.getAll()
+      const provider = config.providers.find((p) => p.id === input)
+      if (provider && provider.url) {
+        windowManager.createDetachedWindow(provider.url)
+      } else {
+        throw new Error(`Provider not found or invalid: ${input}`)
+      }
     }),
 
     // Navigation

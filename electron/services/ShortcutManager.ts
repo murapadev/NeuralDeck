@@ -50,6 +50,13 @@ export class ShortcutManager {
       }
     })
 
+    // Open Settings shortcut
+    if (shortcuts.openSettings) {
+      this.register(shortcuts.openSettings, () => {
+        this.windowManager.openSettingsWindow()
+      })
+    }
+
     // Navigation shortcuts only work when window is focused
     // These are handled by the renderer process via accelerators
   }

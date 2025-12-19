@@ -9,6 +9,7 @@ import http from 'http'
 import https from 'https'
 import path from 'path'
 import { ProviderConfig } from '../config/types.js'
+import { logger } from '../services/LoggerService.js'
 
 // Cache directory for favicons
 const CACHE_DIR = path.join(app.getPath('userData'), 'favicon-cache')
@@ -117,7 +118,7 @@ async function fetchFavicon(provider: ProviderConfig): Promise<Buffer | null> {
     // If URL is empty, it's a local provider without remote favicon
     // Return null to use fallback directly and avoid network errors
     if (knownUrl === '') {
-      console.log(
+      logger.info(
         `NeuralDeck Favicon: Skipping network fetch for ${provider.id} (local/fallback only)`
       )
       return null
@@ -139,7 +140,7 @@ async function fetchFavicon(provider: ProviderConfig): Promise<Buffer | null> {
       `https://www.google.com/s2/favicons?domain=${providerUrl.host}&sz=128`
     )
   } catch (e) {
-    console.warn(`NeuralDeck Favicon: Invalid URL for ${provider.id}`)
+    logger.warn(`NeuralDeck Favicon: Invalid URL for ${provider.id}`)
   }
 
   // Try each URL
@@ -147,17 +148,17 @@ async function fetchFavicon(provider: ProviderConfig): Promise<Buffer | null> {
     if (!url) continue
 
     try {
-      console.log(`NeuralDeck Favicon: Trying ${url} for ${provider.id}`)
+      logger.info(`NeuralDeck Favicon: Trying ${url} for ${provider.id}`)
       const buffer = await downloadImage(url)
 
       // Verify it's a valid image
       const image = nativeImage.createFromBuffer(buffer)
       if (!image.isEmpty()) {
-        console.log(`NeuralDeck Favicon: Successfully fetched for ${provider.id}`)
+        logger.info(`NeuralDeck Favicon: Successfully fetched for ${provider.id}`)
         return buffer
       }
     } catch (e) {
-      console.log(`NeuralDeck Favicon: Failed ${url}: ${e}`)
+      logger.warn(`NeuralDeck Favicon: Failed ${url}: ${e}`)
     }
   }
 
@@ -227,7 +228,7 @@ export async function getProviderIcon(
       imageCache.set(cacheKey, icon)
       return icon
     } catch (e) {
-      console.warn(`NeuralDeck Favicon: Failed to read cache for ${provider.id}`)
+      logger.warn(`NeuralDeck Favicon: Failed to read cache for ${provider.id}`)
     }
   }
 
@@ -265,11 +266,11 @@ export async function getProviderIcon(
     }
   } catch (e) {
     pendingDownloads.delete(downloadKey)
-    console.warn(`NeuralDeck Favicon: Failed to fetch for ${provider.id}:`, e)
+    logger.warn(`NeuralDeck Favicon: Failed to fetch for ${provider.id}:`, e)
   }
 
   // Use fallback icon
-  console.log(`NeuralDeck Favicon: Using fallback for ${provider.id}`)
+  logger.info(`NeuralDeck Favicon: Using fallback for ${provider.id}`)
   const fallback = generateFallbackIcon(provider, size)
   imageCache.set(cacheKey, fallback)
   return fallback
@@ -279,16 +280,16 @@ export async function getProviderIcon(
  * Pre-loads all provider icons
  */
 export async function preloadProviderIcons(providers: ProviderConfig[]): Promise<void> {
-  console.log('NeuralDeck Favicon: Preloading icons for', providers.length, 'providers')
+  logger.info(`NeuralDeck Favicon: Preloading icons for ${providers.length} providers`)
 
   const promises = providers.map((provider) =>
     getProviderIcon(provider, 32).catch((e) => {
-      console.warn(`NeuralDeck Favicon: Failed to preload ${provider.id}:`, e)
+      logger.warn(`NeuralDeck Favicon: Failed to preload ${provider.id}:`, e)
     })
   )
 
   await Promise.all(promises)
-  console.log('NeuralDeck Favicon: Preloading complete')
+  logger.info('NeuralDeck Favicon: Preloading complete')
 }
 
 /**

@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { t } from '../i18n'
+import { useTranslation } from '../i18n'
+import type { WindowConfig, AppearanceConfig, ShortcutConfig, PrivacyConfig } from '../../electron/config/types'
 import {
     useAppearanceConfig,
     useAppStore,
@@ -8,43 +9,9 @@ import {
     useWindowConfig
 } from '../store/appStore'
 import { trpc } from '../utils/trpc'
-import type { AppTheme, WindowPosition } from '../types/electron'
 import { UIIcons } from './icons'
 
-// Alias for backward compatibility with existing code
 const icons = UIIcons
-
-type TabId = 'general' | 'appearance' | 'shortcuts' | 'providers' | 'privacy'
-
-const TABS: { id: TabId; label: string; icon: React.ReactElement }[] = [
-  { id: 'general', label: t('settings.general'), icon: icons.general },
-  { id: 'appearance', label: t('settings.appearance'), icon: icons.appearance },
-  { id: 'shortcuts', label: t('settings.shortcuts'), icon: icons.keyboard },
-  { id: 'providers', label: t('settings.providers'), icon: icons.providers },
-  { id: 'privacy', label: t('settings.privacy'), icon: icons.privacy },
-]
-
-const POSITION_OPTIONS: { value: WindowPosition; label: string }[] = [
-  { value: 'near-tray', label: t('position.nearTray') },
-  { value: 'top-left', label: t('position.topLeft') },
-  { value: 'top-right', label: t('position.topRight') },
-  { value: 'bottom-left', label: t('position.bottomLeft') },
-  { value: 'bottom-right', label: t('position.bottomRight') },
-  { value: 'center', label: t('position.center') },
-  { value: 'remember', label: t('position.remember') },
-]
-
-const THEME_OPTIONS: { value: AppTheme; label: string }[] = [
-  { value: 'dark', label: t('settings.appearance.dark') },
-  { value: 'light', label: t('settings.appearance.light') },
-  { value: 'system', label: t('settings.appearance.system') },
-]
-
-const FONT_SIZE_OPTIONS = [
-  { value: 'small', label: t('settings.appearance.small') },
-  { value: 'medium', label: t('settings.appearance.medium') },
-  { value: 'large', label: t('settings.appearance.large') },
-]
 
 // Componentes de UI reutilizables
 const Toggle = ({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) => (
@@ -73,7 +40,7 @@ const Select = <T extends string>({
 }: { 
   value: T; 
   onChange: (v: T) => void; 
-  options: { value: T; label: string }[];
+  options: readonly { value: T; label: string }[];
   label: string;
 }) => (
   <div className="flex items-center justify-between py-2">
@@ -177,22 +144,55 @@ const ShortcutInput = ({
 
 // Paneles de contenido
 const GeneralTab = () => {
+  const { t } = useTranslation()
   const windowConfig = useWindowConfig()
   const windowMutation = trpc.updateWindow.useMutation()
+  
+  // Also need language config here, technically it's in appearance config but UI is here
+  const { config } = useAppStore()
+  const appearanceConfig = config?.appearance || { language: 'en' }
+  const appearanceMutation = trpc.updateAppearance.useMutation()
+
+  const POSITION_OPTIONS = [
+    { value: 'near-tray', label: t('position.nearTray') },
+    { value: 'top-right', label: t('position.topRight') },
+    { value: 'bottom-right', label: t('position.bottomRight') },
+    { value: 'top-left', label: t('position.topLeft') },
+    { value: 'bottom-left', label: t('position.bottomLeft') },
+    { value: 'center', label: t('position.center') },
+    { value: 'remember', label: t('position.remember') },
+  ] as const
 
   if (!windowConfig) return null
 
-  const updateWindowConfig = (updates: any) => {
+  const updateWindowConfig = (updates: Partial<WindowConfig>) => {
       windowMutation.mutate(updates)
   }
 
   return (
     <div className="space-y-6">
       <section>
-        <h3 className="text-lg font-semibold text-white mb-4">Window</h3>
+        <h3 className="text-lg font-semibold text-white mb-4">{t('settings.general.window')}</h3>
         <div className="space-y-1 bg-neutral-800/50 rounded-lg p-4">
+            
+            {/* Language Selector */}
+            <div className="flex items-center justify-between py-2">
+              <span className="text-neutral-200">{t('settings.general.language')}</span>
+              <select
+                value={appearanceConfig?.language || 'en'}
+                onChange={(e) => {
+                  const lang = e.target.value as 'en' | 'es'
+                  appearanceMutation.mutate({ language: lang })
+                }}
+                className="bg-neutral-700 text-white rounded-lg px-3 py-1.5 text-sm border border-neutral-600 focus:border-neural-500 focus:outline-none"
+              >
+                <option value="en">English</option>
+                <option value="es">Español</option>
+              </select>
+            </div>
+
           <Select
-            label="Window position"
+            label={t('settings.general.position')}
             value={windowConfig.position}
             onChange={(v) => updateWindowConfig({ position: v })}
             options={POSITION_OPTIONS}
@@ -244,19 +244,32 @@ const GeneralTab = () => {
 }
 
 const AppearanceTab = () => {
+  const { t } = useTranslation()
   const appearanceConfig = useAppearanceConfig()
   const appearanceMutation = trpc.updateAppearance.useMutation()
 
+  const THEME_OPTIONS = [
+    { value: 'dark', label: t('settings.appearance.dark') },
+    { value: 'light', label: t('settings.appearance.light') },
+    { value: 'system', label: t('settings.appearance.system') },
+  ] as const
+
+  const FONT_SIZE_OPTIONS = [
+    { value: 'small', label: t('settings.appearance.small') },
+    { value: 'medium', label: t('settings.appearance.medium') },
+    { value: 'large', label: t('settings.appearance.large') },
+  ] as const
+
   if (!appearanceConfig) return null
 
-  const updateAppearanceConfig = (updates: any) => {
+  const updateAppearanceConfig = (updates: Partial<AppearanceConfig>) => {
       appearanceMutation.mutate(updates)
   }
 
   return (
     <div className="space-y-6">
       <section>
-        <h3 className="text-lg font-semibold text-white mb-4">Tema</h3>
+        <h3 className="text-lg font-semibold text-white mb-4">{t('settings.appearance.theme')}</h3>
         <div className="space-y-1 bg-neutral-800/50 rounded-lg p-4">
           <Select
             label="Application theme"
@@ -285,7 +298,7 @@ const AppearanceTab = () => {
             label="Font size"
             value={appearanceConfig.fontSize}
             onChange={(v) => updateAppearanceConfig({ fontSize: v as 'small' | 'medium' | 'large' })}
-            options={FONT_SIZE_OPTIONS as { value: string; label: string }[]}
+            options={FONT_SIZE_OPTIONS}
           />
         </div>
       </section>
@@ -314,20 +327,21 @@ const AppearanceTab = () => {
 }
 
 const ShortcutsTab = () => {
+  const { t } = useTranslation()
   const shortcutsConfig = useShortcutsConfig()
   const providers = useAppStore((s) => s.providers)
   const shortcutsMutation = trpc.updateShortcuts.useMutation()
 
   if (!shortcutsConfig) return null
 
-  const updateShortcutsConfig = (updates: any) => {
+  const updateShortcutsConfig = (updates: Partial<ShortcutConfig>) => {
       shortcutsMutation.mutate(updates)
   }
 
   return (
     <div className="space-y-6">
       <section>
-        <h3 className="text-lg font-semibold text-white mb-4">Atajos globales</h3>
+        <h3 className="text-lg font-semibold text-white mb-4">{t('settings.shortcuts.toggleWindow')}</h3>
         <div className="space-y-1 bg-neutral-800/50 rounded-lg p-4">
           <ShortcutInput
             label="Mostrar/ocultar ventana"
@@ -368,6 +382,7 @@ const ShortcutsTab = () => {
         <div className="space-y-1 bg-neutral-800/50 rounded-lg p-4">
           {providers.slice(0, 5).map((provider, index) => (
             <div key={provider.id} className="flex items-center justify-between py-2">
+
               <span className="text-neutral-200">{provider.name}</span>
               <span className="px-3 py-1.5 bg-neutral-700 rounded-lg text-sm font-mono text-white">
                 {shortcutsConfig.providers[index] || `CommandOrControl+${index + 1}`}
@@ -384,6 +399,7 @@ const ShortcutsTab = () => {
 }
 
 const ProvidersTab = () => {
+  const { t } = useTranslation()
   const config = useAppStore((s) => s.config)
   const allProviders = config?.providers || []
   const [showAddForm, setShowAddForm] = useState(false)
@@ -397,7 +413,8 @@ const ProvidersTab = () => {
   const updateProviderMutation = trpc.updateProvider.useMutation()
   const addProviderMutation = trpc.addCustomProvider.useMutation()
   const removeProviderMutation = trpc.removeCustomProvider.useMutation()
-  // const detachMutation = trpc.detachView.useMutation()
+
+  const detachMutation = trpc.detachView.useMutation()
 
   const handleToggleProvider = (id: string, enabled: boolean) => {
     updateProviderMutation.mutate({ id, data: { enabled } })
@@ -426,15 +443,14 @@ const ProvidersTab = () => {
   }
 
   const handleDetach = (id: string) => {
-    // detachMutation.mutate(id) 
-    console.log('Detach not implemented', id)
+    detachMutation.mutate(id)
   }
 
   return (
     <div className="space-y-6">
       <section>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-white">AI Providers</h3>
+          <h3 className="text-lg font-semibold text-white">{t('settings.providers')}</h3>
           <button
             onClick={() => setShowAddForm(!showAddForm)}
             className="flex items-center gap-2 px-3 py-1.5 bg-neural-500 hover:bg-neural-600 text-white rounded-lg text-sm transition-colors"
@@ -544,6 +560,7 @@ const ProvidersTab = () => {
 }
 
 const PrivacyTab = () => {
+  const { t } = useTranslation()
   const privacyConfig = usePrivacyConfig()
   const providers = useAppStore((s) => s.providers)
   
@@ -552,7 +569,7 @@ const PrivacyTab = () => {
 
   if (!privacyConfig) return null
 
-  const updatePrivacyConfig = (updates: any) => {
+  const updatePrivacyConfig = (updates: Partial<PrivacyConfig>) => {
       privacyMutation.mutate(updates)
   }
 
@@ -573,15 +590,15 @@ const PrivacyTab = () => {
   return (
     <div className="space-y-6">
       <section>
-        <h3 className="text-lg font-semibold text-white mb-4">Browsing Data</h3>
+        <h3 className="text-lg font-semibold text-white mb-4">{t('settings.privacy')}</h3>
         <div className="space-y-1 bg-neutral-800/50 rounded-lg p-4">
           <Toggle
-            label="Clear data on close"
+            label={t('settings.privacy.clearOnClose')}
             checked={privacyConfig.clearOnClose}
             onChange={(v) => updatePrivacyConfig({ clearOnClose: v })}
           />
           <Toggle
-            label="Block trackers"
+            label={t('settings.privacy.blockTrackers')}
             checked={privacyConfig.blockTrackers}
             onChange={(v) => updatePrivacyConfig({ blockTrackers: v })}
           />
@@ -590,7 +607,7 @@ const PrivacyTab = () => {
               onClick={handleClearAllData}
               className="w-full py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg text-sm transition-colors"
             >
-              Clear all data now
+              {t('settings.privacy.clearAllData')}
             </button>
           </div>
         </div>
@@ -620,7 +637,15 @@ const PrivacyTab = () => {
 function Settings({ isWindow = false }: { isWindow?: boolean }) {
   const { isSettingsOpen, closeSettings, settingsTab, setSettingsTab } = useAppStore()
   const openExternalMutation = trpc.openExternal.useMutation()
-  // const closeSettingsWindowMutation = trpc.closeSettingsWindow.useMutation()
+  const { t } = useTranslation()
+
+  const TABS = [
+    { id: 'general', label: t('settings.general'), icon: UIIcons.settings },
+    { id: 'appearance', label: t('settings.appearance'), icon: UIIcons.appearance },
+    { id: 'shortcuts', label: t('settings.shortcuts'), icon: UIIcons.keyboard },
+    { id: 'providers', label: t('settings.providers'), icon: UIIcons.providers },
+    { id: 'privacy', label: t('settings.privacy'), icon: UIIcons.privacy },
+  ] as const
 
   // Si no es ventana y no está abierto, no renderizar
   if (!isWindow && !isSettingsOpen) return null

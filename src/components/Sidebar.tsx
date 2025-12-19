@@ -1,6 +1,7 @@
 import { useAppStore, useAppearanceConfig, useWindowConfig } from '../store/appStore'
 import { trpc } from '../utils/trpc'
 import { ProviderIcons, UIIcons } from './icons'
+import { useTranslation } from '../i18n'
 
 // Provider icon component with fallback
 function ProviderIconWithFavicon({ 
@@ -14,19 +15,39 @@ function ProviderIconWithFavicon({
   providerName: string
   color: string 
 }) {
-  // Try to get icon by icon name or provider id
+  // Fetch favicon
+  const { data: favicon } = trpc.getProviderIcon.useQuery(
+    { providerId, size: 64 },
+    { 
+      staleTime: 1000 * 60 * 60, // 1 hour
+      refetchOnWindowFocus: false 
+    }
+  )
+
+  // 1. Favicon (highest priority if network/cache succeeded)
+  if (favicon) {
+    return (
+      <img 
+        src={favicon} 
+        alt={providerName}
+        className="w-full h-full object-contain rounded-md animate-fade-in"
+      />
+    )
+  }
+
+  // 2. Built-in Icon
   const IconComponent = ProviderIcons[providerIcon] || ProviderIcons[providerId]
   if (IconComponent) {
     return IconComponent(color)
   }
 
-  // Last fallback: name initial
+  // 3. Initials Fallback
   return (
     <div 
-      className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold text-white"
+      className="w-full h-full rounded flex items-center justify-center text-xs font-bold text-white shadow-sm"
       style={{ backgroundColor: color }}
     >
-      {providerName[0]}
+      {providerName[0].toUpperCase()}
     </div>
   )
 }
@@ -39,6 +60,7 @@ function Sidebar() {
     openSettings,
   } = useAppStore()
   
+  const { t } = useTranslation()
   const windowConfig = useWindowConfig()
   const isPinned = windowConfig?.alwaysOnTop ?? false
   const appearanceConfig = useAppearanceConfig()
@@ -50,88 +72,84 @@ function Sidebar() {
   const reloadMutation = trpc.reload.useMutation()
   const backMutation = trpc.goBack.useMutation()
   const forwardMutation = trpc.goForward.useMutation()
+  const openExternalMutation = trpc.openExternal.useMutation()
 
-  const handleProviderClick = (providerId: string, e: React.MouseEvent) => {
-    // Ctrl+click (or Cmd+click on macOS) opens in separate window
+  const handleProviderClick = (provider: { id: string, url: string }, e: React.MouseEvent) => {
+    // Ctrl+click opens in default browser (detach)
     if (e.ctrlKey || e.metaKey) {
-       // TODO: Implement detach
-       console.log('Detach not implemented yet')
+       openExternalMutation.mutate(provider.url)
     } else {
-      switchViewMutation.mutate(providerId)
+      switchViewMutation.mutate(provider.id)
     }
   }
 
-  const handleDetach = (providerId: string, e: React.MouseEvent) => {
+  const handleDetach = (url: string, e: React.MouseEvent) => {
     e.stopPropagation()
     e.preventDefault()
-    // TODO: Implement detach
-    console.log('Detach requested for', providerId)
+    openExternalMutation.mutate(url)
   }
 
   const handleTogglePin = () => {
-    togglePinMutation.mutate(!isPinned)
+    togglePinMutation.mutate({ value: !isPinned })
   }
 
   return (
     <aside 
       className={`
-        flex flex-col h-full bg-neutral-900 border-r border-neutral-800
-        transition-all duration-300 ease-out app-drag
-        ${showNames ? 'w-[140px]' : 'w-[60px]'}
+        flex flex-col h-full bg-neutral-900/95 backdrop-blur-md border-r border-neutral-800
+        transition-all duration-300 ease-in-out app-drag select-none
+        ${showNames ? 'w-[200px]' : 'w-[72px]'}
+        overflow-x-hidden
       `}
     >
       {/* Logo */}
-      <div className="flex items-center justify-center py-4 border-b border-neutral-800 app-drag">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-neural-500 to-neural-700 flex items-center justify-center shadow-lg shadow-neural-500/20">
-          <span className="text-white font-bold text-sm">N</span>
+      <div className="flex items-center justify-center py-6 border-b border-neutral-800/50 app-drag relative">
+        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-neural-500 to-neural-700 flex items-center justify-center shadow-lg shadow-neural-500/20 ring-1 ring-white/10 group cursor-default transition-transform hover:scale-105">
+          <span className="text-white font-bold text-lg">N</span>
         </div>
-        {showNames && (
-          <span className="ml-2 text-white font-semibold text-sm">NeuralDeck</span>
-        )}
+        <div className={`overflow-hidden transition-all duration-300 ${showNames ? 'w-auto opacity-100 ml-3' : 'w-0 opacity-0'}`}>
+           <span className="text-white font-semibold text-lg tracking-tight whitespace-nowrap">{t('app.name')}</span>
+        </div>
       </div>
 
       {/* Provider buttons */}
-      <nav className="flex-1 flex flex-col gap-1 py-4 px-2 overflow-y-auto app-no-drag">
+      <nav className="flex-1 flex flex-col gap-2 py-4 px-2 overflow-y-auto overflow-x-hidden app-no-drag scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-transparent">
         {providers.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full text-center px-2">
-            <span className="text-xs text-neutral-500 mb-2">No active providers</span>
+          <div className="flex flex-col items-center justify-center h-full text-center px-2 opacity-50">
+            <span className="text-sm text-neutral-400 mb-2 font-medium">{t('sidebar.noProviders')}</span>
             <button 
               onClick={() => openSettings('providers')}
-              className="text-xs text-indigo-400 hover:text-indigo-300 underline"
+              className="text-xs text-indigo-400 hover:text-indigo-300 underline underline-offset-2"
             >
-              Configure
+              {t('common.add')}
             </button>
           </div>
         )}
         {providers.map((provider, index) => (
-          <div key={provider.id} className="tooltip-trigger relative group">
+          <div key={provider.id} className="relative group w-full">
             {/* Provider button */}
             <div
               role="button"
               tabIndex={0}
-              onClick={(e) => handleProviderClick(provider.id, e)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  handleProviderClick(provider.id, e as unknown as React.MouseEvent)
-                }
-              }}
+              onClick={(e) => handleProviderClick(provider, e)}
               className={`
-                w-full flex items-center gap-3 rounded-lg transition-all duration-200 cursor-pointer
-                ${showNames ? 'px-3 py-2.5' : 'p-2.5 justify-center'}
+                relative flex items-center gap-3 rounded-xl transition-all duration-200 cursor-pointer group/item
+                ${showNames ? 'px-3 py-2.5 mx-1' : 'p-2.5 mx-1 justify-center'}
                 ${currentProviderId === provider.id 
-                  ? 'bg-neutral-800 shadow-lg' 
-                  : 'hover:bg-neutral-800/50'
+                  ? 'bg-neutral-800 text-white shadow-md ring-1 ring-white/10' 
+                  : 'text-neutral-400 hover:bg-neutral-800/50 hover:text-neutral-200'
                 }
               `}
               style={{
-                color: currentProviderId === provider.id ? provider.color : undefined,
-                boxShadow: currentProviderId === provider.id ? `0 0 20px ${provider.color}20` : undefined
+                boxShadow: currentProviderId === provider.id 
+                  ? `0 4px 12px -2px ${provider.color}20, inset 0 0 0 1px ${provider.color}20` 
+                  : undefined
               }}
             >
               <div 
                 className={`
-                  flex items-center justify-center rounded-lg transition-transform
-                  ${currentProviderId === provider.id ? 'scale-110' : 'group-hover:scale-105'}
+                   relative z-10 w-6 h-6 flex-shrink-0 flex items-center justify-center rounded transition-transform duration-300
+                   ${currentProviderId === provider.id ? 'scale-110' : 'group-hover/item:scale-110'}
                 `}
               >
                 <ProviderIconWithFavicon 
@@ -141,43 +159,59 @@ function Sidebar() {
                   color={provider.color}
                 />
               </div>
-              {showNames && (
-                <span className={`text-sm truncate ${currentProviderId === provider.id ? 'font-medium' : 'text-neutral-400'}`}>
-                  {provider.name}
-                </span>
+              
+              <span 
+                className={`
+                  text-sm font-medium truncate transition-all duration-300
+                  ${showNames ? 'opacity-100 max-w-full' : 'opacity-0 max-w-0 hidden'}
+                `}
+              >
+                {provider.name}
+              </span>
+
+              {/* Active Indicator (Left styling) */}
+              {currentProviderId === provider.id && (
+                <div 
+                  className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full shadow-[0_0_10px_currentColor]"
+                  style={{ backgroundColor: provider.color, color: provider.color }}
+                />
               )}
             </div>
             
-            {/* Pop-out button */}
-            <button
-              onClick={(e) => handleDetach(provider.id, e)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-neutral-700 text-neutral-400 hover:text-white transition-all z-10"
-              title="Open in separate window (Ctrl+click)"
-            >
-              {UIIcons.popout}
-            </button>
-            
-            {/* Tooltip (only if not showing names) */}
-            {!showNames && (
-              <span className="tooltip">
-                {provider.name}
-                <span className="text-xs opacity-60 ml-1">Ctrl+{index + 1}</span>
-              </span>
+            {/* Pop-out Button - Only show if URL is valid */}
+            {provider.url && (
+              <button
+                onClick={(e) => handleDetach(provider.url, e)}
+                className={`
+                  absolute top-1/2 -translate-y-1/2 p-1.5 rounded-lg
+                  bg-neutral-900 shadow-xl border border-neutral-700
+                  text-neutral-400 hover:text-white hover:bg-neutral-800 hover:border-neutral-600
+                  transition-all duration-200 z-20
+                  opacity-0 group-hover:opacity-100 transform scale-90 group-hover:scale-100
+                  ${showNames ? 'right-2' : 'right-0 shadow-none border-none bg-transparent'}
+                `}
+                title={t('tray.openInWindow')}
+                style={!showNames ? { right: '4px', background: 'rgba(0,0,0,0.5)' } : {}}
+              >
+                {UIIcons.popout}
+              </button>
             )}
             
-            {/* Active indicator */}
-            {currentProviderId === provider.id && (
-              <div 
-                className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full"
-                style={{ backgroundColor: provider.color }}
-              />
+            {/* Tooltip (only if collapsed) */}
+            {!showNames && (
+              <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-3 py-2 bg-neutral-900 border border-neutral-800 text-neutral-200 text-xs font-semibold rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 whitespace-nowrap pointer-events-none transform translate-x-2 group-hover:translate-x-0">
+                {provider.name}
+                <div className="mt-0.5 text-neutral-500 font-mono text-[10px] tracking-wide">
+                  Ctrl+{index + 1}
+                </div>
+              </div>
             )}
           </div>
         ))}
       </nav>
 
       {/* Navigation controls */}
-      <div className="flex items-center justify-center gap-1 py-2 px-2 border-t border-neutral-800 app-no-drag">
+      <div className="flex items-center justify-center gap-1 py-3 px-2 border-t border-neutral-800 app-no-drag">
         <button
           onClick={() => backMutation.mutate()}
           disabled={!navigationState.canGoBack}
@@ -186,7 +220,7 @@ function Sidebar() {
               ? 'text-neutral-400 hover:text-white hover:bg-neutral-800' 
               : 'text-neutral-700 cursor-not-allowed'
           }`}
-          title="Back"
+          title={t('sidebar.back')}
         >
           {UIIcons.back}
         </button>
@@ -198,14 +232,14 @@ function Sidebar() {
               ? 'text-neutral-400 hover:text-white hover:bg-neutral-800' 
               : 'text-neutral-700 cursor-not-allowed'
           }`}
-          title="Forward"
+          title={t('sidebar.forward')}
         >
           {UIIcons.forward}
         </button>
         <button
           onClick={() => reloadMutation.mutate()}
           className="p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
-          title="Reload"
+          title={t('sidebar.reload')}
         >
           {UIIcons.reload}
         </button>
@@ -217,7 +251,7 @@ function Sidebar() {
         <button
           onClick={() => openSettings()}
           className="p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
-          title="Settings"
+          title={t('sidebar.settings')}
         >
           {UIIcons.settings}
         </button>
@@ -229,7 +263,7 @@ function Sidebar() {
               ? 'text-neural-500 bg-neural-500/10 hover:bg-neural-500/20'
               : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
           }`}
-          title={isPinned ? 'Unpin window' : 'Always on top'}
+          title={isPinned ? t('sidebar.unpinned') : t('sidebar.pinned')}
         >
           {UIIcons.pin}
         </button>

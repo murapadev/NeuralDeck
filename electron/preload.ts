@@ -1,10 +1,14 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
-// Expose tRPC communication
 contextBridge.exposeInMainWorld('electronTRPC', {
-  sendMessage: (args: unknown[]) => ipcRenderer.send('electron-trpc', args),
+  sendMessage: (args: unknown[]) => {
+    // eslint-disable-next-line no-console
+    console.log('[Preload] Sending tRPC message:', args)
+    ipcRenderer.send('electron-trpc', args)
+  },
   onMessage: (callback: (args: unknown[]) => void) => {
-    const handler = (_: Electron.IpcRendererEvent, args: unknown[]) => callback(args)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const handler = (_: any, args: unknown[]) => callback(args)
     ipcRenderer.on('electron-trpc', handler)
     return () => ipcRenderer.removeListener('electron-trpc', handler)
   },
@@ -12,27 +16,25 @@ contextBridge.exposeInMainWorld('electronTRPC', {
 
 // Expose navigation events from main process
 contextBridge.exposeInMainWorld('neuralDeck', {
-  // Listen for view changes
   onViewChanged: (callback: (providerId: string) => void) => {
-    const handler = (_: Electron.IpcRendererEvent, providerId: string) => callback(providerId)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const handler = (_: any, providerId: string) => callback(providerId)
     ipcRenderer.on('view-changed', handler)
     return () => ipcRenderer.removeListener('view-changed', handler)
   },
-  // Listen for navigation state changes
   onNavigationStateChanged: (
     callback: (state: { canGoBack: boolean; canGoForward: boolean; url: string }) => void
   ) => {
-    const handler = (
-      _: Electron.IpcRendererEvent,
-      state: { canGoBack: boolean; canGoForward: boolean; url: string }
-    ) => callback(state)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const handler = (_: any, state: { canGoBack: boolean; canGoForward: boolean; url: string }) =>
+      callback(state)
     ipcRenderer.on('navigation-state-changed', handler)
     return () => ipcRenderer.removeListener('navigation-state-changed', handler)
   },
-  // Listen for settings open request
   onOpenSettings: (callback: () => void) => {
     const handler = () => callback()
     ipcRenderer.on('open-settings', handler)
     return () => ipcRenderer.removeListener('open-settings', handler)
   },
+  openSettingsWindow: () => ipcRenderer.send('open-settings-window'),
 })

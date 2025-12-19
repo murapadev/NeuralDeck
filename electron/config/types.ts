@@ -63,6 +63,7 @@ export interface PrivacyConfig {
 // Appearance configuration
 export interface AppearanceConfig {
   theme: AppTheme
+  language: 'en' | 'es'
   showProviderNames: boolean
   fontSize: 'small' | 'medium' | 'large'
   accentColor: string
@@ -180,6 +181,7 @@ export const DEFAULT_CONFIG: AppConfig = {
 
   appearance: {
     theme: 'dark',
+    language: 'en',
     showProviderNames: false,
     fontSize: 'medium',
     accentColor: '#6366f1',

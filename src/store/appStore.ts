@@ -51,7 +51,13 @@ export const useAppStore = create<AppState>((set) => ({
 
   setLoading: (isLoading) => set({ isLoading }),
 
-  openSettings: (tab = 'general') => set({ isSettingsOpen: true, settingsTab: tab }),
+  openSettings: (tab = 'general') => {
+    if (window.neuralDeck) {
+      window.neuralDeck.openSettingsWindow()
+    } else {
+      set({ isSettingsOpen: true, settingsTab: tab }) // Fallback for dev/browser
+    }
+  },
 
   closeSettings: () => set({ isSettingsOpen: false }),
 

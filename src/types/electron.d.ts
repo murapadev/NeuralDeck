@@ -49,6 +49,7 @@ export interface PrivacyConfig {
 
 export interface AppearanceConfig {
   theme: AppTheme
+  language: 'en' | 'es'
   showProviderNames: boolean
   fontSize: 'small' | 'medium' | 'large'
   accentColor: string

@@ -3,6 +3,7 @@
  */
 import Store from 'electron-store'
 import { AppConfig, DEFAULT_CONFIG, ProviderConfig } from './types.js'
+import { logger } from '../services/LoggerService.js'
 
 // Typed store interface
 interface TypedStore {
@@ -16,7 +17,7 @@ interface TypedStore {
 const schema = {
   version: { type: 'string' as const },
   firstRun: { type: 'boolean' as const },
-  lastProvider: { type: ['string', 'null'] as const },
+  lastProvider: { type: ['string', 'null'] },
   window: {
     type: 'object' as const,
     properties: {
@@ -69,6 +70,7 @@ const schema = {
     type: 'object' as const,
     properties: {
       theme: { type: 'string' as const, enum: ['dark', 'light', 'system'] },
+      language: { type: 'string' as const, default: 'en' },
       showProviderNames: { type: 'boolean' as const },
       fontSize: { type: 'string' as const, enum: ['small', 'medium', 'large'] },
       accentColor: { type: 'string' as const },
@@ -83,6 +85,7 @@ class ConfigManager {
     this.store = new Store({
       name: 'neuraldeck-config',
       defaults: DEFAULT_CONFIG,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       schema: schema as any,
       clearInvalidConfig: true,
     }) as TypedStore
@@ -99,7 +102,7 @@ class ConfigManager {
 
     if (currentVersion !== DEFAULT_CONFIG.version) {
       // Add migrations here as needed
-      console.log(`Migrating config from ${currentVersion} to ${DEFAULT_CONFIG.version}`)
+      logger.info(`Migrating config from ${currentVersion} to ${DEFAULT_CONFIG.version}`)
       this.store.set('version', DEFAULT_CONFIG.version)
     }
   }

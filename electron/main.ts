@@ -1,6 +1,14 @@
-import { app } from 'electron'
+import { logger } from './services/LoggerService.js'
+import { app, ipcMain } from 'electron'
 import { createIPCHandler } from 'electron-trpc/main'
 import { WindowManager } from './services/WindowManager.js'
+
+// ... existing imports ...
+
+// IPC handlers
+ipcMain.on('open-settings-window', () => {
+  windowManager?.openSettingsWindow()
+})
 import { ViewManager } from './services/ViewManager.js'
 import { TrayManager } from './services/TrayManager.js'
 import { ShortcutManager } from './services/ShortcutManager.js'
@@ -26,7 +34,7 @@ if (!gotTheLock) {
       // 1. Initialize Config
       // Config is singleton lazy-loaded, so just ensuring it's ready if needed,
       // but usually accessing it via configManager is enough.
-      console.log('NeuralDeck: Initializing...')
+      logger.info('NeuralDeck: Initializing...')
 
       // 2. Create Services
       windowManager = new WindowManager()
@@ -43,7 +51,7 @@ if (!gotTheLock) {
       if (windowManager.mainWindow) {
         createIPCHandler({ router, windows: [windowManager.mainWindow] })
       } else {
-        console.error('NeuralDeck Fatal: MainWindow not created')
+        logger.error('NeuralDeck Fatal: MainWindow not created')
       }
 
       // 4. Initial View Logic
@@ -62,9 +70,10 @@ if (!gotTheLock) {
         configManager.markFirstRunComplete()
       }
 
-      console.log('NeuralDeck: Ready')
+      logger.info('App window created')
+      logger.info('NeuralDeck: Ready')
     } catch (error) {
-      console.error('NeuralDeck: Failed to initialize', error)
+      logger.error('NeuralDeck: Failed to initialize', error)
       app.quit()
     }
   })

@@ -1,4 +1,4 @@
-import { BrowserWindow, screen, app } from 'electron'
+import { BrowserWindow, screen, app, shell } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import configManager from '../config/configManager.js'
@@ -11,6 +11,7 @@ const DIST = path.join(DIST_ELECTRON, '../dist')
 
 export class WindowManager {
   public mainWindow: BrowserWindow | null = null
+  public settingsWindow: BrowserWindow | null = null
   private isWindowVisible = false
   private isQuitting = false
 
@@ -166,5 +167,110 @@ export class WindowManager {
 
   public getBounds() {
     return this.mainWindow?.getBounds()
+  }
+
+  /**
+   * Create a detached window for a specific URL
+   */
+  public createDetachedWindow(url: string): void {
+    // Create new window with slightly offset position
+    const { x, y } = this.calculateWindowPosition()
+    const offset = 40 // px offset from main window
+
+    const win = new BrowserWindow({
+      width: 1000,
+      height: 800,
+      minWidth: 400,
+      minHeight: 500,
+      x: x + offset,
+      y: y + offset,
+      show: true,
+      titleBarStyle: 'hidden',
+      backgroundColor: '#09090b',
+      vibrancy: 'sidebar', // macOS only, but good to have
+      trafficLightPosition: { x: 16, y: 16 },
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+        sandbox: true, // Safer for external content
+      },
+    })
+
+    // Remove default menu
+    win.removeMenu()
+
+    // Load the target URL directly
+    win.loadURL(url)
+
+    // Handle new window requests from inside the detached window (e.g. login popups)
+    win.webContents.setWindowOpenHandler(({ url }) => {
+      shell.openExternal(url)
+      return { action: 'deny' }
+    })
+  }
+
+  public openSettingsWindow(): void {
+    if (this.settingsWindow) {
+      this.settingsWindow.focus()
+      return
+    }
+
+    // const { x, y } = this.calculateWindowPosition()
+    // const config = configManager.getAll()
+    // settings window slightly smaller/centered or custom? 
+    // Let's use a reasonable default, or maybe centered.
+    const width = 900
+    const height = 700
+    
+    // Center it relative to screen if possible, or separate logic
+    // For now, let's offset from main or center.
+    const display = screen.getPrimaryDisplay()
+    const CenterX = Math.round((display.workAreaSize.width - width) / 2)
+    const CenterY = Math.round((display.workAreaSize.height - height) / 2)
+
+    this.settingsWindow = new BrowserWindow({
+      width,
+      height,
+      minWidth: 800,
+      minHeight: 600,
+      x: CenterX,
+      y: CenterY,
+      show: false,
+      frame: false,
+      transparent: false,
+      resizable: true,
+      backgroundColor: '#09090b',
+      titleBarStyle: 'hidden',
+      webPreferences: {
+        preload: path.join(DIST_ELECTRON, 'preload.cjs'),
+        nodeIntegration: false,
+        contextIsolation: true,
+      },
+    })
+    
+    // Add App Drag support via CSS app-drag (already in Settings.tsx)
+    // But we need to allow moving the window via IPC or standard frame if hidden.
+    // Settings.tsx handles drag regions.
+
+    if (process.env.VITE_DEV_SERVER_URL) {
+      this.settingsWindow.loadURL(`${process.env.VITE_DEV_SERVER_URL}#settings`)
+      // this.settingsWindow.webContents.openDevTools({ mode: 'detach' })
+    } else {
+      this.settingsWindow.loadURL(`file://${path.join(DIST, 'index.html')}#settings`)
+    }
+
+    this.settingsWindow.on('ready-to-show', () => {
+      this.settingsWindow?.show()
+    })
+
+    this.settingsWindow.on('closed', () => {
+      this.settingsWindow = null
+    })
+    
+    // Open external links in browser
+    this.settingsWindow.webContents.setWindowOpenHandler(({ url }) => {
+      shell.openExternal(url)
+      return { action: 'deny' }
+    })
   }
 }
