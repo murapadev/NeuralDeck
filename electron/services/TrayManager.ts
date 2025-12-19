@@ -18,7 +18,7 @@ export class TrayManager {
   private init(): void {
     const icon = this.createTrayIcon()
     this.tray = new Tray(icon)
-    this.tray.setToolTip('NeuralDeck - Tu centro de mando de IA')
+    this.tray.setToolTip('NeuralDeck - Your AI Command Center')
 
     this.updateMenu()
 
