@@ -52,7 +52,7 @@
         "electron": "39.2.7",
         "electron-builder": "^24.9.1",
         "eslint": "^8.57.0",
-        "eslint-config-prettier": "^9.1.0",
+        "eslint-config-prettier": "^10.1.8",
         "eslint-plugin-react": "^7.34.0",
         "eslint-plugin-react-hooks": "^4.6.0",
         "husky": "^9.0.0",
