@@ -140,7 +140,7 @@ function Settings({ isWindow = false }: { isWindow?: boolean }) {
                   variant="link"
                   className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground justify-start gap-1"
                   onClick={() =>
-                    openExternalMutation.mutate('https://github.com/murapadev/neuraldeck')
+                    openExternalMutation.mutate('https://github.com/murapadev/NeuralDeck')
                   }
                 >
                   GitHub <ExternalLink className="w-3 h-3" />
