@@ -33,7 +33,7 @@
         "clsx": "^2.1.1",
         "electron-store": "^8.2.0",
         "electron-trpc": "^0.7.1",
-        "react-markdown": "^9.0.1",
+        "react-markdown": "^10.1.0",
         "remark-gfm": "^4.0.0",
         "tailwind-merge": "^2.2.0",
         "zod": "^3.23.8",
