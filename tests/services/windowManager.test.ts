@@ -55,9 +55,15 @@ vi.mock('electron', () => {
       on: vi.fn(),
       getPath: vi.fn().mockReturnValue('/mock/path'),
       isPackaged: false,
+      whenReady: vi.fn().mockResolvedValue(undefined),
     },
     shell: {
       openExternal: vi.fn(),
+    },
+    globalShortcut: {
+      register: vi.fn(),
+      unregister: vi.fn(),
+      unregisterAll: vi.fn(),
     },
   }
 })

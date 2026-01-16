@@ -114,7 +114,8 @@ describe('ViewManager', () => {
     
     mockWindowManager = {
       mainWindow: {
-        getBounds: vi.fn().mockReturnValue({ width: 800, height: 600 }),
+        getBounds: vi.fn().mockReturnValue({ x: 0, y: 0, width: 800, height: 600 }),
+        getContentBounds: vi.fn().mockReturnValue({ x: 0, y: 0, width: 800, height: 600 }),
         on: vi.fn(), // Add the missing 'on' method
         contentView: {
           addChildView: vi.fn(),
