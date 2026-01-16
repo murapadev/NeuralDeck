@@ -3,8 +3,10 @@
  * Supports configurable URL for Docker/remote Ollama instances
  */
 
-// Default URL, can be overridden
-let ollamaBaseUrl = 'http://localhost:11434'
+import { OLLAMA } from '../../shared/types'
+
+// URL can be overridden via setBaseUrl
+let ollamaBaseUrl: string = OLLAMA.DEFAULT_URL
 
 export interface OllamaModel {
   name: string
@@ -44,7 +46,7 @@ export async function healthCheck(url?: string): Promise<boolean> {
   try {
     const response = await fetch(`${baseUrl}/api/tags`, {
       method: 'GET',
-      signal: AbortSignal.timeout(3000),
+      signal: AbortSignal.timeout(OLLAMA.HEALTH_TIMEOUT),
     })
     return response.ok
   } catch {

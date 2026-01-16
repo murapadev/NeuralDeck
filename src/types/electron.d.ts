@@ -1,133 +1,88 @@
-// Configuration types (mirrored from main process)
-export type WindowPosition =
-  | 'near-tray'
-  | 'top-left'
-  | 'top-right'
-  | 'bottom-left'
-  | 'bottom-right'
-  | 'center'
-  | 'remember'
+/**
+ * Type declarations for NeuralDeck Electron APIs
+ *
+ * This file defines the APIs exposed to the renderer process
+ * via contextBridge in preload.ts
+ */
 
-export type AppTheme = 'dark' | 'light' | 'system'
+// Re-export shared types for convenience
+export {
+  type WindowPosition,
+  type WindowConfig,
+  type AppTheme,
+  type AppLanguage,
+  type FontSize,
+  type AppearanceConfig,
+  type ProviderConfig,
+  type ShortcutConfig,
+  type PrivacyConfig,
+  type AppConfig,
+  type NavigationState,
+  type UpdateInfo,
+  SIDEBAR,
+  DEFAULT_WINDOW,
+  TIMING,
+} from '../../shared/types'
 
-export interface ProviderConfig {
-  id: string
-  name: string
-  url: string
-  icon: string
-  color: string
-  enabled: boolean
-  order: number
-  isCustom?: boolean
-}
+import type { NavigationState, UpdateInfo } from '../../shared/types'
 
-export interface ShortcutConfig {
-  toggleWindow: string
-  providers: string[]
-  reload: string
-  goBack: string
-  goForward: string
-  openSettings: string
-}
+// ============================================================================
+// NeuralDeck API (exposed via preload.ts)
+// ============================================================================
 
-export interface WindowConfig {
-  width: number
-  height: number
-  position: WindowPosition
-  lastX?: number
-  lastY?: number
-  alwaysOnTop: boolean
-  hideOnBlur: boolean
-  opacity: number
-}
-
-export interface PrivacyConfig {
-  clearOnClose: boolean
-  blockTrackers: boolean
-  incognitoProviders: string[]
-}
-
-export interface AppearanceConfig {
-  theme: AppTheme
-  language: 'en' | 'es'
-  showProviderNames: boolean
-  fontSize: 'small' | 'medium' | 'large'
-  accentColor: string
-}
-
-export interface AppConfig {
-  version: string
-  firstRun: boolean
-  lastProvider: string | null
-  window: WindowConfig
-  shortcuts: ShortcutConfig
-  providers: ProviderConfig[]
-  privacy: PrivacyConfig
-  appearance: AppearanceConfig
-}
-
-export interface NavigationState {
-  canGoBack: boolean
-  canGoForward: boolean
-  url: string
-}
-
-// API expuesta por el preload
+/**
+ * API exposed by preload.ts via contextBridge.
+ * Only includes methods that are actually implemented.
+ */
 export interface NeuralDeckAPI {
-  // Configuration
-  getConfig: () => Promise<AppConfig>
-  updateConfig: (section: keyof AppConfig, updates: any) => void
-
-  // Proveedores
-  getProviders: () => Promise<ProviderConfig[]>
-  getAllProviders: () => Promise<ProviderConfig[]>
-  getCurrentProvider: () => Promise<string | null>
+  // Navigation & Views
   switchView: (providerId: string) => void
-  detachView: (providerId: string) => void
-  updateProvider: (id: string, updates: Partial<ProviderConfig>) => void
-  addCustomProvider: (provider: Omit<ProviderConfig, 'order' | 'isCustom'>) => void
-  removeCustomProvider: (id: string) => void
-  reorderProviders: (orderedIds: string[]) => void
-
-  // Iconos de proveedores (favicons)
-  getProviderIcon: (providerId: string) => Promise<string | null>
-  getAllProviderIcons: () => Promise<Record<string, string>>
-
-  // Navigation
+  openExternal: (url: string) => void
   reload: () => void
   goBack: () => void
   goForward: () => void
 
-  // Privacidad
-  clearCache: (providerId: string) => void
-  clearAllData: () => void
-
-  // Ventana
-  hideWindow: () => void
-  minimizeWindow: () => void
-  toggleAlwaysOnTop: (value: boolean) => void
-  toggleSidebar: () => void
-  showBrowserView: () => void
-  hideBrowserView: () => void
+  // Window & Layout
   openSettingsWindow: () => void
   closeSettingsWindow: () => void
 
-  // Utilidades
-  openExternal: (url: string) => void
+  // Auto-Update
+  downloadUpdate: () => void
+  installUpdate: () => void
+  onUpdateAvailable: (callback: (info: UpdateInfo) => void) => () => void
+  onUpdateDownloaded: (callback: (info: UpdateInfo) => void) => () => void
+  onDownloadProgress: (callback: (progress: { percent: number }) => void) => () => void
+  onUpdateError: (callback: (error: Error) => void) => () => void
+
+  // System
   getPlatform: () => Promise<NodeJS.Platform>
 
-  // Eventos
+  // Events
   onViewChanged: (callback: (providerId: string) => void) => () => void
-  onOpenSettings: (callback: () => void) => () => void
-  onSettingsClosed: (callback: () => void) => () => void
-  onConfigUpdated: (callback: (config: AppConfig) => void) => () => void
-  onProvidersUpdated: (callback: (providers: ProviderConfig[]) => void) => () => void
   onNavigationStateChanged: (callback: (state: NavigationState) => void) => () => void
+  onOpenSettings: (callback: () => void) => () => void
 }
+
+// ============================================================================
+// electronTRPC API (for tRPC communication)
+// ============================================================================
+
+/**
+ * tRPC IPC bridge exposed by preload.ts
+ */
+export interface ElectronTRPC {
+  sendMessage: (operation: { id: number; method: string; params: { path: string; input?: unknown } }) => void
+  onMessage: (callback: (response: { id: number; result?: unknown; error?: unknown }) => void) => () => void
+}
+
+// ============================================================================
+// Global Window Extension
+// ============================================================================
 
 declare global {
   interface Window {
     neuralDeck: NeuralDeckAPI
+    electronTRPC: ElectronTRPC
   }
 }
 

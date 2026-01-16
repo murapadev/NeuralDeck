@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 // Mock electron-store before importing configManager
@@ -29,7 +30,7 @@ vi.mock('electron-store', () => {
   }
 })
 
-import { DEFAULT_CONFIG } from '../../electron/config/types'
+import { DEFAULT_CONFIG } from '../../shared/types'
 
 // Since configManager uses singleton pattern, we need to reset it between tests
 describe('ConfigManager', () => {

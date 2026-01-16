@@ -8,7 +8,7 @@ import fs from 'fs'
 import http from 'http'
 import https from 'https'
 import path from 'path'
-import { ProviderConfig } from '../config/types.js'
+import { ProviderConfig, FAVICON, PROVIDER_IDS } from '../../shared/types.js'
 import { logger } from '../services/LoggerService.js'
 
 // Cache directory for favicons
@@ -16,12 +16,12 @@ const CACHE_DIR = path.join(app.getPath('userData'), 'favicon-cache')
 
 // Known favicon URLs (fallbacks if automatic detection fails)
 const KNOWN_FAVICONS: Record<string, string> = {
-  chatgpt: 'https://chatgpt.com/favicon.ico',
-  claude: 'https://claude.ai/favicon.ico',
-  gemini: 'https://gemini.google.com/favicon.ico',
-  perplexity: 'https://www.perplexity.ai/favicon.ico',
-  deepseek: 'https://chat.deepseek.com/favicon.ico',
-  ollama: '', // Ollama is local, use fallback icon
+  [PROVIDER_IDS.CHATGPT]: 'https://chatgpt.com/favicon.ico',
+  [PROVIDER_IDS.CLAUDE]: 'https://claude.ai/favicon.ico',
+  [PROVIDER_IDS.GEMINI]: 'https://gemini.google.com/favicon.ico',
+  [PROVIDER_IDS.PERPLEXITY]: 'https://www.perplexity.ai/favicon.ico',
+  [PROVIDER_IDS.DEEPSEEK]: 'https://chat.deepseek.com/favicon.ico',
+  [PROVIDER_IDS.OLLAMA]: '', // Ollama is local, use fallback icon
 }
 
 // In-memory cache for processed images
@@ -53,10 +53,10 @@ function hasCachedFavicon(providerId: string): boolean {
   const cachePath = getCachePath(providerId)
   if (!fs.existsSync(cachePath)) return false
 
-  // Check that the file is not too old (7 days)
+  // Check that the file is not too old (configured TTL)
   const stats = fs.statSync(cachePath)
   const ageInDays = (Date.now() - stats.mtimeMs) / (1000 * 60 * 60 * 24)
-  return ageInDays < 7
+  return ageInDays < FAVICON.CACHE_TTL_DAYS
 }
 
 /**
@@ -72,7 +72,7 @@ function downloadImage(url: string): Promise<Buffer> {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         },
-        timeout: 10000,
+        timeout: FAVICON.DOWNLOAD_TIMEOUT,
       },
       (response) => {
         // Follow redirects
@@ -137,9 +137,9 @@ async function fetchFavicon(provider: ProviderConfig): Promise<Buffer | null> {
       `${baseUrl}/favicon.png`,
       `${baseUrl}/apple-touch-icon.png`,
       `${baseUrl}/apple-touch-icon-precomposed.png`,
-      `https://www.google.com/s2/favicons?domain=${providerUrl.host}&sz=128`
+      `https://www.google.com/s2/favicons?domain=${providerUrl.host}&sz=${FAVICON.GOOGLE_SIZE}`
     )
-  } catch (e) {
+  } catch {
     logger.warn(`NeuralDeck Favicon: Invalid URL for ${provider.id}`)
   }
 
@@ -170,7 +170,7 @@ async function fetchFavicon(provider: ProviderConfig): Promise<Buffer | null> {
  * - Resizes to consistent size
  * - Adds circular mask
  */
-function processIcon(buffer: Buffer, size: number = 32): NativeImage {
+function processIcon(buffer: Buffer, size: number = FAVICON.DEFAULT_SIZE): NativeImage {
   const image = nativeImage.createFromBuffer(buffer)
 
   // Resize
@@ -182,7 +182,7 @@ function processIcon(buffer: Buffer, size: number = 32): NativeImage {
 /**
  * Generates a fallback icon with provider initials
  */
-function generateFallbackIcon(provider: ProviderConfig, size: number = 32): NativeImage {
+function generateFallbackIcon(provider: ProviderConfig, size: number = FAVICON.DEFAULT_SIZE): NativeImage {
   const initial = provider.name.charAt(0).toUpperCase()
   const color = provider.color || '#6366f1'
 
@@ -207,7 +207,7 @@ function generateFallbackIcon(provider: ProviderConfig, size: number = 32): Nati
  */
 export async function getProviderIcon(
   provider: ProviderConfig,
-  size: number = 32,
+  size: number = FAVICON.DEFAULT_SIZE,
   forceRefresh: boolean = false
 ): Promise<NativeImage> {
   const cacheKey = `${provider.id}-${size}`
@@ -227,7 +227,7 @@ export async function getProviderIcon(
       const icon = processIcon(buffer, size)
       imageCache.set(cacheKey, icon)
       return icon
-    } catch (e) {
+    } catch {
       logger.warn(`NeuralDeck Favicon: Failed to read cache for ${provider.id}`)
     }
   }
@@ -283,7 +283,7 @@ export async function preloadProviderIcons(providers: ProviderConfig[]): Promise
   logger.info(`NeuralDeck Favicon: Preloading icons for ${providers.length} providers`)
 
   const promises = providers.map((provider) =>
-    getProviderIcon(provider, 32).catch((e) => {
+    getProviderIcon(provider, FAVICON.DEFAULT_SIZE).catch((e) => {
       logger.warn(`NeuralDeck Favicon: Failed to preload ${provider.id}:`, e)
     })
   )
@@ -311,7 +311,7 @@ export function clearFaviconCache(): void {
  */
 export async function getProviderIconDataURL(
   provider: ProviderConfig,
-  size: number = 32
+  size: number = FAVICON.DEFAULT_SIZE
 ): Promise<string> {
   const icon = await getProviderIcon(provider, size)
   return icon.toDataURL()

@@ -1,272 +1,262 @@
-import { useAppStore, useAppearanceConfig, useWindowConfig } from '../store/appStore'
-import { trpc } from '../utils/trpc'
-import { ProviderIcons, UIIcons } from './icons'
+import {
+  closestCenter,
+  DndContext,
+  DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { ExternalLink, Pin, PinOff, Settings } from 'lucide-react'
+import { useSidebar } from '../hooks/useSidebar'
 import { useTranslation } from '../i18n'
+import { cn } from '../lib/utils'
+import { ProviderIcons } from './icons'
+import { Button } from './ui/button'
+import { ScrollArea } from './ui/scroll-area'
+import { Separator } from './ui/separator'
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
 // Provider icon component with fallback
-function ProviderIconWithFavicon({ 
-  providerId, 
+const ProviderIconWithFavicon = ({
   providerIcon,
-  providerName, 
-  color 
-}: { 
-  providerId: string
+  providerName,
+  color,
+  isActive,
+  onClick,
+}: {
   providerIcon: string
   providerName: string
-  color: string 
-}) {
-  // Fetch favicon
-  const { data: favicon } = trpc.getProviderIcon.useQuery(
-    { providerId, size: 64 },
-    { 
-      staleTime: 1000 * 60 * 60, // 1 hour
-      refetchOnWindowFocus: false 
-    }
-  )
+  color: string
+  isActive: boolean
+  onClick: (e: React.MouseEvent) => void
+}) => {
+  const IconComponent = ProviderIcons[providerIcon as keyof typeof ProviderIcons]
 
-  // 1. Favicon (highest priority if network/cache succeeded)
-  if (favicon) {
-    return (
-      <img 
-        src={favicon} 
-        alt={providerName}
-        className="w-full h-full object-contain rounded-md animate-fade-in"
-      />
-    )
-  }
-
-  // 2. Built-in Icon
-  const IconComponent = ProviderIcons[providerIcon] || ProviderIcons[providerId]
-  if (IconComponent) {
-    return IconComponent(color)
-  }
-
-  // 3. Initials Fallback
   return (
-    <div 
-      className="w-full h-full rounded flex items-center justify-center text-xs font-bold text-white shadow-sm"
-      style={{ backgroundColor: color }}
+    <Button
+      variant="ghost"
+      size="icon"
+      className={cn(
+        'relative h-12 w-12 rounded-xl transition-all duration-300 group text-foreground hover:bg-foreground/10',
+        isActive && 'bg-foreground/10 shadow-[0_0_15px_rgba(255,255,255,0.1)] scale-105'
+      )}
+      onClick={onClick}
     >
-      {providerName[0].toUpperCase()}
+      <div
+        className={cn(
+          'absolute inset-0 rounded-xl opacity-0 transition-opacity duration-300',
+          isActive ? 'opacity-100' : 'group-hover:opacity-50'
+        )}
+        style={{ backgroundColor: isActive ? `${color}20` : 'transparent' }}
+      />
+
+      {IconComponent ? (
+        <IconComponent
+          className={cn(
+            'h-7 w-7 transition-transform duration-300',
+            isActive ? 'scale-110' : 'group-hover:opacity-80'
+          )}
+          color={isActive ? color : 'currentColor'}
+        />
+      ) : (
+        <span className="text-sm font-bold uppercase text-foreground">
+          {providerName.slice(0, 2)}
+        </span>
+      )}
+
+      {/* Active Indicator */}
+      {isActive && (
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-1 bg-foreground rounded-r-full shadow-[0_0_8px_rgba(255,255,255,0.5)]" />
+      )}
+    </Button>
+  )
+}
+
+// Sortable Item Wrapper
+function SortableProviderItem({
+  provider,
+  children,
+}: {
+  provider: { id: string }
+  children: React.ReactNode
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: provider.id,
+  })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 20 : 1,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className="relative group/item w-full flex justify-center touch-none"
+    >
+      {children}
     </div>
   )
 }
 
 function Sidebar() {
-  const { 
-    providers, 
-    currentProviderId, 
-    navigationState,
-    openSettings,
-  } = useAppStore()
-  
   const { t } = useTranslation()
-  const windowConfig = useWindowConfig()
-  const isPinned = windowConfig?.alwaysOnTop ?? false
-  const appearanceConfig = useAppearanceConfig()
-  const showNames = appearanceConfig?.showProviderNames ?? false
+  const {
+    currentProviderId,
+    enabledProviders,
+    isLoading,
+    isPinned,
+    handleProviderClick,
+    handleDetach,
+    handleTogglePin,
+    openSettings,
+    handleReorder,
+  } = useSidebar()
 
-  // Mutations
-  const switchViewMutation = trpc.switchView.useMutation()
-  const togglePinMutation = trpc.setAlwaysOnTop.useMutation()
-  const reloadMutation = trpc.reload.useMutation()
-  const backMutation = trpc.goBack.useMutation()
-  const forwardMutation = trpc.goForward.useMutation()
-  const openExternalMutation = trpc.openExternal.useMutation()
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
 
-  const handleProviderClick = (provider: { id: string, url: string }, e: React.MouseEvent) => {
-    // Ctrl+click opens in default browser (detach)
-    if (e.ctrlKey || e.metaKey) {
-       openExternalMutation.mutate(provider.url)
-    } else {
-      switchViewMutation.mutate(provider.id)
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+
+    if (over && active.id !== over.id) {
+      const oldIndex = enabledProviders.findIndex((p) => p.id === active.id)
+      const newIndex = enabledProviders.findIndex((p) => p.id === over.id)
+
+      const newOrder = arrayMove(enabledProviders, oldIndex, newIndex)
+      // We update the order. useSidebar handles sending this to backend/store.
+      if (handleReorder) {
+        handleReorder(newOrder)
+      }
     }
   }
 
-  const handleDetach = (url: string, e: React.MouseEvent) => {
-    e.stopPropagation()
-    e.preventDefault()
-    openExternalMutation.mutate(url)
-  }
-
-  const handleTogglePin = () => {
-    togglePinMutation.mutate({ value: !isPinned })
-  }
-
   return (
-    <aside 
-      className={`
-        flex flex-col h-full bg-neutral-900/95 backdrop-blur-md border-r border-neutral-800
-        transition-all duration-300 ease-in-out app-drag select-none
-        ${showNames ? 'w-[200px]' : 'w-[72px]'}
-        overflow-x-hidden
-      `}
-    >
-      {/* Logo */}
-      <div className="flex items-center justify-center py-6 border-b border-neutral-800/50 app-drag relative">
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-neural-500 to-neural-700 flex items-center justify-center shadow-lg shadow-neural-500/20 ring-1 ring-white/10 group cursor-default transition-transform hover:scale-105">
-          <span className="text-white font-bold text-lg">N</span>
-        </div>
-        <div className={`overflow-hidden transition-all duration-300 ${showNames ? 'w-auto opacity-100 ml-3' : 'w-0 opacity-0'}`}>
-           <span className="text-white font-semibold text-lg tracking-tight whitespace-nowrap">{t('app.name')}</span>
-        </div>
+    <aside className="shrink-0 flex h-full w-[72px] flex-col items-center bg-background/95 backdrop-blur-xl border-r border-border py-4 z-50 select-none">
+      {/* App Logo / Pin */}
+      <div className="mb-4">
+        <Tooltip delayDuration={0}>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleTogglePin}
+              className={cn(
+                'h-10 w-10 rounded-full transition-colors hover:bg-foreground/10',
+                isPinned ? 'text-neural-400 bg-neural-500/10' : 'text-muted-foreground'
+              )}
+            >
+              {isPinned ? <PinOff className="h-5 w-5" /> : <Pin className="h-5 w-5" />}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent
+            side="right"
+            sideOffset={10}
+            className="bg-popover border-border text-popover-foreground"
+          >
+            <p>{isPinned ? t('sidebar.unpinWindow') : t('sidebar.pinWindow')}</p>
+          </TooltipContent>
+        </Tooltip>
       </div>
 
-      {/* Provider buttons */}
-      <nav className="flex-1 flex flex-col gap-2 py-4 px-2 overflow-y-auto overflow-x-hidden app-no-drag scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-transparent">
-        {providers.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full text-center px-2 opacity-50">
-            <span className="text-sm text-neutral-400 mb-2 font-medium">{t('sidebar.noProviders')}</span>
-            <button 
-              onClick={() => openSettings('providers')}
-              className="text-xs text-indigo-400 hover:text-indigo-300 underline underline-offset-2"
-            >
-              {t('common.add')}
-            </button>
-          </div>
-        )}
-        {providers.map((provider, index) => (
-          <div key={provider.id} className="relative group w-full">
-            {/* Provider button */}
-            <div
-              role="button"
-              tabIndex={0}
-              onClick={(e) => handleProviderClick(provider, e)}
-              className={`
-                relative flex items-center gap-3 rounded-xl transition-all duration-200 cursor-pointer group/item
-                ${showNames ? 'px-3 py-2.5 mx-1' : 'p-2.5 mx-1 justify-center'}
-                ${currentProviderId === provider.id 
-                  ? 'bg-neutral-800 text-white shadow-md ring-1 ring-white/10' 
-                  : 'text-neutral-400 hover:bg-neutral-800/50 hover:text-neutral-200'
-                }
-              `}
-              style={{
-                boxShadow: currentProviderId === provider.id 
-                  ? `0 4px 12px -2px ${provider.color}20, inset 0 0 0 1px ${provider.color}20` 
-                  : undefined
-              }}
-            >
-              <div 
-                className={`
-                   relative z-10 w-6 h-6 flex-shrink-0 flex items-center justify-center rounded transition-transform duration-300
-                   ${currentProviderId === provider.id ? 'scale-110' : 'group-hover/item:scale-110'}
-                `}
-              >
-                <ProviderIconWithFavicon 
-                  providerId={provider.id}
-                  providerIcon={provider.icon}
-                  providerName={provider.name}
-                  color={provider.color}
-                />
-              </div>
-              
-              <span 
-                className={`
-                  text-sm font-medium truncate transition-all duration-300
-                  ${showNames ? 'opacity-100 max-w-full' : 'opacity-0 max-w-0 hidden'}
-                `}
-              >
-                {provider.name}
-              </span>
+      <Separator className="w-10 bg-border mb-4" />
 
-              {/* Active Indicator (Left styling) */}
-              {currentProviderId === provider.id && (
-                <div 
-                  className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full shadow-[0_0_10px_currentColor]"
-                  style={{ backgroundColor: provider.color, color: provider.color }}
-                />
+      {/* Providers List */}
+      <ScrollArea className="flex-1 w-full px-2">
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext
+            items={enabledProviders.map((p) => p.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="flex flex-col items-center gap-3 py-2 pb-4">
+              {isLoading ? (
+                <div className="text-muted-foreground text-xs">Loading...</div>
+              ) : enabledProviders.length === 0 ? (
+                <div className="text-muted-foreground text-xs text-center px-2">No providers</div>
+              ) : (
+                enabledProviders.map((provider) => (
+                  <SortableProviderItem key={provider.id} provider={provider}>
+                    <Tooltip delayDuration={0}>
+                      <TooltipTrigger asChild>
+                        <div>
+                          <ProviderIconWithFavicon
+                            providerIcon={provider.icon}
+                            providerName={provider.name}
+                            color={provider.color || '#ffffff'}
+                            isActive={currentProviderId === provider.id}
+                            onClick={(e) => handleProviderClick(provider, e)}
+                          />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent
+                        side="right"
+                        sideOffset={10}
+                        className="flex items-center gap-2 bg-popover border-border text-popover-foreground z-[60]"
+                      >
+                        <span className="font-medium">{provider.name}</span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 rounded-full hover:bg-foreground/20 ml-2"
+                          onClick={(e) => handleDetach(provider.url, e)}
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                        </Button>
+                      </TooltipContent>
+                    </Tooltip>
+                  </SortableProviderItem>
+                ))
               )}
             </div>
-            
-            {/* Pop-out Button - Only show if URL is valid */}
-            {provider.url && (
-              <button
-                onClick={(e) => handleDetach(provider.url, e)}
-                className={`
-                  absolute top-1/2 -translate-y-1/2 p-1.5 rounded-lg
-                  bg-neutral-900 shadow-xl border border-neutral-700
-                  text-neutral-400 hover:text-white hover:bg-neutral-800 hover:border-neutral-600
-                  transition-all duration-200 z-20
-                  opacity-0 group-hover:opacity-100 transform scale-90 group-hover:scale-100
-                  ${showNames ? 'right-2' : 'right-0 shadow-none border-none bg-transparent'}
-                `}
-                title={t('tray.openInWindow')}
-                style={!showNames ? { right: '4px', background: 'rgba(0,0,0,0.5)' } : {}}
-              >
-                {UIIcons.popout}
-              </button>
-            )}
-            
-            {/* Tooltip (only if collapsed) */}
-            {!showNames && (
-              <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-3 py-2 bg-neutral-900 border border-neutral-800 text-neutral-200 text-xs font-semibold rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 whitespace-nowrap pointer-events-none transform translate-x-2 group-hover:translate-x-0">
-                {provider.name}
-                <div className="mt-0.5 text-neutral-500 font-mono text-[10px] tracking-wide">
-                  Ctrl+{index + 1}
-                </div>
-              </div>
-            )}
-          </div>
-        ))}
-      </nav>
+          </SortableContext>
+        </DndContext>
+      </ScrollArea>
 
-      {/* Navigation controls */}
-      <div className="flex items-center justify-center gap-1 py-3 px-2 border-t border-neutral-800 app-no-drag">
-        <button
-          onClick={() => backMutation.mutate()}
-          disabled={!navigationState.canGoBack}
-          className={`p-2 rounded-lg transition-colors ${
-            navigationState.canGoBack 
-              ? 'text-neutral-400 hover:text-white hover:bg-neutral-800' 
-              : 'text-neutral-700 cursor-not-allowed'
-          }`}
-          title={t('sidebar.back')}
-        >
-          {UIIcons.back}
-        </button>
-        <button
-          onClick={() => forwardMutation.mutate()}
-          disabled={!navigationState.canGoForward}
-          className={`p-2 rounded-lg transition-colors ${
-            navigationState.canGoForward 
-              ? 'text-neutral-400 hover:text-white hover:bg-neutral-800' 
-              : 'text-neutral-700 cursor-not-allowed'
-          }`}
-          title={t('sidebar.forward')}
-        >
-          {UIIcons.forward}
-        </button>
-        <button
-          onClick={() => reloadMutation.mutate()}
-          className="p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
-          title={t('sidebar.reload')}
-        >
-          {UIIcons.reload}
-        </button>
-      </div>
+      <Separator className="w-10 bg-border my-4" />
 
-      {/* Footer actions */}
-      <div className="flex items-center justify-center gap-1 py-3 px-2 border-t border-neutral-800 app-no-drag">
-        {/* Settings button */}
-        <button
-          onClick={() => openSettings()}
-          className="p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
-          title={t('sidebar.settings')}
-        >
-          {UIIcons.settings}
-        </button>
-         {/* Pin button */}
-         <button
-          onClick={handleTogglePin}
-          className={`p-2 rounded-lg transition-colors ${
-            isPinned
-              ? 'text-neural-500 bg-neural-500/10 hover:bg-neural-500/20'
-              : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
-          }`}
-          title={isPinned ? t('sidebar.unpinned') : t('sidebar.pinned')}
-        >
-          {UIIcons.pin}
-        </button>
+      {/* Settings */}
+      <div className="mt-auto">
+        <Tooltip delayDuration={0}>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => openSettings()}
+              className="h-12 w-12 rounded-xl text-muted-foreground hover:text-foreground hover:bg-foreground/10 transition-colors"
+            >
+              <Settings className="h-6 w-6" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent
+            side="right"
+            sideOffset={10}
+            className="bg-popover border-border text-popover-foreground"
+          >
+            <p>{t('sidebar.settings')}</p>
+          </TooltipContent>
+        </Tooltip>
       </div>
     </aside>
   )

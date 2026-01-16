@@ -3,6 +3,8 @@ import { WindowManager } from './WindowManager.js'
 import { ViewManager } from './ViewManager.js'
 import configManager from '../config/configManager.js'
 import { logger } from './LoggerService.js'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 export class TrayManager {
   private tray: Tray | null = null
@@ -93,23 +95,15 @@ export class TrayManager {
     ])
 
     // Set standard context menu - this ensures right-click works reliably.
-    // On some Linux environments this may disable the 'click' (left-click) event,
-    // which is why we added "Mostrar/Ocultar" as the first menu item.
     this.tray.setContextMenu(this.contextMenu)
   }
 
   private createTrayIcon(): NativeImage {
-    const size = 22
-    const svg = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
-        <circle cx="${size / 2}" cy="${size / 2}" r="${size / 2 - 1}" fill="#6366f1"/>
-        <path d="M${size / 2 - 3} ${size / 2 + 4} L${size / 2 - 3} ${size / 2 - 4} L${size / 2} ${size / 2 - 4} Q${size / 2 + 4} ${size / 2 - 4} ${size / 2 + 4} ${size / 2} Q${size / 2 + 4} ${size / 2 + 4} ${size / 2} ${size / 2 + 4} L${size / 2 - 3} ${size / 2 + 4}" fill="white"/>
-        <circle cx="${size / 2 + 1}" cy="${size / 2}" r="2" fill="#6366f1"/>
-      </svg>
-    `
-
-    return nativeImage
-      .createFromDataURL(`data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`)
-      .resize({ width: size, height: size })
+    const __dirname = path.dirname(fileURLToPath(import.meta.url))
+    const DIST = path.join(__dirname, '../dist')
+    const PUBLIC = process.env.VITE_DEV_SERVER_URL ? path.join(DIST, '../public') : DIST
+    const iconPath = path.join(PUBLIC, 'tray-icon.png')
+    
+    return nativeImage.createFromPath(iconPath)
   }
 }

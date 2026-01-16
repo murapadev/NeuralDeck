@@ -4,12 +4,13 @@ import path from 'path'
 export default defineConfig({
   test: {
     globals: true,
-    environment: 'node',
+    environment: 'jsdom',
     include: ['**/*.{test,spec}.{js,ts,tsx}'],
+    setupFiles: ['./tests/setup.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
-      exclude: ['node_modules/', 'dist/', 'dist-electron/', 'tests/'],
+      exclude: ['node_modules/', 'dist/', 'dist-electron/', 'tests/', '**/*.d.ts'],
     },
   },
   resolve: {
@@ -18,3 +19,5 @@ export default defineConfig({
     },
   },
 })
+
+

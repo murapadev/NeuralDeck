@@ -1,11 +1,11 @@
 import { create } from 'zustand'
-import {
+import type {
   AppConfig,
   ProviderConfig,
   WindowConfig,
   PrivacyConfig,
   ShortcutConfig,
-} from '../../electron/config/types'
+} from '../../shared/types'
 
 interface AppState {
   isLoading: boolean

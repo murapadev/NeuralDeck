@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Platform](https://img.shields.io/badge/platform-win%20%7C%20mac%20%7C%20linux-lightgrey)
-![Status](https://img.shields.io/badge/status-pre--alpha-orange)
+![Status](https://img.shields.io/badge/status-stable-green)
 ![Electron](https://img.shields.io/badge/built%20with-Electron-blueviolet)
 ![CI](https://github.com/murapadev/NeuralDeck/workflows/CI/badge.svg)
 ![Release](https://github.com/murapadev/NeuralDeck/workflows/Release/badge.svg)
@@ -98,11 +98,18 @@ graph TD
 - [x] **v0.3.0 (Local AI):**
   - Ollama integration with model selection.
   - Markdown rendering for AI responses.
-  - i18n system with English translations.
-- [ ] **v1.0.0 (Release):**
-  - Code signing.
+  - i18n system with English and Spanish translations.
+  - Modular backend architecture.
+- [x] **v1.0.0 (Stable Release):**
+  - Migrated to WebContentsView (Electron 35+).
+  - Code signing configuration.
   - Auto-updates with electron-updater.
-  - Installer improvements.
+  - First-run onboarding experience.
+  - Settings UI with search functionality.
+  - Drag-and-drop provider reordering.
+  - View preloading and memory management.
+  - Performance telemetry endpoints.
+  - E2E and integration test infrastructure.
 
 ---
 

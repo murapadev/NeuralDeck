@@ -1,4 +1,4 @@
-import type { ProviderConfig } from '../config/types'
+import type { ProviderConfig } from '../../shared/types.js'
 
 /**
  * Validates a URL string to ensure it uses http or https protocol
@@ -40,10 +40,16 @@ export function sanitizeConfigUpdate<T extends object>(
   }
 
   const sanitized: Partial<T> = {}
+  const updatesRecord = updates as Record<string, unknown>
+  
   for (const key of allowedKeys) {
-    if (key in updates) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      sanitized[key] = (updates as any)[key]
+    if (Object.prototype.hasOwnProperty.call(updatesRecord, key)) {
+      // We can't guarantee the type of the value at runtime without a schema, 
+      // but we can at least avoid the explicit 'any' and trust the caller or add specific checks if T is known.
+      // For a generic sanitizer, copying the value is the goal.
+      // However, Typescript still complains about assigning unknown to T[keyof T].
+      // We'll use a safer cast.
+      sanitized[key] = updatesRecord[key as string] as T[typeof key]
     }
   }
 

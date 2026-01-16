@@ -6,37 +6,12 @@
  */
 
 import { ipcMain, shell } from 'electron'
-import { autoUpdater } from 'electron-updater'
 import { WindowManager } from './WindowManager.js'
 import { ViewManager } from './ViewManager.js'
+import { AutoUpdateManager } from './AutoUpdateManager.js'
 import { logger } from './LoggerService.js'
 
-/**
- * IPC Channel constants for type-safe channel names
- */
-export const IPC_CHANNELS = {
-  // Settings
-  OPEN_SETTINGS_WINDOW: 'open-settings-window',
-  CLOSE_SETTINGS_WINDOW: 'close-settings-window',
-
-  // View management
-  SWITCH_VIEW: 'switch-view',
-  OPEN_EXTERNAL: 'open-external',
-
-  // Navigation
-  RELOAD: 'reload',
-  GO_BACK: 'go-back',
-  GO_FORWARD: 'go-forward',
-
-  // Auto-update
-  DOWNLOAD_UPDATE: 'download-update',
-  INSTALL_UPDATE: 'install-update',
-
-  // UI toggles
-  TOGGLE_SIDEBAR: 'toggle-sidebar',
-} as const
-
-export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS]
+import { IPC_CHANNELS } from '../../shared/types.js'
 
 /**
  * IpcManager handles registration of all IPC handlers
@@ -44,11 +19,22 @@ export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS]
 export class IpcManager {
   private windowManager: WindowManager
   private viewManager: ViewManager
+  private autoUpdateManager: AutoUpdateManager
   private registered = false
 
-  constructor(windowManager: WindowManager, viewManager: ViewManager) {
+  /**
+   * @param windowManager - Main window manager
+   * @param viewManager - Browser view manager
+   * @param autoUpdateManager - Auto-update service
+   */
+  constructor(
+    windowManager: WindowManager,
+    viewManager: ViewManager,
+    autoUpdateManager: AutoUpdateManager
+  ) {
     this.windowManager = windowManager
     this.viewManager = viewManager
+    this.autoUpdateManager = autoUpdateManager
   }
 
   /**
@@ -72,11 +58,20 @@ export class IpcManager {
 
     // View management handlers
     ipcMain.on(IPC_CHANNELS.SWITCH_VIEW, (_, providerId: string) => {
-      this.viewManager.switchView(providerId)
+      // Validate providerId exists in config
+      if (typeof providerId === 'string' && /^[a-zA-Z0-9_-]+$/.test(providerId)) {
+         this.viewManager.switchView(providerId)
+      } else {
+         logger.warn(`IpcManager: Invalid providerId received: ${providerId}`)
+      }
     })
 
     ipcMain.on(IPC_CHANNELS.OPEN_EXTERNAL, (_, url: string) => {
-      this.handleOpenExternal(url)
+      if (typeof url === 'string' && (url.startsWith('http://') || url.startsWith('https://'))) {
+        this.handleOpenExternal(url)
+      } else {
+        logger.warn(`IpcManager: Invalid external URL received: ${url}`)
+      }
     })
 
     // Navigation handlers
@@ -94,17 +89,16 @@ export class IpcManager {
 
     // Auto-update handlers
     ipcMain.on(IPC_CHANNELS.DOWNLOAD_UPDATE, () => {
-      autoUpdater.downloadUpdate()
+      this.autoUpdateManager.downloadUpdate()
     })
 
     ipcMain.on(IPC_CHANNELS.INSTALL_UPDATE, () => {
-      autoUpdater.quitAndInstall()
+      this.autoUpdateManager.quitAndInstall()
     })
 
-    // UI toggle handlers
-    ipcMain.on(IPC_CHANNELS.TOGGLE_SIDEBAR, () => {
-      // Placeholder for future implementation
-      // windowManager.toggleSidebar()
+    // Debugging handler
+    ipcMain.on(IPC_CHANNELS.RENDERER_LOG, (_, message: string) => {
+      logger.info('[Renderer]', message)
     })
 
     this.registered = true

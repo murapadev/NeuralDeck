@@ -6,13 +6,16 @@
  */
 
 import { app } from 'electron'
-import { createIPCHandler } from 'electron-trpc/main'
+import { createTRPCIPCHandler } from './TRPCHandler.js'
 import { WindowManager } from './WindowManager.js'
 import { ViewManager } from './ViewManager.js'
 import { TrayManager } from './TrayManager.js'
 import { ShortcutManager } from './ShortcutManager.js'
 import { IpcManager } from './IpcManager.js'
+import { AutoUpdateManager } from './AutoUpdateManager.js'
 import { logger } from './LoggerService.js'
+import { crashReporterService } from './CrashReporter.js'
+import { setAppRouter } from './routerRegistry.js'
 import { createRouter } from '../router/index.js'
 import configManager from '../config/configManager.js'
 
@@ -26,11 +29,14 @@ export class ServiceManager {
   public trayManager!: TrayManager
   public shortcutManager!: ShortcutManager
   public ipcManager!: IpcManager
+  public autoUpdateManager!: AutoUpdateManager
 
   private initialized = false
 
   /**
-   * Initialize all services in dependency order
+   * Initialize services.
+   * Core services are initialized immediately.
+   * Secondary services are initialized lazily.
    */
   public async initialize(): Promise<void> {
     if (this.initialized) {
@@ -38,10 +44,13 @@ export class ServiceManager {
       return
     }
 
+    // 0. Initialize Crash Detection (First priority)
+    crashReporterService.initialize()
+
     logger.info('ServiceManager: Initializing services...')
 
     try {
-      // 1. Create core services in dependency order
+      // 1. Create CORE services in dependency order
       this.windowManager = new WindowManager()
 
       // Verify window was created
@@ -51,31 +60,66 @@ export class ServiceManager {
 
       this.viewManager = new ViewManager(this.windowManager)
 
-      // 2. Create tray manager (attach to global to prevent GC)
+      // 2. Create tray manager (essential for interaction)
       this.trayManager = new TrayManager(this.windowManager, this.viewManager)
       ;(globalThis as typeof globalThis & { trayManager?: TrayManager }).trayManager =
         this.trayManager
 
-      // 3. Create shortcut manager
+      // 3. Create shortcut manager (essential for interaction)
       this.shortcutManager = new ShortcutManager(this.windowManager, this.viewManager)
 
-      // 4. Create IPC manager and register handlers
-      this.ipcManager = new IpcManager(this.windowManager, this.viewManager)
+      // 4. Create IPC manager and register handlers (essential for frontend)
+      // Pass null for AutoUpdateManager initially, we will inject it later or handle it optionally
+      // Better: Create AutoUpdateManager but don't start checks yet
+      this.autoUpdateManager = new AutoUpdateManager(this.windowManager)
+      
+      this.ipcManager = new IpcManager(this.windowManager, this.viewManager, this.autoUpdateManager)
       this.ipcManager.registerAll()
 
       // 5. Setup tRPC router
       const router = createRouter(this.windowManager, this.viewManager, this.shortcutManager)
-      createIPCHandler({ router, windows: [this.windowManager.mainWindow] })
+      setAppRouter(router) // Store for use by other modules (e.g., WindowManager)
+      createTRPCIPCHandler({ router, windows: [this.windowManager.mainWindow] })
 
       // 6. Register cleanup handlers
       this.registerCleanupHandlers()
 
+      // 7. Load app content (safe now that everything is initialized)
+      this.windowManager.loadApp()
+
+      // 8. Deferred Initialization (Lazy Loading)
+      this.initializeBackgroundServices()
+
       this.initialized = true
-      logger.info('ServiceManager: All services initialized successfully')
+      logger.info('ServiceManager: Core services initialized successfully')
     } catch (error) {
       logger.error('ServiceManager: Failed to initialize services:', error)
       throw error
     }
+  }
+
+  /**
+   * Initialize non-critical services in the background
+   * to improve startup time.
+   */
+  private initializeBackgroundServices(): void {
+    setTimeout(() => {
+      logger.info('ServiceManager: Initializing background services...')
+      try {
+        // Start auto-update checks after app is stable
+        this.autoUpdateManager.startUpdateChecks()
+        
+        // Preload top 3 providers for faster switching
+        this.viewManager.preloadTopProviders(3)
+        
+        // Start background memory garbage collection
+        this.viewManager.startBackgroundGC(60000) // Every 60 seconds
+        
+        logger.info('ServiceManager: Background services initialized')
+      } catch (error) {
+        logger.error('ServiceManager: Failed to initialize background services', error)
+      }
+    }, 2000) // 2 second delay
   }
 
   /**

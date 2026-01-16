@@ -1,13 +1,18 @@
-import { BrowserWindow, screen, app, shell } from 'electron'
+import { app, BrowserWindow, globalShortcut, screen, shell, WebContentsView } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { AppConfig } from '../../src/types/electron.js'
 import configManager from '../config/configManager.js'
 import { debounce } from '../utils/helpers.js'
+import { logger } from './LoggerService.js'
+import { getAppRouter } from './routerRegistry.js'
+import { createTRPCIPCHandler } from './TRPCHandler.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 // After bundling, main.cjs is at dist-electron/, so __dirname IS dist-electron
 const DIST_ELECTRON = __dirname
 const DIST = path.join(DIST_ELECTRON, '../dist')
+const PUBLIC = process.env.VITE_DEV_SERVER_URL ? path.join(DIST, '../public') : DIST
 
 export class WindowManager {
   public mainWindow: BrowserWindow | null = null
@@ -16,6 +21,8 @@ export class WindowManager {
   private isQuitting = false
 
   constructor() {
+    logger.info('WindowManager initialized')
+    logger.info('Preload path:', path.join(DIST_ELECTRON, 'preload.cjs'))
     this.createWindow()
     this.registerListeners()
   }
@@ -23,33 +30,9 @@ export class WindowManager {
   private createWindow(): void {
     const config = configManager.getAll()
 
-    this.mainWindow = new BrowserWindow({
-      width: config.window.width,
-      height: config.window.height,
-      minWidth: 380,
-      minHeight: 500,
-      show: false,
-      frame: false,
-      transparent: false,
-      resizable: true,
-      skipTaskbar: true,
-      alwaysOnTop: config.window.alwaysOnTop,
-      opacity: config.window.opacity,
-      backgroundColor: '#09090b',
-      webPreferences: {
-        preload: path.join(DIST_ELECTRON, 'preload.cjs'),
-        nodeIntegration: false,
-        contextIsolation: true,
-      },
-      titleBarStyle: 'hidden', // Add this for mac/linux consistency if needed
-    })
+    const windowOptions = this.getMainWindowOptions(config)
 
-    if (process.env.VITE_DEV_SERVER_URL) {
-      this.mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL)
-      this.mainWindow.webContents.openDevTools({ mode: 'detach' })
-    } else {
-      this.mainWindow.loadFile(path.join(DIST, 'index.html'))
-    }
+    this.mainWindow = new BrowserWindow(windowOptions)
 
     // Debounced resize handler
     const debouncedResize = debounce(() => {
@@ -84,6 +67,91 @@ export class WindowManager {
         this.hideWindow()
       }
     })
+    this.mainWindow.once('ready-to-show', () => {
+      // Always show in dev mode, or if debug is enabled
+      if (
+        process.env.VITE_DEV_SERVER_URL ||
+        configManager.get('debug') ||
+        process.env.NODE_ENV !== 'production'
+      ) {
+        this.showWindow()
+      }
+    })
+
+    // Local DevTools Shortcut - use globalShortcut when window is focused
+    // Note: before-input-event only works when focus is on the main webContents,
+    // not on embedded WebContentsViews. Using a global shortcut scoped to focus.
+    const toggleDevTools = () => {
+      // Toggle DevTools for the currently focused webContents
+      if (this.mainWindow?.isFocused()) {
+        // Always toggle main window devtools first for debugging React UI
+        this.mainWindow?.webContents.toggleDevTools()
+      } else if (this.mainWindow) {
+        // Check if a view is active and focused
+        const views = this.mainWindow.contentView.children
+        if (views.length > 0) {
+          // Get the last added view (current provider)
+          const activeView = views[views.length - 1]
+          if (activeView && 'webContents' in activeView) {
+            ;(activeView as WebContentsView).webContents.toggleDevTools()
+          }
+        }
+      }
+    }
+
+    // Register global shortcuts for DevTools (only in dev mode)
+    if (process.env.VITE_DEV_SERVER_URL || process.env.NODE_ENV !== 'production') {
+      // Use Ctrl+Shift+I globally when main window is focused
+      app.whenReady().then(() => {
+        globalShortcut.register('CommandOrControl+Shift+I', () => {
+          // Toggle DevTools regardless of focus check (focus detection can be unreliable)
+          if (this.mainWindow) {
+            this.mainWindow.webContents.toggleDevTools()
+          }
+        })
+      })
+    }
+
+    // F12 and Ctrl+Shift+I work on the main window webContents (backup)
+    this.mainWindow.webContents.on('before-input-event', (event, input) => {
+      if (input.type === 'keyDown') {
+        if (
+          input.key === 'F12' ||
+          ((input.control || input.meta) && input.shift && input.code === 'KeyI')
+        ) {
+          toggleDevTools()
+          event.preventDefault()
+        }
+      }
+    })
+  }
+
+  public loadApp(): void {
+    if (!this.mainWindow) return
+
+    // Add listener to verify preload execution
+    this.mainWindow.webContents.on('did-finish-load', () => {
+      logger.info('[WindowManager] Main window finished loading')
+    })
+
+    this.mainWindow.webContents.on('console-message', (_event, _level, message) => {
+      // Log renderer console messages to main process (for debugging)
+      if (message.includes('[Preload]') || message.includes('[App]')) {
+        logger.info(`[Renderer Console] ${message}`)
+      }
+    })
+
+    if (process.env.VITE_DEV_SERVER_URL) {
+      logger.info('[WindowManager] Loading dev server URL:', process.env.VITE_DEV_SERVER_URL)
+      this.mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL)
+      this.mainWindow.webContents.openDevTools({ mode: 'detach' })
+    } else {
+      this.mainWindow.loadFile(path.join(DIST, 'index.html'))
+      const config = configManager.getAll()
+      if (config.debug) {
+        this.mainWindow.webContents.openDevTools({ mode: 'detach' })
+      }
+    }
   }
 
   private registerListeners(): void {
@@ -122,7 +190,11 @@ export class WindowManager {
   }
 
   public toggleWindow(): void {
-    this.isWindowVisible ? this.hideWindow() : this.showWindow()
+    if (this.isWindowVisible) {
+      this.hideWindow()
+    } else {
+      this.showWindow()
+    }
   }
 
   private calculateWindowPosition(): { x: number; y: number } {
@@ -217,11 +289,11 @@ export class WindowManager {
 
     // const { x, y } = this.calculateWindowPosition()
     // const config = configManager.getAll()
-    // settings window slightly smaller/centered or custom? 
+    // settings window slightly smaller/centered or custom?
     // Let's use a reasonable default, or maybe centered.
     const width = 900
     const height = 700
-    
+
     // Center it relative to screen if possible, or separate logic
     // For now, let's offset from main or center.
     const display = screen.getPrimaryDisplay()
@@ -241,13 +313,20 @@ export class WindowManager {
       resizable: true,
       backgroundColor: '#09090b',
       titleBarStyle: 'hidden',
+      icon: path.join(PUBLIC, 'icon.png'),
       webPreferences: {
         preload: path.join(DIST_ELECTRON, 'preload.cjs'),
         nodeIntegration: false,
         contextIsolation: true,
       },
     })
-    
+
+    // Register Settings window with tRPC IPC handler
+    const router = getAppRouter()
+    if (router && this.settingsWindow) {
+      createTRPCIPCHandler({ router, windows: [this.settingsWindow] })
+    }
+
     // Add App Drag support via CSS app-drag (already in Settings.tsx)
     // But we need to allow moving the window via IPC or standard frame if hidden.
     // Settings.tsx handles drag regions.
@@ -257,6 +336,9 @@ export class WindowManager {
       // this.settingsWindow.webContents.openDevTools({ mode: 'detach' })
     } else {
       this.settingsWindow.loadURL(`file://${path.join(DIST, 'index.html')}#settings`)
+      if (configManager.get('debug')) {
+        this.settingsWindow.webContents.openDevTools({ mode: 'detach' })
+      }
     }
 
     this.settingsWindow.on('ready-to-show', () => {
@@ -266,11 +348,42 @@ export class WindowManager {
     this.settingsWindow.on('closed', () => {
       this.settingsWindow = null
     })
-    
+
     // Open external links in browser
     this.settingsWindow.webContents.setWindowOpenHandler(({ url }) => {
       shell.openExternal(url)
       return { action: 'deny' }
     })
+  }
+
+  public closeSettingsWindow(): void {
+    if (this.settingsWindow) {
+      this.settingsWindow.close()
+    }
+  }
+
+  private getMainWindowOptions(config: AppConfig): Electron.BrowserWindowConstructorOptions {
+    return {
+      width: config.window.width,
+      height: config.window.height,
+      minWidth: 380,
+      minHeight: 500,
+      show: false,
+      frame: false,
+      transparent: false,
+      resizable: true,
+      skipTaskbar: true,
+      alwaysOnTop: config.window.alwaysOnTop,
+      opacity: config.window.opacity,
+      backgroundColor: '#09090b',
+      webPreferences: {
+        preload: path.join(DIST_ELECTRON, 'preload.cjs'),
+        nodeIntegration: false,
+        contextIsolation: true,
+        sandbox: false, // TODO: Re-enable after fixing electron-trpc compatibility
+      },
+      titleBarStyle: 'hidden',
+      icon: path.join(PUBLIC, 'icon.png'),
+    }
   }
 }

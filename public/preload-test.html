@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Preload Test</title>
+</head>
+<body>
+    <h1>Preload Script Test</h1>
+    <div id="results"></div>
+    
+    <script>
+        const results = document.getElementById('results');
+        
+        // Test 1: Check if electronTRPC exists
+        const electronTRPCExists = typeof window.electronTRPC !== 'undefined';
+        results.innerHTML += `<p><strong>electronTRPC exists:</strong> ${electronTRPCExists}</p>`;
+        
+        if (electronTRPCExists) {
+            results.innerHTML += `<p><strong>electronTRPC:</strong> ${JSON.stringify(Object.keys(window.electronTRPC))}</p>`;
+        }
+        
+        // Test 2: Check if neuralDeck exists
+        const neuralDeckExists = typeof window.neuralDeck !== 'undefined';
+        results.innerHTML += `<p><strong>neuralDeck exists:</strong> ${neuralDeckExists}</p>`;
+        
+        if (neuralDeckExists) {
+            results.innerHTML += `<p><strong>neuralDeck:</strong> ${JSON.stringify(Object.keys(window.neuralDeck))}</p>`;
+        }
+        
+        // Test 3: Log to console
+        console.log('[TEST] electronTRPC:', window.electronTRPC);
+        console.log('[TEST] neuralDeck:', window.neuralDeck);
+        
+        // Change background based on result
+        if (electronTRPCExists && neuralDeckExists) {
+            document.body.style.backgroundColor = '#00ff00';
+            results.innerHTML += `<h2 style="color: green;">✓ ALL TESTS PASSED</h2>`;
+        } else {
+            document.body.style.backgroundColor = '#ff0000';
+            results.innerHTML += `<h2 style="color: red;">✗ TESTS FAILED</h2>`;
+        }
+    </script>
+</body>
+</html>

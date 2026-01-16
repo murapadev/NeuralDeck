@@ -6,6 +6,7 @@ import { globalShortcut, app } from 'electron'
 import { WindowManager } from './WindowManager.js'
 import { ViewManager } from './ViewManager.js'
 import configManager from '../config/configManager.js'
+import { logger } from './LoggerService.js'
 
 export class ShortcutManager {
   private windowManager: WindowManager
@@ -70,11 +71,11 @@ export class ShortcutManager {
       if (success) {
         this.registeredShortcuts.push(accelerator)
       } else {
-        console.warn(`ShortcutManager: Failed to register ${accelerator}`)
+        logger.warn(`ShortcutManager: Failed to register ${accelerator}`)
       }
       return success
     } catch (error) {
-      console.warn(`ShortcutManager: Error registering ${accelerator}:`, error)
+      logger.warn(`ShortcutManager: Error registering ${accelerator}:`, error)
       return false
     }
   }
