@@ -2,13 +2,13 @@
  * Tests for WindowManager service
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Mock electron modules
 vi.mock('electron', () => {
   class MockBrowserWindow {
     static fromWebContents = vi.fn()
-    
+
     webContents = {
       on: vi.fn(),
       send: vi.fn(),
@@ -17,9 +17,9 @@ vi.mock('electron', () => {
       setWindowOpenHandler: vi.fn(),
       getURL: vi.fn().mockReturnValue('https://test.com'),
     }
-    
+
     constructor() {}
-    
+
     on = vi.fn()
     once = vi.fn()
     show = vi.fn()
@@ -143,7 +143,7 @@ describe('WindowManager', () => {
 
   beforeEach(async () => {
     vi.resetModules()
-    
+
     const module = await import('../../electron/services/WindowManager')
     WindowManager = module.WindowManager
   })

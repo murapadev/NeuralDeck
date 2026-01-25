@@ -24,10 +24,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
           node-version: 18.x
           cache: 'npm'
@@ -48,13 +48,13 @@ jobs:
         if: matrix.platform == 'linux'
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
-        run: npm run build:linux
+        run: npm run build:linux -- --publish=always
 
       - name: Build and release (Windows)
         if: matrix.platform == 'windows'
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
-        run: npm run build:win
+        run: npm run build:win -- --publish=always
 
       - name: Build and release (macOS)
         if: matrix.platform == 'macos'
@@ -65,10 +65,10 @@ jobs:
           # APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           # CSC_LINK: ${{ secrets.CSC_LINK }}
           # CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
-        run: npm run build:mac
+        run: npm run build:mac -- --publish=always
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.platform }}-build
           path: |
@@ -78,38 +78,3 @@ jobs:
             release/*.dmg
             release/*.zip
           if-no-files-found: ignore
-
-  create-release:
-    name: Create GitHub Release
-    needs: release
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Download all artifacts
-        uses: actions/download-artifact@v7
-        with:
-          path: artifacts
-
-      - name: Extract version from tag
-        id: get_version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          name: NeuralDeck ${{ steps.get_version.outputs.VERSION }}
-          draft: false
-          prerelease: ${{ contains(steps.get_version.outputs.VERSION, 'alpha') || contains(steps.get_version.outputs.VERSION, 'beta') || contains(steps.get_version.outputs.VERSION, 'rc') }}
-          generate_release_notes: true
-          files: |
-            artifacts/**/*.exe
-            artifacts/**/*.AppImage
-            artifacts/**/*.deb
-            artifacts/**/*.dmg
-            artifacts/**/*.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

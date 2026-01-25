@@ -8,6 +8,9 @@ dist/
 dist-electron/
 release/
 *.log
+auto_merge*.txt
+merge_log*.txt
+merge_results*.txt
 
 # IDE
 .vscode/*
@@ -33,6 +36,8 @@ yarn-error.log*
 # Testing
 coverage/
 .nyc_output/
+playwright-report/
+test-results/
 
 # Electron-specific
 *.asar

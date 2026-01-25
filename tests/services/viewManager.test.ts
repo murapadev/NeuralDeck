@@ -2,7 +2,7 @@
  * Tests for ViewManager service
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { WindowManager } from '../../electron/services/WindowManager'
 
 // Mock electron modules
@@ -35,9 +35,9 @@ vi.mock('electron', () => {
     },
     session: {
       fromPartition: vi.fn().mockReturnValue({
-        setPermissionRequestHandler: vi.fn()
-      })
-    }
+        setPermissionRequestHandler: vi.fn(),
+      }),
+    },
   }
 })
 
@@ -57,9 +57,11 @@ vi.mock('../../electron/config/configManager.js', () => ({
       },
     }),
     set: vi.fn(),
-    getEnabledProviders: vi.fn().mockReturnValue([
-      { id: 'chatgpt', name: 'ChatGPT', url: 'https://chat.openai.com', enabled: true, order: 0 },
-    ]),
+    getEnabledProviders: vi
+      .fn()
+      .mockReturnValue([
+        { id: 'chatgpt', name: 'ChatGPT', url: 'https://chat.openai.com', enabled: true, order: 0 },
+      ]),
   },
 }))
 
@@ -111,7 +113,7 @@ describe('ViewManager', () => {
 
   beforeEach(async () => {
     vi.resetModules()
-    
+
     mockWindowManager = {
       mainWindow: {
         getBounds: vi.fn().mockReturnValue({ x: 0, y: 0, width: 800, height: 600 }),
@@ -174,22 +176,31 @@ describe('ViewManager', () => {
     it('should switch to an external provider view', () => {
       const viewManager = new ViewManager(mockWindowManager as unknown as WindowManager)
       viewManager.switchView('chatgpt')
-      
+
       expect(mockWindowManager.mainWindow?.contentView.addChildView).toHaveBeenCalled()
-      expect(mockWindowManager.mainWindow?.webContents.send).toHaveBeenCalledWith('view-changed', 'chatgpt')
+      expect(mockWindowManager.mainWindow?.webContents.send).toHaveBeenCalledWith(
+        'view-changed',
+        'chatgpt'
+      )
     })
 
     it('should handle native provider (ollama) differently', () => {
       const viewManager = new ViewManager(mockWindowManager as unknown as WindowManager)
       viewManager.switchView('ollama')
-      
+
       // Native providers don't use BrowserView
-      expect(mockWindowManager.mainWindow?.webContents.send).toHaveBeenCalledWith('view-changed', 'ollama')
-      expect(mockWindowManager.mainWindow?.webContents.send).toHaveBeenCalledWith('navigation-state-changed', {
-        canGoBack: false,
-        canGoForward: false,
-        url: 'neural://chat',
-      })
+      expect(mockWindowManager.mainWindow?.webContents.send).toHaveBeenCalledWith(
+        'view-changed',
+        'ollama'
+      )
+      expect(mockWindowManager.mainWindow?.webContents.send).toHaveBeenCalledWith(
+        'navigation-state-changed',
+        {
+          canGoBack: false,
+          canGoForward: false,
+          url: 'neural://chat',
+        }
+      )
     })
 
     it('should not crash when mainWindow is null', () => {
@@ -218,7 +229,7 @@ describe('ViewManager', () => {
       const viewManager = new ViewManager(mockWindowManager as unknown as WindowManager)
       viewManager.switchView('chatgpt')
       viewManager.reloadCurrent()
-      
+
       const view = viewManager.getBrowserView('chatgpt')
       expect(view?.webContents.reload).toHaveBeenCalled()
     })
@@ -234,7 +245,7 @@ describe('ViewManager', () => {
       const viewManager = new ViewManager(mockWindowManager as unknown as WindowManager)
       viewManager.switchView('chatgpt')
       viewManager.handleResize()
-      
+
       const view = viewManager.getBrowserView('chatgpt')
       expect(view?.setBounds).toHaveBeenCalled()
     })
