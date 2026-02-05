@@ -1,5 +1,11 @@
 name: Auto-merge Pull Requests
 
+# This workflow automatically approves and merges Dependabot PRs
+# Note: For this workflow to work properly, branch protection rules should either:
+# - Allow the GITHUB_TOKEN to approve PRs, or
+# - Exempt Dependabot from review requirements
+# - Or use a PAT with appropriate permissions
+
 on:
   pull_request:
     types: [opened, synchronize, reopened]
@@ -13,11 +19,18 @@ jobs:
   auto-approve-and-merge:
     name: Auto-approve and merge Dependabot PRs
     runs-on: ubuntu-latest
+    # Only run for Dependabot PRs
     if: github.actor == 'dependabot[bot]'
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+      
+      - name: Get Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
         
       - name: Approve pull request
         run: |
