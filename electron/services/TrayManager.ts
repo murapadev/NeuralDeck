@@ -106,4 +106,8 @@ export class TrayManager {
     
     return nativeImage.createFromPath(iconPath)
   }
+
+  public getBounds() {
+    return this.tray?.getBounds()
+  }
 }

@@ -11,6 +11,8 @@ import { TIMING, IPC_CHANNELS } from '../../shared/types.js'
 
 export class AutoUpdateManager {
   private windowManager: WindowManager
+  private updateInterval: NodeJS.Timeout | null = null
+  private startupTimeout: NodeJS.Timeout | null = null
 
   constructor(windowManager: WindowManager) {
     this.windowManager = windowManager
@@ -77,14 +79,34 @@ export class AutoUpdateManager {
    */
   public startUpdateChecks(): void {
     // Check for updates on startup (after delay)
-    setTimeout(() => {
+    if (this.startupTimeout) {
+      clearTimeout(this.startupTimeout)
+    }
+    this.startupTimeout = setTimeout(() => {
       this.checkForUpdates()
     }, TIMING.UPDATE_CHECK_DELAY)
 
     // Check for updates periodically
-    setInterval(() => {
+    if (this.updateInterval) {
+      clearInterval(this.updateInterval)
+    }
+    this.updateInterval = setInterval(() => {
       this.checkForUpdates()
     }, TIMING.UPDATE_CHECK_INTERVAL)
+  }
+
+  /**
+   * Stop scheduled update checks (used on shutdown)
+   */
+  public stopUpdateChecks(): void {
+    if (this.startupTimeout) {
+      clearTimeout(this.startupTimeout)
+      this.startupTimeout = null
+    }
+    if (this.updateInterval) {
+      clearInterval(this.updateInterval)
+      this.updateInterval = null
+    }
   }
 
   /**

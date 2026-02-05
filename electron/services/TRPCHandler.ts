@@ -40,6 +40,7 @@ export function createTRPCIPCHandler<TRouter extends AnyRouter>(options: {
 }): void {
   const { router, windows } = options
   const procedures = router._def.procedures as RouterProcedures
+  const isDev = process.env.NODE_ENV !== 'production'
 
   // Add new windows to the registered set
   for (const win of windows) {
@@ -62,10 +63,22 @@ export function createTRPCIPCHandler<TRouter extends AnyRouter>(options: {
   logger.info('[TRPCHandler] Registered window IDs:', Array.from(registeredWindows))
 
   ipcMain.on('trpc', async (event, operation: TRPCOperation) => {
-    logger.info('[TRPCHandler] RAW IPC received on trpc channel')
-    const { id, method: _method, params } = operation
+    if (!operation || typeof operation !== 'object') {
+      logger.warn('[TRPCHandler] Invalid IPC payload, ignoring')
+      return
+    }
+
+    const { id, params } = operation
+    if (!params || typeof params.path !== 'string' || typeof id !== 'number') {
+      logger.warn('[TRPCHandler] Malformed IPC payload, ignoring')
+      return
+    }
+
     const { path, input } = params
-    logger.info('[TRPCHandler] Received request:', path, JSON.stringify(input))
+
+    if (isDev) {
+      logger.debug('[TRPCHandler] Request:', path)
+    }
 
     // Only process from registered windows
     const senderWindow = BrowserWindow.fromWebContents(event.sender)
@@ -103,7 +116,7 @@ export function createTRPCIPCHandler<TRouter extends AnyRouter>(options: {
 
       event.sender.send('trpc', response)
     } catch (cause) {
-      console.error('[TRPCHandler] Error in procedure:', path, cause)
+      logger.error('[TRPCHandler] Error in procedure:', path, cause)
       const errorMessage = cause instanceof Error ? cause.message : 'Unknown error'
 
       const response: TRPCResponse = {

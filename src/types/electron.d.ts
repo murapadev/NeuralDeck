@@ -6,25 +6,38 @@
  */
 
 // Re-export shared types for convenience
-export {
-  type WindowPosition,
-  type WindowConfig,
-  type AppTheme,
-  type AppLanguage,
-  type FontSize,
-  type AppearanceConfig,
-  type ProviderConfig,
-  type ShortcutConfig,
-  type PrivacyConfig,
-  type AppConfig,
-  type NavigationState,
-  type UpdateInfo,
-  SIDEBAR,
-  DEFAULT_WINDOW,
-  TIMING,
+import type {
+  AppConfig,
+  AppearanceConfig,
+  FontSize,
+  Language,
+  NavigationState,
+  PrivacyConfig,
+  ProviderConfig,
+  ShortcutConfig,
+  Theme,
+  UpdateInfo,
+  WindowConfig,
+  WindowPosition,
 } from '../../shared/types'
 
-import type { NavigationState, UpdateInfo } from '../../shared/types'
+export type AppTheme = Theme
+export type AppLanguage = Language
+
+export type {
+  WindowPosition,
+  WindowConfig,
+  FontSize,
+  AppearanceConfig,
+  ProviderConfig,
+  ShortcutConfig,
+  PrivacyConfig,
+  AppConfig,
+  NavigationState,
+  UpdateInfo,
+}
+
+export { SIDEBAR, DEFAULT_WINDOW, TIMING } from '../../shared/types'
 
 // ============================================================================
 // NeuralDeck API (exposed via preload.ts)
@@ -61,6 +74,7 @@ export interface NeuralDeckAPI {
   onViewChanged: (callback: (providerId: string) => void) => () => void
   onNavigationStateChanged: (callback: (state: NavigationState) => void) => () => void
   onOpenSettings: (callback: () => void) => () => void
+  onConfigUpdated: (callback: (config: AppConfig) => void) => () => void
 }
 
 // ============================================================================

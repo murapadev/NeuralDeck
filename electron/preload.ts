@@ -1,8 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { IPC_CHANNELS } from '../shared/constants.js'
 
-console.log('[Preload] Script starting...')
-
 // Manual implementation of electronTRPC API that ipcLink expects
 contextBridge.exposeInMainWorld('electronTRPC', {
   sendMessage: (operation: {
@@ -10,23 +8,17 @@ contextBridge.exposeInMainWorld('electronTRPC', {
     method: string
     params: { path: string; input?: unknown }
   }) => {
-    console.log('[Preload] electronTRPC.sendMessage:', operation.params.path)
     ipcRenderer.send('trpc', operation)
   },
   onMessage: (callback: (response: { id: number; result?: unknown; error?: unknown }) => void) => {
     const handler = (
       _: Electron.IpcRendererEvent,
       response: { id: number; result?: unknown; error?: unknown }
-    ) => {
-      console.log('[Preload] electronTRPC.onMessage received:', response)
-      callback(response)
-    }
+    ) => callback(response)
     ipcRenderer.on('trpc', handler)
     return () => ipcRenderer.removeListener('trpc', handler)
   },
 })
-
-console.log('[Preload] electronTRPC exposed to window')
 
 // Expose custom NeuralDeck APIs separately
 contextBridge.exposeInMainWorld('neuralDeck', {
@@ -89,5 +81,10 @@ contextBridge.exposeInMainWorld('neuralDeck', {
     const handler = () => callback()
     ipcRenderer.on(IPC_CHANNELS.OPEN_SETTINGS, handler)
     return () => ipcRenderer.removeListener(IPC_CHANNELS.OPEN_SETTINGS, handler)
+  },
+  onConfigUpdated: (callback: (config: Record<string, unknown>) => void) => {
+    const handler = (_: Electron.IpcRendererEvent, config: Record<string, unknown>) => callback(config)
+    ipcRenderer.on(IPC_CHANNELS.CONFIG_UPDATED, handler)
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.CONFIG_UPDATED, handler)
   },
 })

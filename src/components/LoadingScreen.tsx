@@ -8,11 +8,20 @@ function LoadingScreen() {
     <div className="flex flex-col items-center justify-center h-screen w-screen bg-background">
       {/* Animated logo */}
       <div className="relative">
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-neural-500 to-neural-700 flex items-center justify-center shadow-lg shadow-neural-500/25">
+        <div
+          className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg"
+          style={{
+            background: 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.7) 100%)',
+            boxShadow: '0 10px 25px hsl(var(--primary) / 0.25)',
+          }}
+        >
           <span className="text-foreground font-bold text-2xl">N</span>
         </div>
         {/* Loading ring */}
-        <div className="absolute -inset-3 rounded-3xl border-2 border-neural-500/30 loading-ring" />
+        <div
+          className="absolute -inset-3 rounded-3xl border-2 loading-ring"
+          style={{ borderColor: 'hsl(var(--primary) / 0.3)' }}
+        />
       </div>
 
       {/* Text */}

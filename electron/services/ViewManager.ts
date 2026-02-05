@@ -15,6 +15,7 @@ export class ViewManager {
   private views: Map<string, WebContentsView> = new Map()
   private currentViewId: string | null = null
   private windowManager: WindowManager
+  private incognitoViewIds: Set<string> = new Set()
 
   constructor(windowManager: WindowManager) {
     this.windowManager = windowManager
@@ -134,6 +135,9 @@ export class ViewManager {
       })
 
       this.views.set(providerId, view)
+      if (isIncognito) {
+        this.incognitoViewIds.add(providerId)
+      }
       logger.info(`ViewManager: Created view for ${providerId} (partition: ${partition})`)
     }
 
@@ -293,6 +297,16 @@ export class ViewManager {
           if (mainWindow) {
             mainWindow.contentView.removeChildView(view)
           }
+          if (this.incognitoViewIds.has(id)) {
+            const viewSession = view.webContents.session
+            if (viewSession?.clearStorageData) {
+              void viewSession.clearStorageData()
+            }
+            if (viewSession?.clearCache) {
+              void viewSession.clearCache()
+            }
+            this.incognitoViewIds.delete(id)
+          }
           view.webContents.close()
           this.views.delete(id)
           logger.info(`ViewManager: Destroyed unused view: ${id}`)
@@ -404,6 +418,16 @@ export class ViewManager {
           const mainWindow = this.windowManager.mainWindow
           if (mainWindow) {
             mainWindow.contentView.removeChildView(view)
+          }
+          if (this.incognitoViewIds.has(id)) {
+            const viewSession = view.webContents.session
+            if (viewSession?.clearStorageData) {
+              void viewSession.clearStorageData()
+            }
+            if (viewSession?.clearCache) {
+              void viewSession.clearCache()
+            }
+            this.incognitoViewIds.delete(id)
           }
           view.webContents.close()
           this.views.delete(id)

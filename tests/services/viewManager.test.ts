@@ -100,6 +100,7 @@ describe('ViewManager', () => {
   let mockWindowManager: {
     mainWindow: {
       getBounds: ReturnType<typeof vi.fn>
+      getContentBounds: ReturnType<typeof vi.fn>
       on: ReturnType<typeof vi.fn>
       contentView: {
         addChildView: ReturnType<typeof vi.fn>

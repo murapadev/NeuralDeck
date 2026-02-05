@@ -15,7 +15,7 @@ export { useTheme } from './useTheme'
  * Hook for managing IPC event listeners from the Electron main process
  */
 export function useIpcListeners() {
-  const { setCurrentProvider, setNavigationState, openSettings } = useAppStore()
+  const { setCurrentProvider, setNavigationState, openSettings, setConfig } = useAppStore()
 
   useEffect(() => {
     const cleanups: (() => void)[] = []
@@ -44,12 +44,19 @@ export function useIpcListeners() {
           openSettings()
         })
       )
+
+      // Listen for config updates from main process
+      cleanups.push(
+        window.neuralDeck.onConfigUpdated((config) => {
+          setConfig(config)
+        })
+      )
     }
 
     return () => {
       cleanups.forEach((cleanup) => cleanup())
     }
-  }, [setCurrentProvider, setNavigationState, openSettings])
+  }, [setCurrentProvider, setNavigationState, openSettings, setConfig])
 }
 
 /**

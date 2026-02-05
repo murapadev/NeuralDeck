@@ -6,14 +6,21 @@ on:
   pull_request:
     branches: [main, develop]
 
+# Cancel in-progress runs for the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     name: Test on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        node-version: [18.x]
+        node-version: [20.x]
 
     steps:
       - name: Checkout code
@@ -34,25 +41,22 @@ jobs:
       - name: Type check
         run: npx tsc --noEmit
 
+      # Run tests with coverage only on Ubuntu, regular tests on other platforms
       - name: Run tests
+        if: matrix.os != 'ubuntu-latest'
         run: npm test
 
       - name: Run tests with coverage
         if: matrix.os == 'ubuntu-latest'
         run: npm run test:coverage
 
-      - name: Upload coverage to Codecov
-        if: matrix.os == 'ubuntu-latest'
-        uses: codecov/codecov-action@v4
-        with:
-          fail_ci_if_error: false
-          files: ./coverage/coverage-final.json
-
   build:
     name: Build on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
     needs: test
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
 
@@ -63,7 +67,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18.x
+          node-version: 20.x
           cache: 'npm'
 
       - name: Install dependencies
@@ -74,6 +78,17 @@ jobs:
 
       - name: Build frontend
         run: npx vite build
+
+      # Cache electron-builder to speed up subsequent builds
+      - name: Cache electron-builder
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+          key: ${{ runner.os }}-electron-builder-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-electron-builder-
 
       - name: Test electron-builder (dry run)
         if: matrix.os == 'ubuntu-latest'

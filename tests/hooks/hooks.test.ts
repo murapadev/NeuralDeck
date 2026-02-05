@@ -96,11 +96,7 @@ describe('Hooks', () => {
   describe('useSettingsWindow', () => {
     it('should detect settings window hash', async () => {
       const originalHash = window.location.hash
-      
-      Object.defineProperty(window, 'location', {
-        value: { hash: '#settings' },
-        writable: true,
-      })
+      window.location.hash = '#settings'
 
       const { useSettingsWindow } = await import('../../src/hooks/index')
       const { result } = renderHook(() => useSettingsWindow())
@@ -108,17 +104,11 @@ describe('Hooks', () => {
       expect(result.current).toBe(true)
 
       // Restore
-      Object.defineProperty(window, 'location', {
-        value: { hash: originalHash },
-        writable: true,
-      })
+      window.location.hash = originalHash
     })
 
     it('should return false for non-settings hash', async () => {
-      Object.defineProperty(window, 'location', {
-        value: { hash: '' },
-        writable: true,
-      })
+      window.location.hash = ''
 
       const { useSettingsWindow } = await import('../../src/hooks/index')
       const { result } = renderHook(() => useSettingsWindow())

@@ -42,157 +42,189 @@ function saveModel(model: string) {
 }
 
 export const useChat = () => {
-    const [messages, setMessages] = useState<Message[]>(loadMessages)
-    const [input, setInput] = useState('')
-    const [isLoading, setIsLoading] = useState(false)
-    const [isConnected, setIsConnected] = useState<boolean | null>(null)
-    const [models, setModels] = useState<OllamaModel[]>([])
-    const [selectedModel, setSelectedModel] = useState(loadModel)
-    const [isLoadingModels, setIsLoadingModels] = useState(true)
-    const bottomRef = useRef<HTMLDivElement>(null)
+  const [messages, setMessages] = useState<Message[]>(loadMessages)
+  const [input, setInput] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [isConnected, setIsConnected] = useState<boolean | null>(null)
+  const [models, setModels] = useState<OllamaModel[]>([])
+  const [selectedModel, setSelectedModel] = useState(loadModel)
+  const [isLoadingModels, setIsLoadingModels] = useState(true)
+  const bottomRef = useRef<HTMLDivElement>(null)
 
-    const scrollToBottom = () => {
-        bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-    }
+  const scrollToBottom = () => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
 
-    const checkConnection = useCallback(async () => {
-        setIsLoadingModels(true)
-        const connected = await ollamaService.healthCheck()
-        setIsConnected(connected)
-        
-        if (connected) {
-            const availableModels = await ollamaService.getModels()
-            setModels(availableModels)
-            
-            const savedModel = loadModel()
-            if (!savedModel && availableModels.length > 0) {
-                setSelectedModel(availableModels[0].name)
-                saveModel(availableModels[0].name)
-            }
-        }
+  const checkConnection = useCallback(async () => {
+    setIsLoadingModels(true)
+    try {
+      const connected = await ollamaService.healthCheck()
+      setIsConnected(connected)
+
+      if (!connected) {
+        setModels([])
+        setSelectedModel('')
         setIsLoadingModels(false)
-    }, [])
+        return
+      }
 
-    useEffect(() => {
-        checkConnection()
-        const interval = setInterval(checkConnection, TIMING.OLLAMA_POLL_INTERVAL)
-        return () => clearInterval(interval)
-    }, [checkConnection])
+      const availableModels = await ollamaService.getModels()
+      setModels(availableModels)
 
-    useEffect(() => {
-        scrollToBottom()
-    }, [messages])
+      const savedModel = loadModel()
+      const validSavedModel = availableModels.find((model) => model.name === savedModel)
+      const nextModel = validSavedModel?.name ?? availableModels[0]?.name ?? ''
 
-    useEffect(() => {
-        saveMessages(messages)
-    }, [messages])
+      setSelectedModel(nextModel)
+      if (nextModel) saveModel(nextModel)
+    } catch {
+      setIsConnected(false)
+      setModels([])
+      setSelectedModel('')
+    } finally {
+      setIsLoadingModels(false)
+    }
+  }, [])
 
-    const handleModelChange = (model: string) => {
-        setSelectedModel(model)
-        saveModel(model)
+  useEffect(() => {
+    checkConnection()
+    const interval = setInterval(checkConnection, TIMING.OLLAMA_POLL_INTERVAL)
+    return () => clearInterval(interval)
+  }, [checkConnection])
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
+
+  useEffect(() => {
+    saveMessages(messages)
+  }, [messages])
+
+  const handleModelChange = (model: string) => {
+    setSelectedModel(model)
+    saveModel(model)
+  }
+
+  const clearConversation = () => {
+    setMessages([])
+    try {
+      localStorage.removeItem(STORAGE_KEYS.OLLAMA_CHAT)
+    } catch {
+      // Ignore storage errors
+    }
+  }
+
+  const updateInput = (value: string) => {
+    setInput(value)
+  }
+
+  const sendMessage = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
+    if (!input.trim() || isLoading || !isConnected || !selectedModel) return
+
+    const userMessage = input.trim()
+    setInput('')
+
+    const newUserMessage: Message = {
+      role: 'user',
+      content: userMessage,
+      timestamp: Date.now(),
     }
 
-    const clearConversation = () => {
-        setMessages([])
-        localStorage.removeItem(STORAGE_KEYS.OLLAMA_CHAT)
-    }
+    let requestMessages: Message[] = []
+    setMessages((prev) => {
+      requestMessages = [...prev, newUserMessage]
+      return [
+        ...requestMessages,
+        { role: 'assistant', content: '', timestamp: Date.now() },
+      ]
+    })
 
-    const updateInput = (value: string) => {
-        setInput(value)
-    }
+    setIsLoading(true)
 
-    const sendMessage = async (e?: React.FormEvent) => {
-        if (e) e.preventDefault()
-        if (!input.trim() || isLoading || !isConnected || !selectedModel) return
+    try {
+      const response = await fetch(`${ollamaService.baseUrl}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: selectedModel,
+          messages: requestMessages.map((message) => ({
+            role: message.role,
+            content: message.content,
+          })),
+          stream: true,
+        }),
+      })
 
-        const userMessage = input.trim()
-        setInput('')
-        
-        const newUserMessage: Message = { 
-            role: 'user', 
-            content: userMessage,
-            timestamp: Date.now()
+      if (!response.body) throw new Error('No response body')
+
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+      let assistantMessage = ''
+      let streamDone = false
+
+      while (!streamDone) {
+        const { done, value } = await reader.read()
+        if (done) {
+          streamDone = true
+          continue
         }
-        
-        setMessages(prev => [...prev, newUserMessage])
-        setIsLoading(true)
-        setMessages(prev => [...prev, { role: 'assistant', content: '', timestamp: Date.now() }])
 
-        try {
-            const response = await fetch(`${ollamaService.baseUrl}/api/chat`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    model: selectedModel,
-                    messages: [...messages, newUserMessage].map(m => ({ role: m.role, content: m.content })),
-                    stream: true
-                }),
-            })
+        const chunk = decoder.decode(value, { stream: true })
+        const lines = chunk.split('\n').filter((line) => line.trim() !== '')
 
-            if (!response.body) throw new Error('No response body')
-
-            const reader = response.body.getReader()
-            const decoder = new TextDecoder()
-            let assistantMessage = ''
-            let streamDone = false
-
-            while (!streamDone) {
-                const { done, value } = await reader.read()
-                if (done) {
-                    streamDone = true
-                    continue
+        for (const line of lines) {
+          try {
+            const json = JSON.parse(line)
+            if (json.message?.content) {
+              assistantMessage += json.message.content
+              setMessages((prev) => {
+                const next = [...prev]
+                if (next.length === 0) return next
+                next[next.length - 1] = {
+                  role: 'assistant',
+                  content: assistantMessage,
+                  timestamp: Date.now(),
                 }
-
-                const chunk = decoder.decode(value, { stream: true })
-                const lines = chunk.split('\n').filter(line => line.trim() !== '')
-
-                for (const line of lines) {
-                    try {
-                        const json = JSON.parse(line)
-                        if (json.message && json.message.content) {
-                            assistantMessage += json.message.content
-                            setMessages(prev => {
-                                const newMessages = [...prev]
-                                newMessages[newMessages.length - 1] = { 
-                                    role: 'assistant', 
-                                    content: assistantMessage,
-                                    timestamp: Date.now()
-                                }
-                                return newMessages
-                            })
-                        }
-                        if (json.done) setIsLoading(false)
-                    } catch {
-                        // Ignore parse errors
-                    }
-                }
+                return next
+              })
             }
-        } catch {
-            setMessages(prev => [
-                ...prev.slice(0, -1),
-                { role: 'assistant', content: '⚠️ **Error**: Could not connect to Ollama.', timestamp: Date.now() }
-            ])
-            setIsLoading(false)
-            setIsConnected(false)
+            if (json.done) setIsLoading(false)
+          } catch {
+            // Ignore parse errors
+          }
         }
+      }
+    } catch {
+      setMessages((prev) => [
+        ...prev.slice(0, -1),
+        {
+          role: 'assistant',
+          content: '⚠️ **Error**: Could not connect to Ollama.',
+          timestamp: Date.now(),
+        },
+      ])
+      setIsLoading(false)
+      setIsConnected(false)
     }
+  }
 
-    return {
-        messages,
-        input,
-        isLoading,
-        isConnected,
-        models,
-        selectedModel,
-        isLoadingModels,
-        bottomRef,
-        checkConnection,
-        handleModelChange,
-        clearConversation,
-        updateInput,
-        sendMessage,
-        // Helper to format model size
-        formatModelSize: ollamaService.formatModelSize,
-        getModelDisplayName: ollamaService.getModelDisplayName
-    }
+  return {
+    messages,
+    input,
+    isLoading,
+    isConnected,
+    models,
+    selectedModel,
+    isLoadingModels,
+    bottomRef,
+    checkConnection,
+    handleModelChange,
+    clearConversation,
+    updateInput,
+    sendMessage,
+    // Helper to format model size
+    formatModelSize: ollamaService.formatModelSize,
+    getModelDisplayName: ollamaService.getModelDisplayName,
+  }
 }

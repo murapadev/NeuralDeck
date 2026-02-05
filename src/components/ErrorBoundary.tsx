@@ -118,7 +118,7 @@ ${errorInfo?.componentStack || 'No component stack available'}
               <div className="flex gap-3">
                 <Button
                   onClick={this.handleReload}
-                  className="flex-1 bg-neural-600 hover:bg-neural-500"
+                  className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
                 >
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Reload

@@ -20,25 +20,33 @@ function MainContent() {
     setConfig,
     isLoading: isStoreLoading,
     setLoading,
+    config: storeConfig,
   } = useAppStore()
 
-  // React Query for initial data
-  const { data: config, isLoading: isConfigLoading, isError } = trpc.getConfig.useQuery()
+  // React Query for initial data only
+  const { data: config, isLoading: isConfigLoading, isError } = trpc.getConfig.useQuery(undefined, {
+    // Only fetch once on mount - IPC listeners handle updates
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+  })
 
-  // Sync with store when config is loaded
+  // Sync with store ONLY on initial load (when store config is null)
   useEffect(() => {
-    if (config) {
+    // Only set config if store doesn't have one yet (initial load)
+    if (config && !storeConfig) {
       setConfig(config)
       setLoading(false)
       if (!currentProviderId && config.lastProvider) {
         setCurrentProvider(config.lastProvider)
       }
-    } else if (isError) {
+    } else if (isError && !storeConfig) {
       // Handle error case - stop loading to prevent infinite loading state
       console.error('[App] Failed to load config from tRPC')
       setLoading(false)
     }
-  }, [config, isError, setConfig, setLoading, currentProviderId, setCurrentProvider])
+  }, [config, isError, storeConfig, setConfig, setLoading, currentProviderId, setCurrentProvider])
 
   // Use extracted hooks for IPC, auto-update, and theme
   useIpcListeners()
@@ -92,13 +100,9 @@ function App() {
   useEffect(() => {
     if (isElectronReady) return // Already ready, nothing to do
 
-    console.log('[App] Polling for electronTRPC availability...')
-
     // Poll for electronTRPC availability
     const checkInterval = setInterval(() => {
-      console.log('[App] Checking electronTRPC:', !!window.electronTRPC)
       if (window.electronTRPC) {
-        console.log('[App] electronTRPC is now available')
         setIsElectronReady(true)
         clearInterval(checkInterval)
       }

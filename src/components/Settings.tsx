@@ -43,18 +43,21 @@ function Settings({ isWindow = false }: { isWindow?: boolean }) {
   }
 
   // Filter logic
-  const tabs = [
-    { id: 'general', icon: SettingsIcon, label: t('settings.general') },
-    { id: 'appearance', icon: Palette, label: t('settings.appearance') },
-    { id: 'shortcuts', icon: Keyboard, label: t('settings.shortcuts') },
-    { id: 'providers', icon: Database, label: t('settings.providers') },
-    { id: 'privacy', icon: Shield, label: t('settings.privacy') },
-  ]
+  const tabs = useMemo(
+    () => [
+      { id: 'general', icon: SettingsIcon, label: t('settings.general') },
+      { id: 'appearance', icon: Palette, label: t('settings.appearance') },
+      { id: 'shortcuts', icon: Keyboard, label: t('settings.shortcuts') },
+      { id: 'providers', icon: Database, label: t('settings.providers') },
+      { id: 'privacy', icon: Shield, label: t('settings.privacy') },
+    ],
+    [t]
+  )
 
   const filteredTabs = useMemo(() => {
     if (!searchQuery) return tabs
     return tabs.filter((tab) => tab.label.toLowerCase().includes(searchQuery.toLowerCase()))
-  }, [searchQuery, t, tabs])
+  }, [searchQuery, tabs])
 
   // If not window and not open, don't render (unless animating in future)
   if (!isWindow && !isSettingsOpen) return null
@@ -90,7 +93,7 @@ function Settings({ isWindow = false }: { isWindow?: boolean }) {
                 placeholder="Search settings..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-8 bg-muted border-border text-xs focus:ring-neural-500"
+                className="h-8 bg-muted border-border text-xs focus:ring-ring"
               />
             </div>
           </div>

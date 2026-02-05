@@ -16,30 +16,76 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { ExternalLink, Pin, PinOff, Settings } from 'lucide-react'
+import { useFavicon } from '../hooks/useFavicon'
 import { useSidebar } from '../hooks/useSidebar'
 import { useTranslation } from '../i18n'
 import { cn } from '../lib/utils'
+import { useAppearanceConfig } from '../store/appStore'
 import { ProviderIcons } from './icons'
 import { Button } from './ui/button'
 import { ScrollArea } from './ui/scroll-area'
 import { Separator } from './ui/separator'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
-// Provider icon component with fallback
+// Provider icon component with favicon support
 const ProviderIconWithFavicon = ({
+  providerId,
   providerIcon,
   providerName,
   color,
   isActive,
   onClick,
+  showLabel,
 }: {
+  providerId: string
   providerIcon: string
   providerName: string
   color: string
   isActive: boolean
   onClick: (e: React.MouseEvent) => void
+  showLabel?: boolean
 }) => {
+  // Try to load favicon from backend
+  const { favicon } = useFavicon(providerId, 64)
   const IconComponent = ProviderIcons[providerIcon as keyof typeof ProviderIcons]
+
+  // Render icon: favicon > SVG icon > initials fallback
+  const renderIcon = () => {
+    if (favicon) {
+      return (
+        <img
+          src={favicon}
+          alt={providerName}
+          className={cn(
+            'h-7 w-7 rounded-md object-contain transition-transform duration-300',
+            isActive ? 'scale-110' : 'group-hover:opacity-80'
+          )}
+          onError={(e) => {
+            // Hide broken image
+            e.currentTarget.style.display = 'none'
+          }}
+        />
+      )
+    }
+
+    if (IconComponent) {
+      return (
+        <IconComponent
+          className={cn(
+            'h-7 w-7 transition-transform duration-300',
+            isActive ? 'scale-110' : 'group-hover:opacity-80'
+          )}
+          color={isActive ? color : 'currentColor'}
+        />
+      )
+    }
+
+    return (
+      <span className="text-sm font-bold uppercase text-foreground">
+        {providerName.slice(0, 2)}
+      </span>
+    )
+  }
 
   return (
     <Button
@@ -47,6 +93,7 @@ const ProviderIconWithFavicon = ({
       size="icon"
       className={cn(
         'relative h-12 w-12 rounded-xl transition-all duration-300 group text-foreground hover:bg-foreground/10',
+        showLabel && 'w-full justify-start gap-3 px-3',
         isActive && 'bg-foreground/10 shadow-[0_0_15px_rgba(255,255,255,0.1)] scale-105'
       )}
       onClick={onClick}
@@ -59,23 +106,20 @@ const ProviderIconWithFavicon = ({
         style={{ backgroundColor: isActive ? `${color}20` : 'transparent' }}
       />
 
-      {IconComponent ? (
-        <IconComponent
-          className={cn(
-            'h-7 w-7 transition-transform duration-300',
-            isActive ? 'scale-110' : 'group-hover:opacity-80'
-          )}
-          color={isActive ? color : 'currentColor'}
-        />
-      ) : (
-        <span className="text-sm font-bold uppercase text-foreground">
-          {providerName.slice(0, 2)}
-        </span>
+      {renderIcon()}
+
+      {showLabel && (
+        <span className="text-xs font-medium text-foreground truncate">{providerName}</span>
       )}
 
       {/* Active Indicator */}
       {isActive && (
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-1 bg-foreground rounded-r-full shadow-[0_0_8px_rgba(255,255,255,0.5)]" />
+        <div
+          className={cn(
+            'absolute left-0 top-1/2 -translate-y-1/2 w-1 bg-foreground rounded-r-full shadow-[0_0_8px_rgba(255,255,255,0.5)]',
+            showLabel ? 'h-6' : 'h-8'
+          )}
+        />
       )}
     </Button>
   )
@@ -85,9 +129,11 @@ const ProviderIconWithFavicon = ({
 function SortableProviderItem({
   provider,
   children,
+  className,
 }: {
   provider: { id: string }
   children: React.ReactNode
+  className?: string
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: provider.id,
@@ -106,7 +152,7 @@ function SortableProviderItem({
       style={style}
       {...attributes}
       {...listeners}
-      className="relative group/item w-full flex justify-center touch-none"
+      className={cn('relative group/item w-full flex touch-none', className)}
     >
       {children}
     </div>
@@ -115,6 +161,8 @@ function SortableProviderItem({
 
 function Sidebar() {
   const { t } = useTranslation()
+  const appearance = useAppearanceConfig()
+  const showProviderNames = appearance?.showProviderNames ?? false
   const {
     currentProviderId,
     enabledProviders,
@@ -154,9 +202,14 @@ function Sidebar() {
   }
 
   return (
-    <aside className="shrink-0 flex h-full w-[72px] flex-col items-center bg-background/95 backdrop-blur-xl border-r border-border py-4 z-50 select-none">
+    <aside
+      className={cn(
+        'shrink-0 flex h-full flex-col bg-background/95 backdrop-blur-xl border-r border-border py-4 z-50 select-none transition-[width] duration-200',
+        showProviderNames ? 'w-[140px] items-stretch px-2' : 'w-[72px] items-center'
+      )}
+    >
       {/* App Logo / Pin */}
-      <div className="mb-4">
+      <div className="mb-4 flex w-full justify-center">
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>
             <Button
@@ -165,7 +218,7 @@ function Sidebar() {
               onClick={handleTogglePin}
               className={cn(
                 'h-10 w-10 rounded-full transition-colors hover:bg-foreground/10',
-                isPinned ? 'text-neural-400 bg-neural-500/10' : 'text-muted-foreground'
+                isPinned ? 'text-primary bg-primary/10' : 'text-muted-foreground'
               )}
             >
               {isPinned ? <PinOff className="h-5 w-5" /> : <Pin className="h-5 w-5" />}
@@ -181,32 +234,43 @@ function Sidebar() {
         </Tooltip>
       </div>
 
-      <Separator className="w-10 bg-border mb-4" />
+      <Separator className={cn('bg-border mb-4', showProviderNames ? 'w-full' : 'w-10')} />
 
       {/* Providers List */}
-      <ScrollArea className="flex-1 w-full px-2">
+      <ScrollArea className={cn('flex-1 w-full', showProviderNames ? 'px-1' : 'px-2')}>
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext
             items={enabledProviders.map((p) => p.id)}
             strategy={verticalListSortingStrategy}
           >
-            <div className="flex flex-col items-center gap-3 py-2 pb-4">
+            <div
+              className={cn(
+                'flex flex-col gap-3 py-2 pb-4',
+                showProviderNames ? 'items-stretch' : 'items-center'
+              )}
+            >
               {isLoading ? (
                 <div className="text-muted-foreground text-xs">Loading...</div>
               ) : enabledProviders.length === 0 ? (
                 <div className="text-muted-foreground text-xs text-center px-2">No providers</div>
               ) : (
                 enabledProviders.map((provider) => (
-                  <SortableProviderItem key={provider.id} provider={provider}>
+                  <SortableProviderItem
+                    key={provider.id}
+                    provider={provider}
+                    className={showProviderNames ? 'justify-start' : 'justify-center'}
+                  >
                     <Tooltip delayDuration={0}>
                       <TooltipTrigger asChild>
-                        <div>
+                        <div className={cn(showProviderNames ? 'w-full' : '')}>
                           <ProviderIconWithFavicon
+                            providerId={provider.id}
                             providerIcon={provider.icon}
                             providerName={provider.name}
                             color={provider.color || '#ffffff'}
                             isActive={currentProviderId === provider.id}
                             onClick={(e) => handleProviderClick(provider, e)}
+                            showLabel={showProviderNames}
                           />
                         </div>
                       </TooltipTrigger>
@@ -234,7 +298,7 @@ function Sidebar() {
         </DndContext>
       </ScrollArea>
 
-      <Separator className="w-10 bg-border my-4" />
+      <Separator className={cn('bg-border my-4', showProviderNames ? 'w-full' : 'w-10')} />
 
       {/* Settings */}
       <div className="mt-auto">

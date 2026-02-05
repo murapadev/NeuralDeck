@@ -26,6 +26,7 @@ const IPC_CHANNELS = {
   VIEW_CHANGED: 'view-changed',
   NAVIGATION_STATE_CHANGED: 'navigation-state-changed',
   OPEN_SETTINGS: 'open-settings',
+  CONFIG_UPDATED: 'config-updated',
 }
 
 // Manual implementation of electronTRPC API that ipcLink expects
@@ -97,5 +98,10 @@ contextBridge.exposeInMainWorld('neuralDeck', {
     const handler = () => callback()
     ipcRenderer.on(IPC_CHANNELS.OPEN_SETTINGS, handler)
     return () => ipcRenderer.removeListener(IPC_CHANNELS.OPEN_SETTINGS, handler)
+  },
+  onConfigUpdated: (callback) => {
+    const handler = (_, config) => callback(config)
+    ipcRenderer.on(IPC_CHANNELS.CONFIG_UPDATED, handler)
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.CONFIG_UPDATED, handler)
   },
 })

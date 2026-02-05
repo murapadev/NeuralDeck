@@ -1,9 +1,17 @@
 import { z } from 'zod'
-import { app } from 'electron'
+import { app, BrowserWindow } from 'electron'
 import { publicProcedure, router } from './trpc.js'
 import configManager from '../config/configManager.js'
 import { ShortcutManager } from '../services/ShortcutManager.js'
 import { ViewManager } from '../services/ViewManager.js'
+import { IPC_CHANNELS } from '../../shared/constants.js'
+
+const broadcastConfig = () => {
+  const config = configManager.getAll()
+  for (const win of BrowserWindow.getAllWindows()) {
+    win.webContents.send(IPC_CHANNELS.CONFIG_UPDATED, config)
+  }
+}
 
 export const createSettingsRouter = (
   shortcutManager: ShortcutManager,
@@ -36,6 +44,7 @@ export const createSettingsRouter = (
         if (input.showProviderNames !== undefined) {
           viewManager.handleResize()
         }
+        broadcastConfig()
         return configManager.getAll()
       }),
 
@@ -50,6 +59,7 @@ export const createSettingsRouter = (
       )
       .mutation(({ input }) => {
         configManager.updatePrivacy(input)
+        broadcastConfig()
         return configManager.getAll()
       }),
 
@@ -67,6 +77,7 @@ export const createSettingsRouter = (
       .mutation(({ input }) => {
         configManager.updateShortcuts(input)
         shortcutManager.refresh()
+        broadcastConfig()
         return configManager.getAll()
       }),
 
@@ -81,6 +92,7 @@ export const createSettingsRouter = (
       )
       .mutation(({ input }) => {
         configManager.updateGeneral(input)
+        broadcastConfig()
         return configManager.getAll()
       }),
     exportConfig: publicProcedure.mutation(() => {
@@ -92,6 +104,7 @@ export const createSettingsRouter = (
       if (success) {
         shortcutManager.refresh()
         viewManager.handleResize()
+        broadcastConfig()
       }
       return success
     }),
@@ -100,6 +113,7 @@ export const createSettingsRouter = (
       configManager.reset()
       shortcutManager.refresh()
       viewManager.handleResize()
+      broadcastConfig()
       return configManager.getAll()
     }),
   })

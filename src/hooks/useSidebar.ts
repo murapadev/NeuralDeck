@@ -35,7 +35,16 @@ export const useSidebar = () => {
   }
 
   const handleTogglePin = () => {
-    updateWindowMutation.mutate({ alwaysOnTop: !isPinned })
+    const newPinState = !isPinned
+    // Optimistic update for immediate UI feedback
+    if (config) {
+      setConfig({
+        ...config,
+        window: { ...config.window, alwaysOnTop: newPinState }
+      })
+    }
+    // Sync with backend
+    updateWindowMutation.mutate({ alwaysOnTop: newPinState })
   }
 
   const handleReorder = useCallback(

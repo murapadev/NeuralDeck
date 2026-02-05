@@ -55,7 +55,7 @@ const ShortcutInput = ({
           className={cn(
             'font-mono text-center cursor-pointer transition-all',
             recording
-              ? 'border-neural-500 ring-2 ring-neural-500/20 bg-neural-500/10 text-neural-400'
+              ? 'border-primary ring-2 ring-primary/20 bg-primary/10 text-primary'
               : 'hover:bg-muted'
           )}
         />

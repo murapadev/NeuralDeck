@@ -6,34 +6,43 @@
 import { vi } from 'vitest'
 
 // Mock window.neuralDeck (Electron IPC bridge)
+// Must match NeuralDeckAPI interface from src/types/electron.d.ts
 const mockNeuralDeck = {
+  // Navigation & Views
+  switchView: vi.fn(),
+  openExternal: vi.fn(),
+  reload: vi.fn(),
+  goBack: vi.fn(),
+  goForward: vi.fn(),
+
+  // Window & Layout
+  openSettingsWindow: vi.fn(),
+  closeSettingsWindow: vi.fn(),
+
+  // Auto-Update
+  downloadUpdate: vi.fn(),
+  installUpdate: vi.fn(),
+  onUpdateAvailable: vi.fn(() => () => {}),
+  onUpdateDownloaded: vi.fn(() => () => {}),
+  onDownloadProgress: vi.fn(() => () => {}),
+  onUpdateError: vi.fn(() => () => {}),
+
+  // System
+  getPlatform: vi.fn(() => Promise.resolve('linux' as NodeJS.Platform)),
+
+  // Events
   onViewChanged: vi.fn(() => () => {}),
   onNavigationStateChanged: vi.fn(() => () => {}),
   onOpenSettings: vi.fn(() => () => {}),
-  switchView: vi.fn(),
-  goBack: vi.fn(),
-  goForward: vi.fn(),
-  reload: vi.fn(),
-  openExternal: vi.fn(),
-  getConfig: vi.fn(),
-  setConfig: vi.fn()
+  onConfigUpdated: vi.fn(() => () => {}),
 }
 
-// Set up global mocks
-Object.defineProperty(globalThis, 'window', {
-  value: {
-    ...globalThis.window,
-    neuralDeck: mockNeuralDeck,
-    location: {
-      hash: '',
-      href: 'http://localhost/'
-    },
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    dispatchEvent: vi.fn()
-  },
-  writable: true
-})
+// Attach mocks to the existing jsdom window instead of replacing it
+if (typeof window !== 'undefined') {
+  window.neuralDeck = mockNeuralDeck
+  window.location.hash = ''
+  // Keep default href to avoid navigation side effects in jsdom
+}
 
 // Export mocks for use in tests
 export { mockNeuralDeck }

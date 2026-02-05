@@ -1,8 +1,17 @@
 import { z } from 'zod'
+import { BrowserWindow } from 'electron'
 import { publicProcedure, router } from './trpc.js'
 import configManager from '../config/configManager.js'
 import faviconManager from '../utils/faviconManager.js'
 import { COLORS, FAVICON } from '../../shared/types.js'
+import { IPC_CHANNELS } from '../../shared/constants.js'
+
+const broadcastConfig = () => {
+  const config = configManager.getAll()
+  for (const win of BrowserWindow.getAllWindows()) {
+    win.webContents.send(IPC_CHANNELS.CONFIG_UPDATED, config)
+  }
+}
 
 export const createProvidersRouter = () => {
   return router({
@@ -23,11 +32,13 @@ export const createProvidersRouter = () => {
       )
       .mutation(({ input }) => {
         configManager.addCustomProvider(input)
+        broadcastConfig()
         return configManager.getAll()
       }),
 
     removeCustomProvider: publicProcedure.input(z.string()).mutation(({ input }) => {
       configManager.removeCustomProvider(input)
+      broadcastConfig()
       return configManager.getAll()
     }),
 
@@ -42,6 +53,7 @@ export const createProvidersRouter = () => {
       )
       .mutation(({ input }) => {
         configManager.updateProvider(input.id, input.data)
+        broadcastConfig()
         return configManager.getAll()
       }),
 
@@ -49,6 +61,7 @@ export const createProvidersRouter = () => {
       .input(z.array(z.any())) // We can refine this validation if needed
       .mutation(({ input }) => {
         configManager.updateProviders(input)
+        broadcastConfig()
         return configManager.getAll()
       }),
 

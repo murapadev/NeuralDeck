@@ -97,7 +97,7 @@ export const ProviderSettings = () => {
           </div>
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
-              <Button size="sm" className="bg-neural-600 hover:bg-neural-500 text-foreground">
+              <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
                 <Plus className="w-4 h-4 mr-2" />
                 {t('settings.providers.addProvider')}
               </Button>
@@ -171,7 +171,7 @@ export const ProviderSettings = () => {
                 >
                   {t('common.cancel')}
                 </Button>
-                <Button onClick={handleAddProvider} className="bg-neural-600 hover:bg-neural-500">
+                <Button onClick={handleAddProvider} className="bg-primary text-primary-foreground hover:bg-primary/90">
                   {t('settings.providers.save')}
                 </Button>
               </DialogFooter>

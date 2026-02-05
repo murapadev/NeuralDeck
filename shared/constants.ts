@@ -17,6 +17,7 @@ export const DEFAULT_PROVIDERS: ProviderConfig[] = [
     color: '#10a37f',
     enabled: true,
     order: 0,
+    isCustom: false,
   },
   {
     id: 'gemini',
@@ -26,6 +27,7 @@ export const DEFAULT_PROVIDERS: ProviderConfig[] = [
     color: '#8e44ef',
     enabled: true,
     order: 1,
+    isCustom: false,
   },
   {
     id: 'claude',
@@ -35,6 +37,7 @@ export const DEFAULT_PROVIDERS: ProviderConfig[] = [
     color: '#d97706',
     enabled: true,
     order: 2,
+    isCustom: false,
   },
   {
     id: 'deepseek',
@@ -44,6 +47,7 @@ export const DEFAULT_PROVIDERS: ProviderConfig[] = [
     color: '#3b82f6',
     enabled: true,
     order: 3,
+    isCustom: false,
   },
   {
     id: 'perplexity',
@@ -53,6 +57,7 @@ export const DEFAULT_PROVIDERS: ProviderConfig[] = [
     color: '#22c55e',
     enabled: true,
     order: 4,
+    isCustom: false,
   },
   {
     id: 'ollama',
@@ -240,6 +245,7 @@ export const IPC_CHANNELS = {
   VIEW_CHANGED: 'view-changed',
   NAVIGATION_STATE_CHANGED: 'navigation-state-changed',
   OPEN_SETTINGS: 'open-settings',
+  CONFIG_UPDATED: 'config-updated',
 } as const
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS]

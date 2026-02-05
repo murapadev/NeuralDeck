@@ -6,6 +6,7 @@ import { trpc } from '../../utils/trpc'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { Label } from '../ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
+import { Switch } from '../ui/switch'
 
 export const AppearanceSettings = () => {
   const { t } = useTranslation()
@@ -73,6 +74,28 @@ export const AppearanceSettings = () => {
                 <SelectItem value="large">{t('settings.appearance.large')}</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle className="text-lg">{t('settings.appearance.sidebar')}</CardTitle>
+          <CardDescription>{t('settings.appearance.sidebarDesc')}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between gap-4">
+            <Label htmlFor="show-provider-names" className="flex flex-col space-y-1">
+              <span>{t('settings.appearance.showProviderNames')}</span>
+              <span className="text-xs font-normal text-muted-foreground">
+                {t('settings.appearance.showProviderNamesDesc')}
+              </span>
+            </Label>
+            <Switch
+              id="show-provider-names"
+              checked={appearanceConfig.showProviderNames}
+              onCheckedChange={(checked) => updateAppearanceConfig({ showProviderNames: checked })}
+            />
           </div>
         </CardContent>
       </Card>

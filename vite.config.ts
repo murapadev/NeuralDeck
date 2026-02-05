@@ -42,8 +42,8 @@ export default defineConfig({
             rollupOptions: {
               external: ['electron', 'electron-store'],
               output: {
-                format: 'es',
-                entryFileNames: '[name].js',
+                format: 'cjs',
+                entryFileNames: '[name].cjs',
               },
             },
           },

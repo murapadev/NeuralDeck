@@ -1,7 +1,16 @@
 import { z } from 'zod'
+import { BrowserWindow } from 'electron'
 import { publicProcedure, router } from './trpc.js'
 import configManager from '../config/configManager.js'
 import { WindowManager } from '../services/WindowManager.js'
+import { IPC_CHANNELS } from '../../shared/constants.js'
+
+const broadcastConfig = () => {
+  const config = configManager.getAll()
+  for (const win of BrowserWindow.getAllWindows()) {
+    win.webContents.send(IPC_CHANNELS.CONFIG_UPDATED, config)
+  }
+}
 
 export const createWindowRouter = (windowManager: WindowManager) => {
   return router({
@@ -41,6 +50,7 @@ export const createWindowRouter = (windowManager: WindowManager) => {
           }
         }
         configManager.updateWindow(input)
+        broadcastConfig()
         return configManager.getAll()
       }),
 
@@ -51,6 +61,7 @@ export const createWindowRouter = (windowManager: WindowManager) => {
     setAlwaysOnTop: publicProcedure.input(z.object({ value: z.boolean() })).mutation(({ input }) => {
       windowManager.mainWindow?.setAlwaysOnTop(input.value)
       configManager.updateWindow({ alwaysOnTop: input.value })
+      broadcastConfig()
       return input.value
     }),
     

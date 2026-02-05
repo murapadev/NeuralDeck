@@ -48,7 +48,7 @@ export default function ChatInterface() {
               </Badge>
               {models.length > 0 && (
                 <Select value={selectedModel} onValueChange={handleModelChange}>
-                  <SelectTrigger className="w-[180px] h-8 text-xs bg-muted border-border focus:ring-neural-500">
+                  <SelectTrigger className="w-[180px] h-8 text-xs bg-muted border-border focus:ring-ring">
                     <SelectValue placeholder="Select Model" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover border-border">
@@ -120,7 +120,7 @@ export default function ChatInterface() {
                 className={cn(
                   'max-w-[85%] rounded-2xl px-5 py-3 text-sm leading-relaxed shadow-sm',
                   msg.role === 'user'
-                    ? 'bg-neural-600 text-foreground rounded-tr-sm'
+                    ? 'bg-primary text-primary-foreground rounded-tr-sm'
                     : 'bg-card border border-border text-card-foreground rounded-tl-sm'
                 )}
               >
@@ -133,7 +133,7 @@ export default function ChatInterface() {
                           const isInline = !className
                           return isInline ? (
                             <code
-                              className="bg-muted px-1.5 py-0.5 rounded text-neural-200 font-mono text-xs"
+                              className="bg-muted px-1.5 py-0.5 rounded text-foreground font-mono text-xs"
                               {...props}
                             >
                               {children}
@@ -167,7 +167,7 @@ export default function ChatInterface() {
             onChange={(e) => updateInput(e.target.value)}
             placeholder={isConnected ? t('chat.typeMessage') : t('chat.notConnected')}
             disabled={isLoading || !isConnected}
-            className="flex-1 bg-background border-border focus-visible:ring-neural-500 h-11"
+            className="flex-1 bg-background border-border focus-visible:ring-ring h-11"
           />
           <Button
             type="submit"
@@ -177,7 +177,7 @@ export default function ChatInterface() {
               'h-11 w-11 shrink-0 transition-all',
               isLoading
                 ? 'bg-muted text-muted-foreground'
-                : 'bg-neural-600 hover:bg-neural-500 text-foreground'
+                : 'bg-primary text-primary-foreground hover:bg-primary/90'
             )}
           >
             {isLoading ? (

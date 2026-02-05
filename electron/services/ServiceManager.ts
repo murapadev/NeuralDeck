@@ -32,6 +32,7 @@ export class ServiceManager {
   public autoUpdateManager!: AutoUpdateManager
 
   private initialized = false
+  private gcInterval: NodeJS.Timeout | null = null
 
   /**
    * Initialize services.
@@ -64,6 +65,7 @@ export class ServiceManager {
       this.trayManager = new TrayManager(this.windowManager, this.viewManager)
       ;(globalThis as typeof globalThis & { trayManager?: TrayManager }).trayManager =
         this.trayManager
+      this.windowManager.setTrayBoundsProvider(() => this.trayManager.getBounds())
 
       // 3. Create shortcut manager (essential for interaction)
       this.shortcutManager = new ShortcutManager(this.windowManager, this.viewManager)
@@ -113,7 +115,7 @@ export class ServiceManager {
         this.viewManager.preloadTopProviders(3)
         
         // Start background memory garbage collection
-        this.viewManager.startBackgroundGC(60000) // Every 60 seconds
+        this.gcInterval = this.viewManager.startBackgroundGC(60000) // Every 60 seconds
         
         logger.info('ServiceManager: Background services initialized')
       } catch (error) {
@@ -169,6 +171,14 @@ export class ServiceManager {
 
       // Destroy unused views
       this.viewManager?.destroyUnusedViews()
+
+      // Stop background update checks
+      this.autoUpdateManager?.stopUpdateChecks()
+
+      if (this.gcInterval) {
+        clearInterval(this.gcInterval)
+        this.gcInterval = null
+      }
 
       logger.info('ServiceManager: Cleanup complete')
     } catch (error) {

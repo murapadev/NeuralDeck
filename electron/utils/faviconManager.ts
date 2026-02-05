@@ -14,13 +14,14 @@ import { logger } from '../services/LoggerService.js'
 // Cache directory for favicons
 const CACHE_DIR = path.join(app.getPath('userData'), 'favicon-cache')
 
-// Known favicon URLs (fallbacks if automatic detection fails)
-const KNOWN_FAVICONS: Record<string, string> = {
-  [PROVIDER_IDS.CHATGPT]: 'https://chatgpt.com/favicon.ico',
-  [PROVIDER_IDS.CLAUDE]: 'https://claude.ai/favicon.ico',
-  [PROVIDER_IDS.GEMINI]: 'https://gemini.google.com/favicon.ico',
-  [PROVIDER_IDS.PERPLEXITY]: 'https://www.perplexity.ai/favicon.ico',
-  [PROVIDER_IDS.DEEPSEEK]: 'https://chat.deepseek.com/favicon.ico',
+// Known favicon URLs - using Google Favicon API for reliability
+// Format: domain for Google API lookup, empty string for local providers
+const KNOWN_FAVICON_DOMAINS: Record<string, string> = {
+  [PROVIDER_IDS.CHATGPT]: 'chatgpt.com',
+  [PROVIDER_IDS.CLAUDE]: 'claude.ai',
+  [PROVIDER_IDS.GEMINI]: 'gemini.google.com',
+  [PROVIDER_IDS.PERPLEXITY]: 'perplexity.ai',
+  [PROVIDER_IDS.DEEPSEEK]: 'chat.deepseek.com',
   [PROVIDER_IDS.OLLAMA]: '', // Ollama is local, use fallback icon
 }
 
@@ -108,39 +109,50 @@ function downloadImage(url: string): Promise<Buffer> {
 
 /**
  * Attempts to fetch favicon from multiple sources
+ * Priority: Google Favicon API (most reliable) > Standard paths
  */
 async function fetchFavicon(provider: ProviderConfig): Promise<Buffer | null> {
-  const urls: string[] = []
-
-  // Use known URL if available
-  if (provider.id in KNOWN_FAVICONS) {
-    const knownUrl = KNOWN_FAVICONS[provider.id]
-    // If URL is empty, it's a local provider without remote favicon
-    // Return null to use fallback directly and avoid network errors
-    if (knownUrl === '') {
-      logger.info(
-        `NeuralDeck Favicon: Skipping network fetch for ${provider.id} (local/fallback only)`
-      )
-      return null
-    }
-    urls.push(knownUrl)
+  // If it's a local provider (empty domain), skip network fetch
+  if (provider.id in KNOWN_FAVICON_DOMAINS && KNOWN_FAVICON_DOMAINS[provider.id] === '') {
+    logger.info(
+      `NeuralDeck Favicon: Skipping network fetch for ${provider.id} (local/fallback only)`
+    )
+    return null
   }
 
-  // Build URLs based on provider domain
+  const urls: string[] = []
+
+  // Determine domain for Google Favicon API
+  let domain = ''
+  if (provider.id in KNOWN_FAVICON_DOMAINS && KNOWN_FAVICON_DOMAINS[provider.id]) {
+    domain = KNOWN_FAVICON_DOMAINS[provider.id]
+  } else {
+    try {
+      const providerUrl = new URL(provider.url)
+      domain = providerUrl.host
+    } catch {
+      logger.warn(`NeuralDeck Favicon: Invalid URL for ${provider.id}`)
+    }
+  }
+
+  // Google Favicon API - highest priority (most reliable)
+  if (domain) {
+    urls.push(`https://www.google.com/s2/favicons?domain=${domain}&sz=${FAVICON.GOOGLE_SIZE}`)
+  }
+
+  // Build additional URLs based on provider domain as fallbacks
   try {
     const providerUrl = new URL(provider.url)
     const baseUrl = `${providerUrl.protocol}//${providerUrl.host}`
 
-    // Common favicon locations
+    // Standard favicon locations
     urls.push(
       `${baseUrl}/favicon.ico`,
       `${baseUrl}/favicon.png`,
-      `${baseUrl}/apple-touch-icon.png`,
-      `${baseUrl}/apple-touch-icon-precomposed.png`,
-      `https://www.google.com/s2/favicons?domain=${providerUrl.host}&sz=${FAVICON.GOOGLE_SIZE}`
+      `${baseUrl}/apple-touch-icon.png`
     )
   } catch {
-    logger.warn(`NeuralDeck Favicon: Invalid URL for ${provider.id}`)
+    // URL parsing failed, continue with Google API only
   }
 
   // Try each URL

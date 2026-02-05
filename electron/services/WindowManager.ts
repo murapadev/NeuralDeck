@@ -19,6 +19,7 @@ export class WindowManager {
   public settingsWindow: BrowserWindow | null = null
   private isWindowVisible = false
   private isQuitting = false
+  private trayBoundsProvider: (() => Electron.Rectangle | undefined) | null = null
 
   constructor() {
     logger.info('WindowManager initialized')
@@ -52,7 +53,9 @@ export class WindowManager {
     })
 
     this.mainWindow.on('blur', () => {
-      if (configManager.get('window').hideOnBlur) {
+      const windowConfig = configManager.get('window')
+      // Don't hide on blur if window is pinned (alwaysOnTop) or hideOnBlur is disabled
+      if (windowConfig.hideOnBlur && !windowConfig.alwaysOnTop) {
         setTimeout(() => {
           if (this.mainWindow && !this.mainWindow.isFocused()) {
             this.hideWindow()
@@ -231,8 +234,30 @@ export class WindowManager {
         }
       case 'near-tray':
       default:
-        // This is a simplification; ideally we'd get tray bounds from TrayManager
-        // For now, default to top-right
+        // Prefer tray bounds when available to position near the system tray
+        if (this.trayBoundsProvider) {
+          const bounds = this.trayBoundsProvider()
+          if (bounds) {
+            const trayCenterX = bounds.x + bounds.width / 2
+            const trayCenterY = bounds.y + bounds.height / 2
+            const trayDisplay = screen.getDisplayNearestPoint({ x: trayCenterX, y: trayCenterY })
+            const workArea = trayDisplay.workArea
+
+            const isRight = trayCenterX > workArea.x + workArea.width / 2
+            const isBottom = trayCenterY > workArea.y + workArea.height / 2
+
+            const x = isRight
+              ? workArea.x + workArea.width - windowWidth - margin
+              : workArea.x + margin
+            const y = isBottom
+              ? workArea.y + workArea.height - windowHeight - margin
+              : workArea.y + margin
+
+            return { x, y }
+          }
+        }
+
+        // Fallback to top-right
         return { x: screenWidth - windowWidth - margin, y: margin }
     }
   }
@@ -242,12 +267,21 @@ export class WindowManager {
   }
 
   /**
+   * Provide tray bounds for positioning the window near the system tray.
+   */
+  public setTrayBoundsProvider(provider: () => Electron.Rectangle | undefined): void {
+    this.trayBoundsProvider = provider
+  }
+
+  /**
    * Create a detached window for a specific URL
+   * Window has native frame for proper window controls (move, resize, close)
    */
   public createDetachedWindow(url: string): void {
     // Create new window with slightly offset position
     const { x, y } = this.calculateWindowPosition()
     const offset = 40 // px offset from main window
+    const isMac = process.platform === 'darwin'
 
     const win = new BrowserWindow({
       width: 1000,
@@ -257,19 +291,20 @@ export class WindowManager {
       x: x + offset,
       y: y + offset,
       show: true,
-      titleBarStyle: 'hidden',
+      // Use native frame for proper window controls on all platforms
+      frame: true,
+      // On macOS, use hidden-inset for cleaner look with traffic lights
+      titleBarStyle: isMac ? 'hiddenInset' : 'default',
       backgroundColor: '#09090b',
-      vibrancy: 'sidebar', // macOS only, but good to have
-      trafficLightPosition: { x: 16, y: 16 },
+      vibrancy: isMac ? 'sidebar' : undefined,
+      trafficLightPosition: isMac ? { x: 16, y: 16 } : undefined,
+      autoHideMenuBar: true, // Auto-hide menu bar but allow access with Alt
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,
         sandbox: true, // Safer for external content
       },
     })
-
-    // Remove default menu
-    win.removeMenu()
 
     // Load the target URL directly
     win.loadURL(url)

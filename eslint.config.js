@@ -39,6 +39,14 @@ export default tseslint.config(
       'no-console': ['warn', { allow: ['warn', 'error'] }],
     },
   },
+  {
+    files: ['electron/**/*.{ts,tsx}'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
+  },
   // Configuration for CommonJS files (preload.cjs)
   {
     files: ['**/*.cjs'],
@@ -52,6 +60,7 @@ export default tseslint.config(
     },
     rules: {
       '@typescript-eslint/no-require-imports': 'off',
+      '@typescript-eslint/no-var-requires': 'off',
       'no-console': ['warn', { allow: ['warn', 'error'] }],
     },
   },
