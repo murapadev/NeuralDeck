@@ -38,6 +38,9 @@ vi.mock('electron', () => {
         setPermissionRequestHandler: vi.fn(),
       }),
     },
+    app: {
+      isPackaged: false,
+    },
   }
 })
 

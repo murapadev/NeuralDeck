@@ -47,22 +47,22 @@ export function useFavicons(providerIds: string[], size: number = 32) {
   const [favicons, setFavicons] = useState<Record<string, string | null>>({})
 
   // Create queries for each provider
-  const queries = providerIds.map((providerId) => {
-    const cacheKey = `${providerId}-${size}`
-    return {
-      providerId,
-      cached: faviconCache.get(cacheKey) || null,
-    }
-  })
+  // Create a stable key for the providers list
+  const providersKey = providerIds.join(',')
 
   // Initialize from cache
   useEffect(() => {
     const initial: Record<string, string | null> = {}
-    queries.forEach(({ providerId, cached }) => {
-      initial[providerId] = cached
-    })
+    // Reconstruct list from key to avoid dependency on providerIds array reference
+    // This assumes providerIds do not contain commas
+    if (providersKey) {
+      providersKey.split(',').forEach((providerId) => {
+        const cacheKey = `${providerId}-${size}`
+        initial[providerId] = faviconCache.get(cacheKey) || null
+      })
+    }
     setFavicons(initial)
-  }, [providerIds.join(',')])
+  }, [providersKey, size])
 
   return favicons
 }
