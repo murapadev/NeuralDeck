@@ -160,41 +160,6 @@ Follow these steps to set up the local development environment.
 
 ---
 
-## 🚀 Release Process
-
-NeuralDeck uses automated CI/CD for testing and releases:
-
-### Automated Testing
-
-Every push and pull request triggers automated tests:
-
-- Linting and code style checks
-- TypeScript type checking
-- Unit and integration tests
-- Multi-platform build verification
-
-### Creating a Release
-
-To create a new release:
-
-1. **Update version** in `package.json`:
-
-   ```bash
-   npm version patch  # or minor, major
-   ```
-
-2. **Push the tag**:
-
-   ```bash
-   git push origin main --tags
-   ```
-
-3. **GitHub Actions will automatically**:
-   - Run all tests
-   - Build binaries for Windows, macOS, and Linux
-   - Create a GitHub Release
-   - Upload all artifacts
-
 ### Download Releases
 
 Download the latest release from the [Releases page](https://github.com/murapadev/NeuralDeck/releases):
