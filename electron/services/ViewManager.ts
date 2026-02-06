@@ -5,7 +5,7 @@
  * Each provider gets its own isolated WebContentsView with optional incognito mode.
  */
 
-import { WebContentsView, shell, session } from 'electron'
+import { WebContentsView, shell, session, app } from 'electron'
 import configManager from '../config/configManager.js'
 import { WindowManager } from './WindowManager.js'
 import { logger } from './LoggerService.js'
@@ -121,18 +121,20 @@ export class ViewManager {
       })
 
       // DevTools shortcut handler (Ctrl+Shift+I or F12)
-      const viewWebContents = view.webContents
-      viewWebContents.on('before-input-event', (event, input) => {
-        if (input.type === 'keyDown') {
-          if (
-            input.key === 'F12' ||
-            ((input.control || input.meta) && input.shift && input.code === 'KeyI')
-          ) {
-            viewWebContents.toggleDevTools()
-            event.preventDefault()
+      if (!app.isPackaged) {
+        const viewWebContents = view.webContents
+        viewWebContents.on('before-input-event', (event, input) => {
+          if (input.type === 'keyDown') {
+            if (
+              input.key === 'F12' ||
+              ((input.control || input.meta) && input.shift && input.code === 'KeyI')
+            ) {
+              viewWebContents.toggleDevTools()
+              event.preventDefault()
+            }
           }
-        }
-      })
+        })
+      }
 
       this.views.set(providerId, view)
       if (isIncognito) {

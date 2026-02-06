@@ -103,7 +103,7 @@ export class WindowManager {
     }
 
     // Register global shortcuts for DevTools (only in dev mode)
-    if (process.env.VITE_DEV_SERVER_URL || process.env.NODE_ENV !== 'production') {
+    if (!app.isPackaged && (process.env.VITE_DEV_SERVER_URL || process.env.NODE_ENV !== 'production')) {
       // Use Ctrl+Shift+I globally when main window is focused
       app.whenReady().then(() => {
         globalShortcut.register('CommandOrControl+Shift+I', () => {
@@ -116,17 +116,19 @@ export class WindowManager {
     }
 
     // F12 and Ctrl+Shift+I work on the main window webContents (backup)
-    this.mainWindow.webContents.on('before-input-event', (event, input) => {
-      if (input.type === 'keyDown') {
-        if (
-          input.key === 'F12' ||
-          ((input.control || input.meta) && input.shift && input.code === 'KeyI')
-        ) {
-          toggleDevTools()
-          event.preventDefault()
+    if (!app.isPackaged) {
+      this.mainWindow.webContents.on('before-input-event', (event, input) => {
+        if (input.type === 'keyDown') {
+          if (
+            input.key === 'F12' ||
+            ((input.control || input.meta) && input.shift && input.code === 'KeyI')
+          ) {
+            toggleDevTools()
+            event.preventDefault()
+          }
         }
-      }
-    })
+      })
+    }
   }
 
   public loadApp(): void {
@@ -151,7 +153,7 @@ export class WindowManager {
     } else {
       this.mainWindow.loadFile(path.join(DIST, 'index.html'))
       const config = configManager.getAll()
-      if (config.debug) {
+      if (config.debug && !app.isPackaged) {
         this.mainWindow.webContents.openDevTools({ mode: 'detach' })
       }
     }

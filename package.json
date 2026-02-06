@@ -1,6 +1,6 @@
 {
     "name": "neuraldeck",
-    "version": "0.4.0",
+    "version": "0.4.5",
     "description": "NeuralDeck - AI Provider Manager - Access ChatGPT, Gemini, Claude and more from a floating interface",
     "type": "module",
     "main": "dist-electron/main.cjs",

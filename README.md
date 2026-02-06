@@ -33,6 +33,11 @@ It works as a **"Ghost Window"**: always there, loaded in memory, but only appea
 - **🛡️ Stealth Mode:** Privacy options, cache clearing on close, and tracker blocking.
 - **💻 True Cross-Platform:** Works on Windows 10/11, macOS (Intel/Silicon), and Linux (X11/Wayland\*).
 
+### 📸 Screenshots
+
+![NeuralDeck Screenshot 1](docs/img/image1.png)
+![NeuralDeck Screenshot 2](docs/img/image2.png)
+
 ---
 
 ## 🏗️ Technical Architecture
