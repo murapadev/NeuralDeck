@@ -9,6 +9,7 @@ public record Theme(string Value)
 
 public record WindowPosition(string Value)
 {
+    public static readonly WindowPosition Default = new("default");
     public static readonly WindowPosition NearTray = new("near-tray");
     public static readonly WindowPosition TopLeft = new("top-left");
     public static readonly WindowPosition TopRight = new("top-right");

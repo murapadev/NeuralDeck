@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("NeuralDeck")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b6eb934545b19c23be12918843122d76083c6b9f")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c3c64b6bfa86e19e6e789eb1ec1e68906ec9cf37")]
 [assembly: System.Reflection.AssemblyProductAttribute("NeuralDeck")]
 [assembly: System.Reflection.AssemblyTitleAttribute("NeuralDeck")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
