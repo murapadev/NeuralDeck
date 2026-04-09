@@ -20,9 +20,10 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            var mainWindowViewModel = new MainWindowViewModel(OnOnboardingComplete);
             var mainWindow = new MainWindow
             {
-                DataContext = new MainWindowViewModel()
+                DataContext = mainWindowViewModel
             };
 
             // Set window position from config
@@ -52,5 +53,10 @@ public partial class App : Application
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    private void OnOnboardingComplete()
+    {
+        // Onboarding completed - could trigger additional setup here
     }
 }

@@ -8,71 +8,61 @@ using NeuralDeck.Services;
 
 namespace NeuralDeck.ViewModels;
 
-public partial class MainWindowViewModel : ViewModelBase
+public partial class MainWindowViewModel : ObservableObject
 {
-    [ObservableProperty]
-    private bool _isLoading = true;
+    private readonly Action _onOnboardingComplete;
 
     [ObservableProperty]
-    private bool _showOnboarding;
+    private string _currentView = "chat";
 
     [ObservableProperty]
-    private string? _currentProviderId;
+    private bool _isLoading = false;
 
     [ObservableProperty]
-    private bool _isPinned;
+    private bool _showOnboarding = false;
 
     [ObservableProperty]
-    private bool _showProviderNames;
+    private bool _isPinned = true;
 
     [ObservableProperty]
-    private string _currentView = "chat"; // "chat" or "settings"
+    private ObservableCollection<ProviderDisplay> _enabledProviders = new();
 
     [ObservableProperty]
-    private ViewModelBase? _currentViewModel;
+    private ChatViewModel? _chatViewModel;
 
-    public ObservableCollection<ProviderConfig> EnabledProviders { get; } = new();
-
-    private readonly ConfigService _configService;
-    private readonly OllamaService _ollamaService;
-
-    public ChatViewModel ChatViewModel { get; }
-    public SettingsViewModel SettingsViewModel { get; }
-
-    public MainWindowViewModel()
+    public MainWindowViewModel(Action? onOnboardingComplete = null)
     {
-        _configService = ConfigService.Instance;
-        _ollamaService = OllamaService.Instance;
-
+        _onOnboardingComplete = onOnboardingComplete ?? (() => { });
         ChatViewModel = new ChatViewModel();
-        SettingsViewModel = new SettingsViewModel();
-
-        // Load config
-        var config = _configService.GetConfig();
-        ShowOnboarding = config.FirstRun;
-        IsPinned = config.Window.AlwaysOnTop;
-        ShowProviderNames = config.Appearance.ShowProviderNames;
-
-        // Load enabled providers
-        RefreshProviders();
-
-        // Set initial view
-        if (config.LastProvider == "ollama" || config.LastProvider == null)
-        {
-            CurrentView = "chat";
-            CurrentViewModel = ChatViewModel;
-        }
-
-        IsLoading = false;
+        LoadConfig();
     }
 
-    public void RefreshProviders()
+    private void LoadConfig()
     {
-        EnabledProviders.Clear();
-        var providers = _configService.GetEnabledProviders();
-        foreach (var p in providers)
+        try
         {
-            EnabledProviders.Add(p);
+            var config = ConfigService.Instance.GetConfig();
+            ShowOnboarding = config.FirstRun;
+
+            EnabledProviders.Clear();
+            foreach (var provider in config.Providers.Where(p => p.Enabled))
+            {
+                EnabledProviders.Add(new ProviderDisplay
+                {
+                    Name = provider.Name,
+                    Color = provider.Color,
+                    Enabled = provider.Enabled
+                });
+            }
+
+            if (config.Window.AlwaysOnTop)
+            {
+                IsPinned = true;
+            }
+        }
+        catch
+        {
+            ShowOnboarding = true;
         }
     }
 
@@ -80,66 +70,40 @@ public partial class MainWindowViewModel : ViewModelBase
     private void TogglePin()
     {
         IsPinned = !IsPinned;
-        _configService.UpdateWindow(w => w.AlwaysOnTop = IsPinned);
-        WindowService.Instance.SetAlwaysOnTop(IsPinned);
     }
 
     [RelayCommand]
     private void OpenSettings()
     {
         CurrentView = "settings";
-        CurrentViewModel = SettingsViewModel;
     }
 
     [RelayCommand]
-    private void SelectProvider(ProviderConfig provider)
+    private void SelectProvider(ProviderDisplay? provider)
     {
-        CurrentProviderId = provider.Id;
-
-        if (provider.Id == "ollama")
+        if (provider != null)
         {
             CurrentView = "chat";
-            CurrentViewModel = ChatViewModel;
         }
-        else
-        {
-            // For other providers, we would open in a WebView
-            // For now, just switch to chat as placeholder
-            CurrentView = "chat";
-            CurrentViewModel = ChatViewModel;
-        }
-
-        _configService.UpdateGeneral(lastProvider: provider.Id);
     }
 
     [RelayCommand]
-    private void OpenProviderInBrowser(ProviderConfig provider)
+    private void CloseSettings()
     {
-        // Open in external browser
-        try
-        {
-            var url = provider.Url;
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-            {
-                FileName = url,
-                UseShellExecute = true
-            });
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[MainWindowViewModel] Failed to open URL: {ex.Message}");
-        }
+        CurrentView = "chat";
     }
 
     public void OnOnboardingComplete()
     {
         ShowOnboarding = false;
-        _configService.MarkFirstRunComplete();
+        _onOnboardingComplete();
+        ConfigService.Instance.MarkFirstRunComplete();
     }
+}
 
-    public void ToggleSidebarExpanded()
-    {
-        ShowProviderNames = !ShowProviderNames;
-        _configService.UpdateAppearance(a => a.ShowProviderNames = ShowProviderNames);
-    }
+public class ProviderDisplay
+{
+    public string Name { get; set; } = "";
+    public string Color { get; set; } = "#6366f1";
+    public bool Enabled { get; set; }
 }
