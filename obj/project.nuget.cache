@@ -1,0 +1,51 @@
+{
+  "version": 2,
+  "dgSpecHash": "VHmOLiHDr2g=",
+  "success": true,
+  "projectFilePath": "/home/pablorm/Proyectos/Propios/Github/NeuralDeck/NeuralDeck.csproj",
+  "expectedPackageFiles": [
+    "/home/pablorm/.nuget/packages/avalonia/11.2.1/avalonia.11.2.1.nupkg.sha512",
+    "/home/pablorm/.nuget/packages/avalonia.angle.windows.natives/2.1.22045.20230930/avalonia.angle.windows.natives.2.1.22045.20230930.nupkg.sha512",
+    "/home/pablorm/.nuget/packages/avalonia.buildservices/0.0.29/avalonia.buildservices.0.0.29.nupkg.sha512",
+    "/home/pablorm/.nuget/packages/avalonia.desktop/11.2.1/avalonia.desktop.11.2.1.nupkg.sha512",
+    "/home/pablorm/.nuget/packages/avalonia.fonts.inter/11.2.1/avalonia.fonts.inter.11.2.1.nupkg.sha512",
+    "/home/pablorm/.nuget/packages/avalonia.freedesktop/11.2.1/avalonia.freedesktop.11.2.1.nupkg.sha512",
+    "/home/pablorm/.nuget/packages/avalonia.native/11.2.1/avalonia.native.11.2.1.nupkg.sha512",
+    "/home/pablorm/.nuget/packages/avalonia.remote.protocol/11.2.1/avalonia.remote.protocol.11.2.1.nupkg.sha512",
+    "/home/pablorm/.nuget/packages/avalonia.skia/11.2.1/avalonia.skia.11.2.1.nupkg.sha512",
+    "/home/pablorm/.nuget/packages/avalonia.themes.fluent/11.2.1/avalonia.themes.fluent.11.2.1.nupkg.sha512",
+    "/home/pablorm/.nuget/packages/avalonia.win32/11.2.1/avalonia.win32.11.2.1.nupkg.sha512",
+    "/home/pablorm/.nuget/packages/avalonia.x11/11.2.1/avalonia.x11.11.2.1.nupkg.sha512",
+    "/home/pablorm/.nuget/packages/communitytoolkit.mvvm/8.2.2/communitytoolkit.mvvm.8.2.2.nupkg.sha512",
+    "/home/pablorm/.nuget/packages/harfbuzzsharp/7.3.0.2/harfbuzzsharp.7.3.0.2.nupkg.sha512",
+    "/home/pablorm/.nuget/packages/harfbuzzsharp.nativeassets.linux/7.3.0.2/harfbuzzsharp.nativeassets.linux.7.3.0.2.nupkg.sha512",
+    "/home/pablorm/.nuget/packages/harfbuzzsharp.nativeassets.macos/7.3.0.2/harfbuzzsharp.nativeassets.macos.7.3.0.2.nupkg.sha512",
+    "/home/pablorm/.nuget/packages/harfbuzzsharp.nativeassets.webassembly/7.3.0.3-preview.2.2/harfbuzzsharp.nativeassets.webassembly.7.3.0.3-preview.2.2.nupkg.sha512",
+    "/home/pablorm/.nuget/packages/harfbuzzsharp.nativeassets.win32/7.3.0.2/harfbuzzsharp.nativeassets.win32.7.3.0.2.nupkg.sha512",
+    "/home/pablorm/.nuget/packages/markdig/0.37.0/markdig.0.37.0.nupkg.sha512",
+    "/home/pablorm/.nuget/packages/microcom.runtime/0.11.0/microcom.runtime.0.11.0.nupkg.sha512",
+    "/home/pablorm/.nuget/packages/microsoft.extensions.dependencyinjection/8.0.0/microsoft.extensions.dependencyinjection.8.0.0.nupkg.sha512",
+    "/home/pablorm/.nuget/packages/microsoft.extensions.dependencyinjection.abstractions/8.0.0/microsoft.extensions.dependencyinjection.abstractions.8.0.0.nupkg.sha512",
+    "/home/pablorm/.nuget/packages/skiasharp/2.88.8/skiasharp.2.88.8.nupkg.sha512",
+    "/home/pablorm/.nuget/packages/skiasharp.nativeassets.linux/2.88.8/skiasharp.nativeassets.linux.2.88.8.nupkg.sha512",
+    "/home/pablorm/.nuget/packages/skiasharp.nativeassets.macos/2.88.8/skiasharp.nativeassets.macos.2.88.8.nupkg.sha512",
+    "/home/pablorm/.nuget/packages/skiasharp.nativeassets.webassembly/2.88.8/skiasharp.nativeassets.webassembly.2.88.8.nupkg.sha512",
+    "/home/pablorm/.nuget/packages/skiasharp.nativeassets.win32/2.88.8/skiasharp.nativeassets.win32.2.88.8.nupkg.sha512",
+    "/home/pablorm/.nuget/packages/system.io.pipelines/8.0.0/system.io.pipelines.8.0.0.nupkg.sha512",
+    "/home/pablorm/.nuget/packages/system.text.encodings.web/8.0.0/system.text.encodings.web.8.0.0.nupkg.sha512",
+    "/home/pablorm/.nuget/packages/system.text.json/8.0.4/system.text.json.8.0.4.nupkg.sha512",
+    "/home/pablorm/.nuget/packages/tmds.dbus.protocol/0.20.0/tmds.dbus.protocol.0.20.0.nupkg.sha512"
+  ],
+  "logs": [
+    {
+      "code": "NU1903",
+      "level": "Warning",
+      "warningLevel": 1,
+      "message": "El paquete \"System.Text.Json\" 8.0.4 tiene una vulnerabilidad de gravedad alta conocida, https://github.com/advisories/GHSA-8g4q-xg66-9fp4",
+      "libraryId": "System.Text.Json",
+      "targetGraphs": [
+        "net8.0"
+      ]
+    }
+  ]
+}
