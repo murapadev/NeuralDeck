@@ -1,6 +1,8 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="NeuralDeck.Views.ChatView">
+             xmlns:vm="clr-namespace:NeuralDeck.ViewModels"
+             x:Class="NeuralDeck.Views.ChatView"
+             x:DataType="vm:ChatViewModel">
 
     <Grid RowDefinitions="Auto,*,Auto">
         <!-- Header -->
@@ -39,6 +41,7 @@
                 Padding="16,12">
             <Grid ColumnDefinitions="*,Auto">
                 <TextBox Grid.Column="0"
+                         Text="{Binding InputText}"
                          Watermark="Type a message..."
                          MinHeight="44"
                          Background="#27272a"
@@ -48,6 +51,7 @@
                          FontSize="14"/>
 
                 <Button Grid.Column="1"
+                        Command="{Binding SendMessageCommand}"
                         Margin="8,0,0,0"
                         Width="44" Height="44"
                         Padding="0">
