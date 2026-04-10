@@ -44,3 +44,12 @@ test-results/
 
 # TypeScript cache
 *.tsbuildinfo
+
+# .NET build outputs
+bin/
+obj/
+*.user
+*.suo
+*.cache
+*.dll
+*.pdb

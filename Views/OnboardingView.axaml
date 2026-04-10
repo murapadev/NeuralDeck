@@ -1,0 +1,31 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:NeuralDeck.ViewModels"
+             x:Class="NeuralDeck.Views.OnboardingView"
+             x:DataType="vm:OnboardingViewModel">
+
+    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="24">
+        <!-- Logo -->
+        <Border Width="96" Height="96" CornerRadius="24"
+                Background="#6366f1" HorizontalAlignment="Center">
+            <TextBlock Text="N" FontSize="48" FontWeight="Bold"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                       Foreground="#fafafa"/>
+        </Border>
+
+        <!-- Title -->
+        <StackPanel Spacing="8" HorizontalAlignment="Center">
+            <TextBlock Text="NeuralDeck"
+                       FontSize="32" FontWeight="Bold"
+                       Foreground="#fafafa" HorizontalAlignment="Center"/>
+            <TextBlock Text="Your invisible AI command center"
+                       FontSize="16" Foreground="#71717a"
+                       HorizontalAlignment="Center"/>
+        </StackPanel>
+
+        <!-- Get Started Button -->
+        <Button Content="Get Started" Command="{Binding FinishCommand}" Padding="32,16" FontSize="16"
+                Background="#fafafa" Foreground="#09090b"
+                HorizontalAlignment="Center" Margin="0,24,0,0"/>
+    </StackPanel>
+</UserControl>
