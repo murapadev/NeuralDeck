@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Input.Platform;
+using CommunityToolkit.Mvvm.Input;
 using NeuralDeck.Models;
 
 namespace NeuralDeck.Services;
@@ -185,7 +186,7 @@ public class ShortcutService
     }
 }
 
-// Simple relay command for key bindings using CommunityToolkit.Mvvm
+// Simple command implementation for Avalonia KeyBinding using WPF ICommand
 public class RelayCommand : System.Windows.Input.ICommand
 {
     private readonly Action _execute;
