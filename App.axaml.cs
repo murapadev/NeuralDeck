@@ -50,6 +50,7 @@ public partial class App : Application
             }
 
             desktop.MainWindow = mainWindow;
+            desktop.Exit += (_, _) => mainWindowViewModel.Dispose();
         }
 
         base.OnFrameworkInitializationCompleted();
