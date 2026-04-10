@@ -9,7 +9,7 @@ using NeuralDeck.Services;
 
 namespace NeuralDeck.ViewModels;
 
-public partial class ChatViewModel : ViewModelBase
+public partial class ChatViewModel : ViewModelBase, IDisposable
 {
     [ObservableProperty]
     private bool _isConnected;
@@ -35,6 +35,8 @@ public partial class ChatViewModel : ViewModelBase
     private readonly OllamaService _ollamaService;
     private readonly ConfigService _configService;
     private CancellationTokenSource? _chatCts;
+    private CancellationTokenSource? _pollCts;
+    private readonly object _messagesLock = new();
 
     public ChatViewModel()
     {
@@ -48,14 +50,28 @@ public partial class ChatViewModel : ViewModelBase
         _ = CheckConnectionAsync();
 
         // Periodic polling
-        Task.Run(async () =>
+        _pollCts = new CancellationTokenSource();
+        _ = PollConnectionAsync(_pollCts.Token);
+    }
+
+    private async Task PollConnectionAsync(CancellationToken cancellationToken)
+    {
+        while (!cancellationToken.IsCancellationRequested)
         {
-            while (true)
+            try
             {
-                await Task.Delay(Constants.OllamaPollIntervalMs);
+                await Task.Delay(Constants.OllamaPollIntervalMs, cancellationToken);
                 await CheckConnectionAsync();
             }
-        });
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+            catch
+            {
+                // Continue polling even on errors
+            }
+        }
     }
 
     private string GetSavedModelName()
@@ -168,15 +184,18 @@ public partial class ChatViewModel : ViewModelBase
                 {
                     await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
                     {
-                        if (Messages.Count > 0)
+                        lock (_messagesLock)
                         {
-                            var last = Messages[^1];
-                            Messages[^1] = new ChatMessage
+                            if (Messages.Count > 0)
                             {
-                                Role = last.Role,
-                                Content = last.Content + chunk,
-                                Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
-                            };
+                                var last = Messages[^1];
+                                Messages[^1] = new ChatMessage
+                                {
+                                    Role = last.Role,
+                                    Content = last.Content + chunk,
+                                    Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+                                };
+                            }
                         }
                     });
                 },
@@ -189,14 +208,17 @@ public partial class ChatViewModel : ViewModelBase
         catch (Exception ex)
         {
             Console.WriteLine($"[ChatViewModel] Chat error: {ex.Message}");
-            if (Messages.Count > 0)
+            lock (_messagesLock)
             {
-                Messages[^1] = new ChatMessage
+                if (Messages.Count > 0)
                 {
-                    Role = "assistant",
-                    Content = "⚠️ **Error**: Could not connect to Ollama.",
-                    Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
-                };
+                    Messages[^1] = new ChatMessage
+                    {
+                        Role = "assistant",
+                        Content = "⚠️ **Error**: Could not connect to Ollama.",
+                        Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+                    };
+                }
             }
         }
         finally
@@ -217,10 +239,6 @@ public partial class ChatViewModel : ViewModelBase
     private void SelectModel(OllamaModel model)
     {
         SelectedModel = model;
-        if (model != null)
-        {
-            SaveSelectedModel(model.Name);
-        }
     }
 
     partial void OnSelectedModelChanged(OllamaModel? value)
@@ -233,4 +251,14 @@ public partial class ChatViewModel : ViewModelBase
 
     public string FormatModelSize(long bytes) => OllamaService.FormatModelSize(bytes);
     public string GetModelDisplayName(string name) => OllamaService.GetModelDisplayName(name);
+
+    public void Dispose()
+    {
+        _pollCts?.Cancel();
+        _pollCts?.Dispose();
+        _pollCts = null;
+        _chatCts?.Cancel();
+        _chatCts?.Dispose();
+        _chatCts = null;
+    }
 }
