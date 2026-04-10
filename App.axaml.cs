@@ -50,6 +50,7 @@ public partial class App : Application
             }
 
             desktop.MainWindow = mainWindow;
+            desktop.Exit += OnExit;
         }
 
         base.OnFrameworkInitializationCompleted();
@@ -58,5 +59,17 @@ public partial class App : Application
     private void OnOnboardingComplete()
     {
         // Onboarding completed - could trigger additional setup here
+    }
+
+    private void OnExit(object? sender, ControlledApplicationLifetimeExitEventArgs e)
+    {
+        try
+        {
+            OllamaService.Instance.Dispose();
+        }
+        catch
+        {
+            // Best-effort cleanup on shutdown
+        }
     }
 }
