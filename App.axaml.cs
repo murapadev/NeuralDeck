@@ -50,6 +50,9 @@ public partial class App : Application
             }
 
             desktop.MainWindow = mainWindow;
+
+            // Dispose tray resources on exit; handler lifetime matches application lifetime.
+            desktop.Exit += (s, e) => TrayService.Instance.Dispose();
         }
 
         base.OnFrameworkInitializationCompleted();
