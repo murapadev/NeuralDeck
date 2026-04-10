@@ -78,11 +78,12 @@ public class TrayService
     public void ShowNotification(string title, string message)
     {
         Console.WriteLine($"[TrayService] Notification: {title} - {message}");
-        
+
         try
         {
             if (_mainWindow != null)
             {
+                // WindowNotificationManager doesn't need explicit disposal
                 var notificationManager = new WindowNotificationManager(_mainWindow);
                 notificationManager.Show(new Notification(title, message, NotificationType.Information));
             }
