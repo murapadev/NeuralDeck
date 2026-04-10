@@ -50,6 +50,8 @@ public partial class App : Application
             }
 
             desktop.MainWindow = mainWindow;
+
+            desktop.Exit += (_, _) => ShortcutService.Instance?.Dispose();
         }
 
         base.OnFrameworkInitializationCompleted();

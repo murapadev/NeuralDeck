@@ -8,7 +8,7 @@ using NeuralDeck.Models;
 
 namespace NeuralDeck.Services;
 
-public class ShortcutService
+public class ShortcutService : IDisposable
 {
     private static ShortcutService? _instance;
     private readonly Dictionary<string, Action> _registeredShortcuts = new();
