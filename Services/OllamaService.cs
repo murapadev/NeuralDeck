@@ -9,11 +9,12 @@ using NeuralDeck.Models;
 
 namespace NeuralDeck.Services;
 
-public class OllamaService
+public class OllamaService : IDisposable
 {
     private static OllamaService? _instance;
-    private readonly HttpClient _httpClient;
+    private HttpClient _httpClient;
     private string _baseUrl;
+    private bool _disposed;
 
     public static OllamaService Instance => _instance ??= new OllamaService();
 
@@ -153,5 +154,12 @@ public class OllamaService
     public static string GetModelDisplayName(string name)
     {
         return name.Replace(":latest", "");
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _httpClient.Dispose();
     }
 }
