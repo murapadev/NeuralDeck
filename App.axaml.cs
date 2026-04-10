@@ -66,6 +66,9 @@ public partial class App : Application
         try
         {
             OllamaService.Instance.Dispose();
+            TrayService.Instance.Dispose();
+            ShortcutService.Instance?.Dispose();
+            _mainWindowViewModel?.Dispose();
         }
         catch
         {

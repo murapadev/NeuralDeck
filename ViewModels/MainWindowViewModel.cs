@@ -8,7 +8,7 @@ using NeuralDeck.Services;
 
 namespace NeuralDeck.ViewModels;
 
-public partial class MainWindowViewModel : ViewModelBase
+public partial class MainWindowViewModel : ViewModelBase, IDisposable
 {
     private readonly Action _onOnboardingComplete;
 
@@ -95,6 +95,12 @@ public partial class MainWindowViewModel : ViewModelBase
         ShowOnboarding = false;
         _onOnboardingComplete();
         ConfigService.Instance.MarkFirstRunComplete();
+    }
+
+    public void Dispose()
+    {
+        ChatViewModel?.Dispose();
+        ChatViewModel = null;
     }
 }
 
