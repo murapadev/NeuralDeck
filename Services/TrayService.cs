@@ -12,6 +12,7 @@ public class TrayService
     private static TrayService? _instance;
     private TrayIcon? _trayIcon;
     private Window? _mainWindow;
+    private WindowNotificationManager? _notificationManager;
     private bool _isInitialized;
 
     public static TrayService Instance => _instance ??= new TrayService();
@@ -25,7 +26,8 @@ public class TrayService
         if (_isInitialized) return;
 
         _mainWindow = mainWindow;
-        
+        _notificationManager = new WindowNotificationManager(_mainWindow);
+
         try
         {
             // Create tray icon
@@ -81,11 +83,9 @@ public class TrayService
 
         try
         {
-            if (_mainWindow != null)
+            if (_notificationManager != null)
             {
-                // WindowNotificationManager doesn't need explicit disposal
-                var notificationManager = new WindowNotificationManager(_mainWindow);
-                notificationManager.Show(new Notification(title, message, NotificationType.Information));
+                _notificationManager.Show(new Notification(title, message, NotificationType.Information));
             }
         }
         catch (Exception ex)
@@ -167,6 +167,7 @@ public class TrayService
             _trayIcon.Dispose();
             _trayIcon = null;
         }
+        _notificationManager = null;
         _mainWindow = null;
         _isInitialized = false;
     }
