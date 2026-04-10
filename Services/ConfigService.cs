@@ -22,6 +22,7 @@ public class ConfigService
     };
 
     private AppConfig _config = new();
+    private readonly object _configLock = new();
     private static ConfigService? _instance;
 
     public static ConfigService Instance => _instance ??= new ConfigService();
