@@ -176,6 +176,9 @@ public partial class SettingsViewModel : ViewModelBase
                 UseShellExecute = true
             });
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[SettingsViewModel] Failed to open GitHub: {ex.Message}");
+        }
     }
 }

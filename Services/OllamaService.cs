@@ -99,7 +99,7 @@ public class OllamaService : IDisposable
         var json = JsonSerializer.Serialize(request);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        var response = await _httpClient.PostAsync($"{_baseUrl}/api/chat", content, cancellationToken);
+        using var response = await _httpClient.PostAsync($"{_baseUrl}/api/chat", content, cancellationToken);
 
         if (!response.IsSuccessStatusCode)
         {

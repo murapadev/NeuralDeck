@@ -87,17 +87,21 @@ public class WindowService
         var config = ConfigService.Instance.GetConfig();
         var screen = _mainWindow?.Screens?.Primary;
 
-        int screenWidth, screenHeight;
+        int screenWidth, screenHeight, workingAreaX, workingAreaY;
         if (screen != null)
         {
             screenWidth = screen.WorkingArea.Width;
             screenHeight = screen.WorkingArea.Height;
+            workingAreaX = screen.WorkingArea.X;
+            workingAreaY = screen.WorkingArea.Y;
         }
         else
         {
             // Fallback to display primary metrics
             screenWidth = 1920;
             screenHeight = 1080;
+            workingAreaX = 0;
+            workingAreaY = 0;
         }
 
         var windowWidth = config.Window.Width;
@@ -111,14 +115,14 @@ public class WindowService
 
         return config.Window.Position switch
         {
-            "top-left" => (margin, margin),
-            "top-right" => (screenWidth - windowWidth - margin, margin),
-            "bottom-left" => (margin, screenHeight - windowHeight - margin),
-            "bottom-right" => (screenWidth - windowWidth - margin, screenHeight - windowHeight - margin),
+            "top-left" => (workingAreaX + margin, workingAreaY + margin),
+            "top-right" => (workingAreaX + screenWidth - windowWidth - margin, workingAreaY + margin),
+            "bottom-left" => (workingAreaX + margin, workingAreaY + screenHeight - windowHeight - margin),
+            "bottom-right" => (workingAreaX + screenWidth - windowWidth - margin, workingAreaY + screenHeight - windowHeight - margin),
             "center" => (
-                (screenWidth - windowWidth) / 2,
-                (screenHeight - windowHeight) / 2),
-            _ => (screenWidth - windowWidth - margin, margin) // near-tray defaults to top-right
+                workingAreaX + (screenWidth - windowWidth) / 2,
+                workingAreaY + (screenHeight - windowHeight) / 2),
+            _ => (workingAreaX + screenWidth - windowWidth - margin, workingAreaY + margin) // near-tray defaults to top-right
         };
     }
 

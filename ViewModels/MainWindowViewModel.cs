@@ -8,7 +8,7 @@ using NeuralDeck.Services;
 
 namespace NeuralDeck.ViewModels;
 
-public partial class MainWindowViewModel : ObservableObject
+public partial class MainWindowViewModel : ViewModelBase
 {
     private readonly Action _onOnboardingComplete;
 
@@ -55,10 +55,7 @@ public partial class MainWindowViewModel : ObservableObject
                 });
             }
 
-            if (config.Window.AlwaysOnTop)
-            {
-                IsPinned = true;
-            }
+            IsPinned = config.Window.AlwaysOnTop;
         }
         catch
         {

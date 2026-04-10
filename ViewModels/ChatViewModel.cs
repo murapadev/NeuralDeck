@@ -43,9 +43,6 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
         _ollamaService = OllamaService.Instance;
         _configService = ConfigService.Instance;
 
-        // Load saved model
-        var savedModelName = GetSavedModelName();
-
         // Start connection check
         _ = CheckConnectionAsync();
 
@@ -61,7 +58,10 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
             try
             {
                 await Task.Delay(Constants.OllamaPollIntervalMs, cancellationToken);
-                await CheckConnectionAsync();
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
+                {
+                    await CheckConnectionAsync();
+                });
             }
             catch (OperationCanceledException)
             {
@@ -72,17 +72,6 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
                 // Continue polling even on errors
             }
         }
-    }
-
-    private string GetSavedModelName()
-    {
-        // For now, no persistence - would use local storage
-        return string.Empty;
-    }
-
-    private void SaveSelectedModel(string modelName)
-    {
-        // Would save to local storage
     }
 
     [RelayCommand]
@@ -243,10 +232,7 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
 
     partial void OnSelectedModelChanged(OllamaModel? value)
     {
-        if (value != null)
-        {
-            SaveSelectedModel(value.Name);
-        }
+        // Model selection persistence would be implemented here
     }
 
     public string FormatModelSize(long bytes) => OllamaService.FormatModelSize(bytes);

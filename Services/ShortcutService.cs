@@ -78,6 +78,10 @@ public class ShortcutService
                 trimmed.Equals("Win", StringComparison.OrdinalIgnoreCase))
                 continue;
 
+            // Handle punctuation characters that don't parse directly to Key enum
+            if (trimmed == ",")
+                return Key.OemComma;
+
             if (Enum.TryParse<Key>(trimmed, true, out var key))
                 return key;
         }
@@ -158,6 +162,13 @@ public class ShortcutService
                 trimmed.Equals("Super", StringComparison.OrdinalIgnoreCase) ||
                 trimmed.Equals("Win", StringComparison.OrdinalIgnoreCase))
                 continue;
+
+            // Handle punctuation characters that don't parse directly to Key enum
+            if (trimmed == ",")
+            {
+                keys.Add(Key.OemComma);
+                continue;
+            }
 
             if (Enum.TryParse<Key>(trimmed, true, out var key))
                 keys.Add(key);
