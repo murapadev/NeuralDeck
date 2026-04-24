@@ -1,6 +1,5 @@
 using System;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.Linq;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -29,6 +28,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [ObservableProperty] private SettingsViewModel? _settingsViewModel;
     [ObservableProperty] private OnboardingViewModel? _onboardingViewModel;
     [ObservableProperty] private ProviderConfig? _selectedProvider;
+    [ObservableProperty] private WebBrowserViewModel? _webBrowserViewModel;
 
     public bool ShowChatView => CurrentView == "chat" && SelectedProviderId == "ollama";
     public bool ShowProviderView => CurrentView == "chat" && SelectedProviderId != "ollama";
@@ -38,7 +38,9 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         ChatViewModel = new ChatViewModel();
         SettingsViewModel = new SettingsViewModel();
         OnboardingViewModel = new OnboardingViewModel();
+        WebBrowserViewModel = new WebBrowserViewModel();
         OnboardingViewModel.OnboardingComplete += (_, _) => OnOnboardingComplete();
+        ConfigService.Instance.ConfigChanged += OnConfigChanged;
         LoadConfig();
     }
 
@@ -52,6 +54,9 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             IsPinned = config.Window.AlwaysOnTop;
             LoadProviders(config);
             UpdateSelectedProvider(config);
+
+            if (SelectedProviderId != "ollama" && SelectedProvider != null)
+                WebBrowserViewModel?.NavigateTo(SelectedProvider.Url);
         }
         catch
         {
@@ -90,6 +95,9 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         ConfigService.Instance.UpdateGeneral(lastProvider: providerId);
         UpdateSelectedProvider();
         CurrentView = "chat";
+
+        if (providerId != "ollama" && SelectedProvider != null)
+            WebBrowserViewModel?.NavigateTo(SelectedProvider.Url);
     }
 
     [RelayCommand]
@@ -119,22 +127,13 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         WindowService.Instance.HideWindow();
     }
 
-    [RelayCommand]
-    private void OpenProviderInBrowser()
+    private void OnConfigChanged(object? sender, AppConfig config)
     {
-        if (string.IsNullOrEmpty(SelectedProvider?.Url)) return;
-        try
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = SelectedProvider.Url,
-                UseShellExecute = true
-            });
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[MainWindowViewModel] Failed to open browser: {ex.Message}");
-        }
+            LoadProviders(config);
+            UpdateSelectedProvider(config);
+        });
     }
 
     public void OnOnboardingComplete()
@@ -148,8 +147,10 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     public void Dispose()
     {
+        ConfigService.Instance.ConfigChanged -= OnConfigChanged;
         ChatViewModel?.Dispose();
         ChatViewModel = null;
+        WebBrowserViewModel = null;
     }
 }
 

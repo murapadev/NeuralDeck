@@ -83,15 +83,15 @@ public class ConfigService
             LastProvider = null,
             Window = new WindowConfig
             {
-                Width = Constants.DefaultWindowWidth,
-                Height = Constants.DefaultWindowHeight,
+                Width = AppConstants.DefaultWindowWidth,
+                Height = AppConstants.DefaultWindowHeight,
                 Position = "near-tray",
                 AlwaysOnTop = true,
                 HideOnBlur = true,
                 Opacity = 1.0
             },
             Shortcuts = new ShortcutConfig(),
-            Providers = Constants.DefaultProviders.Select(p => p.Clone()).ToList(),
+            Providers = AppConstants.DefaultProviders.Select(p => p.Clone()).ToList(),
             Privacy = new PrivacyConfig(),
             Appearance = new AppearanceConfig()
         };
@@ -101,7 +101,7 @@ public class ConfigService
     {
         // Ensure all required providers exist
         var existingIds = config.Providers.Select(p => p.Id).ToHashSet();
-        foreach (var defaultProvider in Constants.DefaultProviders)
+        foreach (var defaultProvider in AppConstants.DefaultProviders)
         {
             if (!existingIds.Contains(defaultProvider.Id))
             {
@@ -110,8 +110,8 @@ public class ConfigService
         }
 
         // Ensure window config has valid values
-        if (config.Window.Width < 300) config.Window.Width = Constants.DefaultWindowWidth;
-        if (config.Window.Height < 400) config.Window.Height = Constants.DefaultWindowHeight;
+        if (config.Window.Width < 300) config.Window.Width = AppConstants.DefaultWindowWidth;
+        if (config.Window.Height < 400) config.Window.Height = AppConstants.DefaultWindowHeight;
         if (config.Window.Opacity < 0.1 || config.Window.Opacity > 1.0) config.Window.Opacity = 1.0;
 
         return config;

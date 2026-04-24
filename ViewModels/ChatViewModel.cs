@@ -60,7 +60,7 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
         {
             try
             {
-                await Task.Delay(Constants.OllamaPollIntervalMs, cancellationToken);
+                await Task.Delay(AppConstants.OllamaPollIntervalMs, cancellationToken);
                 await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
                 {
                     await CheckConnectionAsync();

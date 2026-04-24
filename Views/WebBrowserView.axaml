@@ -1,0 +1,86 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:NeuralDeck.ViewModels"
+             x:Class="NeuralDeck.Views.WebBrowserView"
+             x:DataType="vm:WebBrowserViewModel">
+
+    <Grid RowDefinitions="*,Auto">
+
+        <!-- Main content area -->
+        <StackPanel Grid.Row="0"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center"
+                    Spacing="20"
+                    Margin="32">
+
+            <!-- Provider icon placeholder -->
+            <Border Width="72" Height="72" CornerRadius="18"
+                    Background="#1a1a1d"
+                    BorderBrush="#27272a"
+                    BorderThickness="1"
+                    HorizontalAlignment="Center">
+                <TextBlock Text="🌐"
+                           FontSize="32"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"/>
+            </Border>
+
+            <!-- URL display -->
+            <TextBlock Text="{Binding AddressBarText, Mode=OneWay}"
+                       FontSize="12"
+                       Foreground="#52525b"
+                       HorizontalAlignment="Center"
+                       TextWrapping="Wrap"
+                       MaxWidth="300"
+                       TextAlignment="Center"/>
+
+            <!-- Open button -->
+            <Button Content="Open in Browser"
+                    Command="{Binding OpenInBrowserCommand}"
+                    Padding="24,12"
+                    Background="#6366f1"
+                    Foreground="#fafafa"
+                    CornerRadius="10"
+                    HorizontalAlignment="Center"
+                    FontSize="14"
+                    FontWeight="Medium"/>
+
+            <TextBlock Text="Opens in your default browser"
+                       FontSize="11"
+                       Foreground="#3f3f46"
+                       HorizontalAlignment="Center"/>
+        </StackPanel>
+
+        <!-- Address bar at bottom -->
+        <Border Grid.Row="1"
+                Background="#18181b"
+                BorderBrush="#27272a"
+                BorderThickness="0,1,0,0"
+                Padding="8,6">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBox x:Name="AddressBar"
+                         Grid.Column="0"
+                         Text="{Binding AddressBarText}"
+                         Background="#27272a"
+                         Foreground="#a1a1aa"
+                         BorderBrush="#3f3f46"
+                         CornerRadius="6"
+                         Padding="8,0"
+                         Height="28"
+                         FontSize="11"
+                         VerticalContentAlignment="Center"
+                         Watermark="Enter URL..."/>
+                <Button Grid.Column="1"
+                        Width="28" Height="28"
+                        Padding="0"
+                        Margin="4,0,0,0"
+                        CornerRadius="6"
+                        Command="{Binding OpenInBrowserCommand}"
+                        ToolTip.Tip="Open in external browser">
+                    <Path Width="12" Height="12" Stretch="Uniform" Fill="#6366f1"
+                          Data="M14,3V5H17.59L7.76,14.83L9.17,16.24L19,6.41V10H21V3M19,19H5V5H12V3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V12H19V19Z"/>
+                </Button>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

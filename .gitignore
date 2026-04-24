@@ -21,3 +21,10 @@ Thumbs.db
 auto_merge*.txt
 merge_log*.txt
 merge_results*.txt
+
+# Legacy Electron/npm artifacts (removed in port to Avalonia)
+node_modules/
+dist/
+dist-electron/
+release/
+coverage/

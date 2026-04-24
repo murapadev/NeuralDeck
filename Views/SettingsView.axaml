@@ -146,15 +146,15 @@
             <ScrollViewer IsVisible="{Binding SelectedTab, Converter={StaticResource EqualityConverter}, ConverterParameter=providers}">
                 <StackPanel Spacing="16" Margin="16">
                     <TextBlock Text="Providers" FontSize="16" FontWeight="SemiBold" Foreground="#fafafa"/>
-                    <TextBlock Text="Enable or disable AI providers"
-                               FontSize="12" Foreground="#71717a"/>
+                    <TextBlock Text="Enable or disable AI providers. Custom providers open in the embedded browser."
+                               FontSize="12" Foreground="#71717a" TextWrapping="Wrap"/>
 
                     <ItemsControl ItemsSource="{Binding Providers}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="models:ProviderConfig">
                                 <Border Background="#18181b" CornerRadius="8"
                                         Padding="12,10" Margin="0,0,0,6">
-                                    <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <Grid ColumnDefinitions="Auto,*,Auto,Auto">
                                         <Border Grid.Column="0" Width="32" Height="32"
                                                 CornerRadius="8" Margin="0,0,10,0"
                                                 Background="{Binding Color, Converter={StaticResource StringToColorConverter}}">
@@ -168,19 +168,63 @@
                                             <TextBlock Text="{Binding Name}" FontSize="13"
                                                        FontWeight="Medium" Foreground="#fafafa"/>
                                             <TextBlock Text="{Binding Url}" FontSize="11"
-                                                       Foreground="#52525b"/>
+                                                       Foreground="#52525b" TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
                                         <CheckBox Grid.Column="2" IsChecked="{Binding Enabled}"
-                                                  VerticalAlignment="Center"/>
+                                                  VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <!-- Delete button – only for custom providers -->
+                                        <Button Grid.Column="3"
+                                                Width="28" Height="28" Padding="0" CornerRadius="6"
+                                                IsVisible="{Binding IsCustom}"
+                                                VerticalAlignment="Center"
+                                                ToolTip.Tip="Remove provider"
+                                                Command="{Binding $parent[ItemsControl].((vm:SettingsViewModel)DataContext).RemoveProviderCommand}"
+                                                CommandParameter="{Binding}">
+                                            <Path Width="10" Height="10" Stretch="Uniform" Fill="#ef4444"
+                                                  Data="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/>
+                                        </Button>
                                     </Grid>
                                 </Border>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <Button Content="Save" Command="{Binding SaveProvidersCommand}"
-                            Padding="16,8" Background="#6366f1" Foreground="#fafafa"
-                            CornerRadius="6" HorizontalAlignment="Left"/>
+                    <!-- Add provider form -->
+                    <Border IsVisible="{Binding IsAddingProvider}"
+                            Background="#18181b" CornerRadius="8" Padding="12">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="New provider" FontSize="13" FontWeight="Medium" Foreground="#fafafa"/>
+                            <TextBox Text="{Binding NewProviderName}"
+                                     Watermark="Name (e.g. Mistral)"
+                                     Height="32" FontSize="12"/>
+                            <TextBox Text="{Binding NewProviderUrl}"
+                                     Watermark="URL (e.g. https://chat.mistral.ai)"
+                                     Height="32" FontSize="12"/>
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="Color" FontSize="11" Foreground="#71717a"/>
+                                <ComboBox ItemsSource="{Binding ColorOptions}"
+                                          SelectedItem="{Binding NewProviderColor}"
+                                          Width="160" HorizontalAlignment="Left"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button Content="Add" Command="{Binding ConfirmAddProviderCommand}"
+                                        Padding="16,6" Background="#6366f1" Foreground="#fafafa" CornerRadius="6"/>
+                                <Button Content="Cancel" Command="{Binding CancelAddProviderCommand}"
+                                        Padding="16,6" Background="#27272a" Foreground="#a1a1aa" CornerRadius="6"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Action buttons -->
+                    <StackPanel Orientation="Horizontal" Spacing="8"
+                                IsVisible="{Binding !IsAddingProvider}">
+                        <Button Content="Add custom provider" Command="{Binding ShowAddProviderFormCommand}"
+                                Padding="16,8" Background="#27272a" Foreground="#a1a1aa"
+                                CornerRadius="6"/>
+                        <Button Content="Save" Command="{Binding SaveProvidersCommand}"
+                                Padding="16,8" Background="#6366f1" Foreground="#fafafa"
+                                CornerRadius="6"/>
+                    </StackPanel>
                 </StackPanel>
             </ScrollViewer>
 
@@ -212,7 +256,7 @@
                 Padding="16,8">
             <TextBlock FontSize="11" Foreground="#52525b">
                 <Run Text="Config: "/>
-                <Run Text="{Binding AppVersion, StringFormat='v{0}'}"/>
+                <Run Text="{Binding AppVersion, Mode=OneWay, StringFormat='v{0}'}"/>
             </TextBlock>
         </Border>
     </Grid>

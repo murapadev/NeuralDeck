@@ -22,7 +22,7 @@ public class OllamaService : IDisposable
     {
         _httpClient = new HttpClient();
         _httpClient.Timeout = TimeSpan.FromSeconds(60);
-        _baseUrl = Constants.DefaultOllamaUrl;
+        _baseUrl = AppConstants.DefaultOllamaUrl;
     }
 
     public string BaseUrl

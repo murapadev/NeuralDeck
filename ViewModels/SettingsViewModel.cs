@@ -1,3 +1,4 @@
+using System;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -53,14 +54,19 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty]
     private double _windowOpacity = 1.0;
 
-    [ObservableProperty]
-    private string _appVersion = "0.4.5";
+    public string AppVersion { get; } = "0.4.5";
+
+    [ObservableProperty] private bool _isAddingProvider = false;
+    [ObservableProperty] private string _newProviderName = "";
+    [ObservableProperty] private string _newProviderUrl = "";
+    [ObservableProperty] private string _newProviderColor = "#6366f1";
 
     public ObservableCollection<ProviderConfig> Providers { get; } = new();
     public ObservableCollection<string> ThemeOptions { get; } = new() { "dark", "light", "system" };
     public ObservableCollection<string> LanguageOptions { get; } = new() { "en", "es" };
     public ObservableCollection<string> FontSizeOptions { get; } = new() { "small", "medium", "large" };
     public ObservableCollection<string> PositionOptions { get; } = new() { "near-tray", "top-left", "top-right", "bottom-left", "bottom-right", "center", "remember" };
+    public ObservableCollection<string> ColorOptions { get; } = new(AppConstants.AccentColorOptions);
 
     public SettingsViewModel()
     {
@@ -88,8 +94,6 @@ public partial class SettingsViewModel : ViewModelBase
         HideOnBlur = config.Window.HideOnBlur;
         WindowPosition = config.Window.Position;
         WindowOpacity = config.Window.Opacity;
-
-        AppVersion = config.Version;
 
         Providers.Clear();
         foreach (var p in config.Providers)
@@ -162,6 +166,56 @@ public partial class SettingsViewModel : ViewModelBase
     private void ToggleProvider(ProviderConfig provider)
     {
         provider.Enabled = !provider.Enabled;
+        SaveProviders();
+    }
+
+    [RelayCommand]
+    private void ShowAddProviderForm()
+    {
+        NewProviderName = "";
+        NewProviderUrl = "";
+        NewProviderColor = AppConstants.DefaultAccentColor;
+        IsAddingProvider = true;
+    }
+
+    [RelayCommand]
+    private void CancelAddProvider()
+    {
+        IsAddingProvider = false;
+    }
+
+    [RelayCommand]
+    private void ConfirmAddProvider()
+    {
+        var name = NewProviderName.Trim();
+        var url = NewProviderUrl.Trim();
+        if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(url)) return;
+
+        if (!url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
+            !url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            url = "https://" + url;
+
+        var provider = new ProviderConfig
+        {
+            Id = Guid.NewGuid().ToString("N")[..8],
+            Name = name,
+            Url = url,
+            Color = NewProviderColor,
+            Enabled = true,
+            Order = Providers.Count,
+            IsCustom = true
+        };
+
+        Providers.Add(provider);
+        SaveProviders();
+        IsAddingProvider = false;
+    }
+
+    [RelayCommand]
+    private void RemoveProvider(ProviderConfig provider)
+    {
+        if (!provider.IsCustom) return;
+        Providers.Remove(provider);
         SaveProviders();
     }
 

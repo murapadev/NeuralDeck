@@ -1,6 +1,6 @@
 namespace NeuralDeck.Models;
 
-public static class Constants
+public static class AppConstants
 {
     // Window dimensions
     public const int DefaultWindowWidth = 420;

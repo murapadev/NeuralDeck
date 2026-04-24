@@ -157,35 +157,9 @@
                         <views:ChatView DataContext="{Binding ChatViewModel}"/>
                     </Grid>
 
-                    <!-- Non-Ollama provider placeholder -->
+                    <!-- Embedded web browser for non-Ollama providers -->
                     <Grid IsVisible="{Binding ShowProviderView}">
-                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
-                                    Spacing="16" Margin="24">
-                            <Border Width="64" Height="64" CornerRadius="16"
-                                    HorizontalAlignment="Center"
-                                    Background="{Binding SelectedProvider.Color, Converter={StaticResource StringToColorConverter}}">
-                                <TextBlock Text="{Binding SelectedProvider.Name, Converter={StaticResource FirstTwoConverter}}"
-                                           FontSize="24" FontWeight="Bold"
-                                           HorizontalAlignment="Center" VerticalAlignment="Center"
-                                           Foreground="#fafafa"/>
-                            </Border>
-                            <StackPanel Spacing="6" HorizontalAlignment="Center">
-                                <TextBlock Text="{Binding SelectedProvider.Name}"
-                                           FontSize="20" FontWeight="Bold"
-                                           Foreground="#fafafa" HorizontalAlignment="Center"/>
-                                <TextBlock Text="{Binding SelectedProvider.Url}"
-                                           FontSize="11" Foreground="#52525b"
-                                           HorizontalAlignment="Center"/>
-                            </StackPanel>
-                            <TextBlock Text="Web integration coming in a future version"
-                                       FontSize="13" Foreground="#71717a"
-                                       HorizontalAlignment="Center" TextAlignment="Center"
-                                       TextWrapping="Wrap" MaxWidth="260"/>
-                            <Button Content="Open in browser"
-                                    Command="{Binding OpenProviderInBrowserCommand}"
-                                    Padding="16,8" Background="#27272a" Foreground="#fafafa"
-                                    CornerRadius="8" HorizontalAlignment="Center"/>
-                        </StackPanel>
+                        <views:WebBrowserView DataContext="{Binding WebBrowserViewModel}"/>
                     </Grid>
 
                     <!-- Settings view with header -->
