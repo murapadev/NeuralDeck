@@ -56,13 +56,18 @@
                                     <Grid ColumnDefinitions="Auto,*,Auto">
                                         <Border Grid.Column="0" Width="36" Height="36"
                                                 CornerRadius="9" Margin="0,0,12,0"
-                                                Background="{Binding Color, Converter={StaticResource StringToColorConverter}}">
-                                            <Viewbox Width="20" Height="20" Stretch="Uniform">
-                                                <Path Data="{Binding Id, Converter={StaticResource ProviderIconConverter}}"
-                                                      Fill="#fafafa"
-                                                      Stroke="#fafafa"
-                                                      StrokeThickness="0.3"/>
-                                            </Viewbox>
+                                                Background="#27272a">
+                                            <Grid>
+                                                <!-- Fallback glyph for custom providers -->
+                                                <Viewbox Width="20" Height="20" Stretch="Uniform">
+                                                    <Path Data="{Binding Id, Converter={StaticResource ProviderIconConverter}}"
+                                                          Fill="{Binding Color, Converter={StaticResource StringToColorConverter}}"/>
+                                                </Viewbox>
+                                                <!-- Real brand favicon on top -->
+                                                <Image Source="{Binding Id, Converter={StaticResource ProviderFaviconConverter}}"
+                                                       Width="28" Height="28" Stretch="Uniform"
+                                                       RenderOptions.BitmapInterpolationMode="HighQuality"/>
+                                            </Grid>
                                         </Border>
                                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
                                             <TextBlock Text="{Binding Name}" FontSize="14"

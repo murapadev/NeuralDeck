@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using Avalonia;
 using Avalonia.Data.Converters;
 using Avalonia.Media;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 
 namespace NeuralDeck.Converters;
 
@@ -144,10 +147,47 @@ public class StepToDotConverter : IValueConverter
 }
 
 /// <summary>
-/// Maps a provider Id to a distinctive geometric glyph (Geometry) used in the sidebar and
-/// onboarding list. Each glyph is drawn on a 24x24 viewbox. We purposely use generic shapes
-/// (hexagon / sparkle / starburst / mountain / magnifying-glass / ring) instead of copying
-/// each vendor's trademark.
+/// Maps a provider Id to its brand favicon (normalized 64×64 PNG) bundled in
+/// Assets/Icons/providers/{id}.png. Returns null when the favicon is missing, so the
+/// caller can fall back to the geometric ProviderIconConverter glyph for unknown or
+/// user-added custom providers.
+/// </summary>
+public class ProviderFaviconConverter : IValueConverter
+{
+    private static readonly Dictionary<string, Bitmap?> Cache = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly HashSet<string> KnownIds = new(StringComparer.OrdinalIgnoreCase)
+    { "chatgpt", "gemini", "claude", "deepseek", "perplexity", "ollama" };
+
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        var key = value?.ToString() ?? "";
+        if (!KnownIds.Contains(key)) return null;
+
+        if (Cache.TryGetValue(key, out var cached)) return cached;
+
+        try
+        {
+            var uri = new Uri($"avares://NeuralDeck/Assets/Icons/providers/{key.ToLowerInvariant()}.png");
+            using var stream = AssetLoader.Open(uri);
+            var bmp = new Bitmap(stream);
+            Cache[key] = bmp;
+            return bmp;
+        }
+        catch
+        {
+            Cache[key] = null;
+            return null;
+        }
+    }
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotImplementedException();
+}
+
+/// <summary>
+/// Maps a provider Id to a distinctive geometric glyph (Geometry) used as a fallback for
+/// custom providers that don't have a bundled favicon. Each glyph is drawn on a 24x24
+/// viewbox using generic shapes (hexagon / sparkle / starburst / mountain / magnifying-glass).
 /// </summary>
 public class ProviderIconConverter : IValueConverter
 {

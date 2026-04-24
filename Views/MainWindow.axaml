@@ -92,16 +92,21 @@
                                         <Border Width="44" Height="44" CornerRadius="11"
                                                 BorderThickness="2"
                                                 BorderBrush="{Binding IsSelected, Converter={StaticResource BoolToAccentConverter}}">
-                                            <!-- Tinted brand tile -->
+                                            <!-- Neutral tile frame -->
                                             <Border Width="38" Height="38" CornerRadius="9"
-                                                    Background="{Binding Color, Converter={StaticResource StringToColorConverter}}">
-                                                <!-- Provider glyph -->
-                                                <Viewbox Width="22" Height="22" Stretch="Uniform">
-                                                    <Path Data="{Binding Id, Converter={StaticResource ProviderIconConverter}}"
-                                                          Fill="#fafafa"
-                                                          Stroke="#fafafa"
-                                                          StrokeThickness="0.3"/>
-                                                </Viewbox>
+                                                    Background="#27272a">
+                                                <Grid>
+                                                    <!-- Fallback geometric glyph for custom providers (shown through when Image.Source is null) -->
+                                                    <Viewbox Width="22" Height="22" Stretch="Uniform">
+                                                        <Path Data="{Binding Id, Converter={StaticResource ProviderIconConverter}}"
+                                                              Fill="{Binding Color, Converter={StaticResource StringToColorConverter}}"/>
+                                                    </Viewbox>
+                                                    <!-- Real brand favicon on top, transparent when missing -->
+                                                    <Image Source="{Binding Id, Converter={StaticResource ProviderFaviconConverter}}"
+                                                           Width="28" Height="28"
+                                                           Stretch="Uniform"
+                                                           RenderOptions.BitmapInterpolationMode="HighQuality"/>
+                                                </Grid>
                                             </Border>
                                         </Border>
                                     </Button>

@@ -18,5 +18,6 @@
         <converters:RoleToBrushConverter x:Key="RoleToBrushConverter"/>
         <converters:StepToDotConverter x:Key="StepToDotConverter"/>
         <converters:ProviderIconConverter x:Key="ProviderIconConverter"/>
+        <converters:ProviderFaviconConverter x:Key="ProviderFaviconConverter"/>
     </Application.Resources>
 </Application>
