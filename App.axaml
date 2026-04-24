@@ -9,6 +9,10 @@
     </Application.Styles>
 
     <Application.Resources>
+        <!-- Accent color is reassigned at runtime by ThemeService from config.Appearance.AccentColor -->
+        <Color x:Key="AccentColor">#6366f1</Color>
+        <SolidColorBrush x:Key="AccentBrush" Color="#6366f1"/>
+
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
         <converters:BoolToAccentConverter x:Key="BoolToAccentConverter"/>
         <converters:BoolToColorConverter x:Key="BoolToColorConverter"/>
@@ -19,5 +23,6 @@
         <converters:StepToDotConverter x:Key="StepToDotConverter"/>
         <converters:ProviderIconConverter x:Key="ProviderIconConverter"/>
         <converters:ProviderFaviconConverter x:Key="ProviderFaviconConverter"/>
+        <converters:BoolToOpacityConverter x:Key="BoolToOpacityConverter"/>
     </Application.Resources>
 </Application>

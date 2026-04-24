@@ -73,10 +73,45 @@
                                   Width="200" HorizontalAlignment="Left"/>
                     </StackPanel>
 
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Accent color" FontSize="12" Foreground="#71717a"/>
+                        <ListBox ItemsSource="{Binding ColorOptions}"
+                                 SelectedItem="{Binding AccentColor}"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 Padding="0">
+                            <ListBox.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" Spacing="4"/>
+                                </ItemsPanelTemplate>
+                            </ListBox.ItemsPanel>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate x:DataType="x:String">
+                                    <Border Width="28" Height="28" CornerRadius="14"
+                                            Background="{Binding ., Converter={StaticResource StringToColorConverter}}"
+                                            ToolTip.Tip="{Binding .}"/>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                            <ListBox.Styles>
+                                <Style Selector="ListBoxItem">
+                                    <Setter Property="Padding" Value="2"/>
+                                    <Setter Property="CornerRadius" Value="16"/>
+                                    <Setter Property="Background" Value="Transparent"/>
+                                </Style>
+                                <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="BorderBrush" Value="#fafafa"/>
+                                    <Setter Property="BorderThickness" Value="2"/>
+                                    <Setter Property="CornerRadius" Value="16"/>
+                                </Style>
+                            </ListBox.Styles>
+                        </ListBox>
+                    </StackPanel>
+
                     <CheckBox Content="Show provider names" IsChecked="{Binding ShowProviderNames}" Foreground="#d4d4d8"/>
 
                     <Button Content="Save" Command="{Binding SaveAppearanceCommand}"
-                            Padding="16,8" Background="#6366f1" Foreground="#fafafa"
+                            Padding="16,8" Background="{DynamicResource AccentBrush}" Foreground="#fafafa"
                             CornerRadius="6" HorizontalAlignment="Left"/>
                 </StackPanel>
             </ScrollViewer>

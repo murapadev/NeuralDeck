@@ -81,32 +81,32 @@
 
                     <!-- Message list -->
                     <ItemsControl ItemsSource="{Binding Messages}"
-                                  Margin="8,8">
+                                  Margin="10,8">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="models:ChatMessage">
-                                <Grid ColumnDefinitions="*,*" Margin="0,4">
-                                    <!-- Assistant message (left) -->
-                                    <Border Grid.Column="0"
-                                            IsVisible="{Binding !IsUser}"
-                                            CornerRadius="8,8,8,2"
-                                            Padding="12,8"
+                                <Grid Margin="0,6">
+                                    <!-- Assistant message (left, neutral tile) -->
+                                    <Border IsVisible="{Binding !IsUser}"
+                                            CornerRadius="10,10,10,2"
+                                            Padding="14,10"
                                             Background="#27272a"
                                             HorizontalAlignment="Left"
-                                            MaxWidth="280">
+                                            MaxWidth="520">
                                         <TextBlock Text="{Binding Content}"
                                                    TextWrapping="Wrap"
-                                                   Foreground="#d4d4d8"
+                                                   Foreground="#e4e4e7"
                                                    FontSize="13"
                                                    LineHeight="20"/>
                                     </Border>
-                                    <!-- User message (right) -->
-                                    <Border Grid.Column="1"
-                                            IsVisible="{Binding IsUser}"
-                                            CornerRadius="8,8,2,8"
-                                            Padding="12,8"
+                                    <!-- User message (right, accent-tinted) -->
+                                    <Border IsVisible="{Binding IsUser}"
+                                            CornerRadius="10,10,2,10"
+                                            Padding="14,10"
                                             Background="#1e1b4b"
+                                            BorderBrush="{DynamicResource AccentBrush}"
+                                            BorderThickness="0,0,0,0"
                                             HorizontalAlignment="Right"
-                                            MaxWidth="280">
+                                            MaxWidth="520">
                                         <TextBlock Text="{Binding Content}"
                                                    TextWrapping="Wrap"
                                                    Foreground="#e0e7ff"
@@ -155,15 +155,30 @@
                          Padding="12,10"
                          FontSize="13"
                          IsEnabled="{Binding IsConnected}"/>
+                <!-- Send (idle) -->
                 <Button Grid.Column="1"
                         Command="{Binding SendMessageCommand}"
                         IsEnabled="{Binding IsConnected}"
+                        IsVisible="{Binding !IsLoading}"
                         Margin="8,0,0,0"
                         Width="40" Height="40"
                         CornerRadius="8"
-                        Padding="0">
+                        Padding="0"
+                        ToolTip.Tip="Send (Enter)">
                     <Path Width="18" Height="18" Stretch="Uniform" Fill="#6366f1"
                           Data="M2,21L23,12L2,3V10L17,12L2,14V21Z"/>
+                </Button>
+                <!-- Stop (while streaming) -->
+                <Button Grid.Column="1"
+                        Command="{Binding CancelStreamCommand}"
+                        IsVisible="{Binding IsLoading}"
+                        Margin="8,0,0,0"
+                        Width="40" Height="40"
+                        CornerRadius="8"
+                        Padding="0"
+                        Background="#ef4444"
+                        ToolTip.Tip="Stop generating">
+                    <Rectangle Width="14" Height="14" Fill="#fafafa" RadiusX="2" RadiusY="2"/>
                 </Button>
             </Grid>
         </Border>

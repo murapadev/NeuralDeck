@@ -220,6 +220,16 @@ public class ShortcutService : IDisposable
         Register(config.Shortcuts.ToggleWindow, WindowService.Instance.ToggleWindow);
         Register(config.Shortcuts.OpenSettings, WindowService.Instance.OpenSettingsWindow);
 
+        // Ctrl+Q — clean shutdown through the application lifetime.
+        Register("CommandOrControl+Q", () =>
+        {
+            if (Avalonia.Application.Current?.ApplicationLifetime is
+                Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
+            {
+                desktop.Shutdown();
+            }
+        });
+
         // Per-provider hotkeys: 1..N map to the first N enabled providers in display order.
         var enabled = config.Providers.Where(p => p.Enabled).OrderBy(p => p.Order).ToList();
         for (int i = 0; i < Math.Min(enabled.Count, config.Shortcuts.Providers.Count); i++)

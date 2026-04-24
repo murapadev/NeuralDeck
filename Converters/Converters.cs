@@ -102,14 +102,33 @@ public class FirstTwoConverter : IValueConverter
     }
 }
 
+/// <summary>
+/// Returns 1.0 when bool is true, else 0.0 — lets us hide/show elements whose BorderBrush
+/// must still be a DynamicResource (so it updates when the accent color changes).
+/// </summary>
+public class BoolToOpacityConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is bool b && b ? 1.0 : 0.0;
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotImplementedException();
+}
+
 public class BoolToAccentConverter : IValueConverter
 {
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
         bool selected = value is bool b && b;
-        return selected
-            ? new SolidColorBrush(Color.Parse("#6366f1"))
-            : new SolidColorBrush(Colors.Transparent);
+        if (!selected) return new SolidColorBrush(Colors.Transparent);
+
+        // Resolve the live accent brush from Application resources.
+        if (Application.Current?.Resources.TryGetResource("AccentBrush", null, out var res) == true
+            && res is IBrush brush)
+        {
+            return brush;
+        }
+        return new SolidColorBrush(Color.Parse("#6366f1"));
     }
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)

@@ -26,6 +26,7 @@ public partial class App : Application
                 DataContext = _mainWindowViewModel
             };
 
+            ThemeService.Instance.Initialize();
             WindowService.Instance.SetMainWindow(mainWindow);
             TrayService.Instance.Initialize(mainWindow, _mainWindowViewModel);
             ShortcutService.Instance.Initialize(mainWindow, _mainWindowViewModel);

@@ -88,15 +88,12 @@
                                             CornerRadius="12"
                                             Command="{Binding SelectCommand}"
                                             ToolTip.Tip="{Binding Name}">
-                                        <!-- Indigo selection ring -->
-                                        <Border Width="44" Height="44" CornerRadius="11"
-                                                BorderThickness="2"
-                                                BorderBrush="{Binding IsSelected, Converter={StaticResource BoolToAccentConverter}}">
-                                            <!-- Neutral tile frame -->
+                                        <Grid Width="44" Height="44">
+                                            <!-- Neutral tile frame (always visible) -->
                                             <Border Width="38" Height="38" CornerRadius="9"
                                                     Background="#27272a">
                                                 <Grid>
-                                                    <!-- Fallback geometric glyph for custom providers (shown through when Image.Source is null) -->
+                                                    <!-- Fallback geometric glyph for custom providers -->
                                                     <Viewbox Width="22" Height="22" Stretch="Uniform">
                                                         <Path Data="{Binding Id, Converter={StaticResource ProviderIconConverter}}"
                                                               Fill="{Binding Color, Converter={StaticResource StringToColorConverter}}"/>
@@ -108,7 +105,13 @@
                                                            RenderOptions.BitmapInterpolationMode="HighQuality"/>
                                                 </Grid>
                                             </Border>
-                                        </Border>
+                                            <!-- Accent selection ring, overlay, only visible when selected -->
+                                            <Border Width="44" Height="44" CornerRadius="11"
+                                                    BorderThickness="2"
+                                                    BorderBrush="{DynamicResource AccentBrush}"
+                                                    IsHitTestVisible="False"
+                                                    IsVisible="{Binding IsSelected}"/>
+                                        </Grid>
                                     </Button>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>

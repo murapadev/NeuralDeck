@@ -121,6 +121,14 @@ public partial class SettingsViewModel : ViewModelBase
         });
     }
 
+    // Live preview of theme and accent color as the user tweaks them,
+    // even before clicking Save. The save path only persists to disk.
+    partial void OnThemeChanged(string value)
+        => ThemeService.Instance.Apply(value, AccentColor);
+
+    partial void OnAccentColorChanged(string value)
+        => ThemeService.Instance.Apply(Theme, value);
+
     [RelayCommand]
     private void SaveShortcuts()
     {

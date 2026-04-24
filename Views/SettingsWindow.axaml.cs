@@ -9,6 +9,7 @@ public partial class SettingsWindow : Window
     public SettingsWindow()
     {
         InitializeComponent();
+        KeyDown += OnKeyDown;
     }
 
     protected override void OnLoaded(RoutedEventArgs e)
@@ -23,5 +24,14 @@ public partial class SettingsWindow : Window
     {
         if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
             BeginMoveDrag(e);
+    }
+
+    private void OnKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape)
+        {
+            Close();
+            e.Handled = true;
+        }
     }
 }
