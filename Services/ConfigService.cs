@@ -172,11 +172,16 @@ public class ConfigService
         ConfigChanged?.Invoke(this, _config);
     }
 
-    public void UpdateGeneral(bool? firstRun = null, string? lastProvider = null, bool? debug = null)
+    public void UpdateGeneral(
+        bool? firstRun = null,
+        string? lastProvider = null,
+        bool? debug = null,
+        string? lastOllamaModel = null)
     {
         if (firstRun.HasValue) _config.FirstRun = firstRun.Value;
         if (lastProvider != null) _config.LastProvider = lastProvider;
         if (debug.HasValue) _config.Debug = debug.Value;
+        if (lastOllamaModel != null) _config.LastOllamaModel = lastOllamaModel;
         SaveConfig();
         ConfigChanged?.Invoke(this, _config);
     }

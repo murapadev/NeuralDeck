@@ -27,8 +27,8 @@ public partial class App : Application
             };
 
             WindowService.Instance.SetMainWindow(mainWindow);
-            TrayService.Instance.Initialize(mainWindow);
-            ShortcutService.Instance.Initialize(mainWindow);
+            TrayService.Instance.Initialize(mainWindow, _mainWindowViewModel);
+            ShortcutService.Instance.Initialize(mainWindow, _mainWindowViewModel);
 
             try
             {

@@ -1,0 +1,75 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:NeuralDeck.ViewModels"
+        xmlns:views="clr-namespace:NeuralDeck.Views"
+        x:Class="NeuralDeck.Views.SettingsWindow"
+        x:DataType="vm:SettingsViewModel"
+        Title="NeuralDeck Settings"
+        Icon="avares://NeuralDeck/Assets/Icons/app.png"
+        Width="860" Height="640"
+        MinWidth="720" MinHeight="520"
+        Background="#09090b"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaChromeHints="PreferSystemChrome"
+        ExtendClientAreaTitleBarHeightHint="32"
+        WindowStartupLocation="CenterScreen"
+        ShowInTaskbar="True">
+
+    <Window.Styles>
+        <Style Selector="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#fafafa"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="4"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#27272a"/>
+        </Style>
+        <Style Selector="Button:pressed /template/ ContentPresenter">
+            <Setter Property="Background" Value="#3f3f46"/>
+        </Style>
+        <Style Selector="ComboBox">
+            <Setter Property="Background" Value="#27272a"/>
+            <Setter Property="Foreground" Value="#fafafa"/>
+            <Setter Property="BorderBrush" Value="#3f3f46"/>
+        </Style>
+        <Style Selector="CheckBox">
+            <Setter Property="Foreground" Value="#d4d4d8"/>
+        </Style>
+        <Style Selector="TextBox">
+            <Setter Property="Background" Value="#27272a"/>
+            <Setter Property="Foreground" Value="#fafafa"/>
+            <Setter Property="BorderBrush" Value="#3f3f46"/>
+            <Setter Property="CaretBrush" Value="#6366f1"/>
+        </Style>
+        <Style Selector="Slider">
+            <Setter Property="Foreground" Value="#6366f1"/>
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="32,*">
+
+        <!-- Custom title bar -->
+        <Border Grid.Row="0" Background="#0f0f11"
+                BorderBrush="#27272a" BorderThickness="0,0,0,1"
+                x:Name="TitleBar">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8"
+                            VerticalAlignment="Center" Margin="12,0">
+                    <Border Width="16" Height="16" CornerRadius="4" Background="#6366f1"
+                            VerticalAlignment="Center">
+                        <TextBlock Text="N" FontSize="10" FontWeight="Bold"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   Foreground="#fafafa"/>
+                    </Border>
+                    <TextBlock Text="NeuralDeck Settings" FontSize="11" Foreground="#a1a1aa"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- The reusable SettingsView -->
+        <views:SettingsView Grid.Row="1"/>
+    </Grid>
+</Window>

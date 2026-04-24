@@ -7,30 +7,108 @@ namespace NeuralDeck.ViewModels;
 public partial class WebBrowserViewModel : ViewModelBase
 {
     [ObservableProperty] private string _addressBarText = "";
+    [ObservableProperty] private bool _isLoading;
+    [ObservableProperty] private bool _canGoBack;
+    [ObservableProperty] private bool _canGoForward;
+    [ObservableProperty] private string _statusText = "";
+    [ObservableProperty] private bool _showFallback;
+    [ObservableProperty] private string _fallbackMessage = "";
 
+    public Action<Uri>? NavigateAction { get; set; }
+    public Action? GoBackAction { get; set; }
+    public Action? GoForwardAction { get; set; }
+    public Action? ReloadAction { get; set; }
     public Action<Uri>? OpenInBrowserAction { get; set; }
+
+    private string? _pendingUrl;
 
     public WebBrowserViewModel(string initialUrl = "")
     {
         _addressBarText = initialUrl;
+        _pendingUrl = string.IsNullOrEmpty(initialUrl) ? null : initialUrl;
     }
+
+    [RelayCommand(CanExecute = nameof(CanGoBack))]
+    private void GoBack() => GoBackAction?.Invoke();
+
+    [RelayCommand(CanExecute = nameof(CanGoForward))]
+    private void GoForward() => GoForwardAction?.Invoke();
+
+    [RelayCommand]
+    private void Reload() => ReloadAction?.Invoke();
 
     [RelayCommand]
     private void OpenInBrowser()
     {
-        var url = AddressBarText.Trim();
-        if (string.IsNullOrEmpty(url)) return;
-        if (!url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
-            !url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
-            url = "https://" + url;
-
-        if (Uri.TryCreate(url, UriKind.Absolute, out var uri))
-            OpenInBrowserAction?.Invoke(uri);
+        var url = NormalizeUrl(AddressBarText);
+        if (url != null)
+            OpenInBrowserAction?.Invoke(url);
     }
+
+    partial void OnCanGoBackChanged(bool value) => GoBackCommand.NotifyCanExecuteChanged();
+    partial void OnCanGoForwardChanged(bool value) => GoForwardCommand.NotifyCanExecuteChanged();
 
     public void NavigateTo(string? url)
     {
-        if (!string.IsNullOrEmpty(url))
-            AddressBarText = url;
+        if (string.IsNullOrEmpty(url)) return;
+        AddressBarText = url;
+        _pendingUrl = url;
+
+        if (NavigateAction != null)
+        {
+            var uri = NormalizeUrl(url);
+            if (uri != null)
+            {
+                NavigateAction.Invoke(uri);
+                _pendingUrl = null;
+            }
+        }
+    }
+
+    public void FlushPendingUrl()
+    {
+        if (string.IsNullOrEmpty(_pendingUrl) || NavigateAction == null) return;
+        var uri = NormalizeUrl(_pendingUrl);
+        if (uri != null)
+        {
+            NavigateAction.Invoke(uri);
+            _pendingUrl = null;
+        }
+    }
+
+    public void OnNavigationStarted(Uri? url)
+    {
+        IsLoading = true;
+        if (url != null)
+        {
+            AddressBarText = url.ToString();
+            StatusText = $"Loading {url.Host}…";
+        }
+    }
+
+    public void OnNavigationCompleted(Uri? currentUrl, bool canGoBack, bool canGoForward)
+    {
+        IsLoading = false;
+        StatusText = "";
+        if (currentUrl != null)
+            AddressBarText = currentUrl.ToString();
+        CanGoBack = canGoBack;
+        CanGoForward = canGoForward;
+    }
+
+    public void ShowFallbackMessage(string message)
+    {
+        ShowFallback = true;
+        FallbackMessage = message;
+    }
+
+    private static Uri? NormalizeUrl(string? input)
+    {
+        if (string.IsNullOrWhiteSpace(input)) return null;
+        var text = input.Trim();
+        if (!text.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
+            !text.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            text = "https://" + text;
+        return Uri.TryCreate(text, UriKind.Absolute, out var uri) ? uri : null;
     }
 }

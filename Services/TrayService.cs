@@ -1,17 +1,19 @@
 using System;
-using System.IO;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Notifications;
+using Avalonia.Platform;
 using NeuralDeck.Models;
+using NeuralDeck.ViewModels;
 
 namespace NeuralDeck.Services;
 
-public class TrayService
+public class TrayService : IDisposable
 {
     private static TrayService? _instance;
     private TrayIcon? _trayIcon;
     private Window? _mainWindow;
+    private MainWindowViewModel? _mainViewModel;
     private bool _isInitialized;
 
     public static TrayService Instance => _instance ??= new TrayService();
@@ -20,37 +22,30 @@ public class TrayService
 
     private TrayService() { }
 
-    public void Initialize(Window mainWindow)
+    public void Initialize(Window mainWindow, MainWindowViewModel? mainViewModel = null)
     {
         if (_isInitialized) return;
 
         _mainWindow = mainWindow;
-        
+        _mainViewModel = mainViewModel;
+
         try
         {
-            // Create tray icon
             _trayIcon = new TrayIcon
             {
-                ToolTipText = "NeuralDeck",
+                ToolTipText = "NeuralDeck — AI command center",
                 IsVisible = true
             };
 
-            // Try to set icon from file
-            var iconPath = GetTrayIconPath();
-            if (!string.IsNullOrEmpty(iconPath) && File.Exists(iconPath))
-            {
-                _trayIcon.Icon = new WindowIcon(iconPath);
-            }
+            var icon = TryLoadIcon();
+            if (icon != null)
+                _trayIcon.Icon = icon;
 
-            // Create context menu
             UpdateMenu();
 
-            // Handle left click - toggle window
-            _trayIcon.Clicked += (s, e) =>
-            {
-                TrayLeftClick?.Invoke(this, EventArgs.Empty);
-                WindowService.Instance.ToggleWindow();
-            };
+            _trayIcon.Clicked += OnTrayClicked;
+
+            ConfigService.Instance.ConfigChanged += OnConfigChanged;
 
             _isInitialized = true;
         }
@@ -60,30 +55,48 @@ public class TrayService
         }
     }
 
-    private string? GetTrayIconPath()
+    private void OnTrayClicked(object? sender, EventArgs e)
     {
-        var basePath = AppDomain.CurrentDomain.BaseDirectory;
-        var iconPath = Path.Combine(basePath, "Assets", "Icons", "tray.ico");
-        
-        if (File.Exists(iconPath))
-            return iconPath;
-        
-        iconPath = Path.Combine(basePath, "tray.ico");
-        if (File.Exists(iconPath))
-            return iconPath;
-        
+        TrayLeftClick?.Invoke(this, EventArgs.Empty);
+        WindowService.Instance.ToggleWindow();
+    }
+
+    private void OnConfigChanged(object? sender, AppConfig config)
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(UpdateMenu);
+    }
+
+    private static WindowIcon? TryLoadIcon()
+    {
+        // Avalonia resource paths use the avares:// scheme.
+        string[] candidates =
+        {
+            "avares://NeuralDeck/Assets/Icons/tray.png",
+            "avares://NeuralDeck/Assets/Icons/app.png"
+        };
+
+        foreach (var candidate in candidates)
+        {
+            try
+            {
+                using var stream = AssetLoader.Open(new Uri(candidate));
+                return new WindowIcon(stream);
+            }
+            catch
+            {
+                // Fall through to next candidate.
+            }
+        }
         return null;
     }
 
     public void ShowNotification(string title, string message)
     {
-        Console.WriteLine($"[TrayService] Notification: {title} - {message}");
-
+        Console.WriteLine($"[TrayService] Notification: {title} — {message}");
         try
         {
             if (_mainWindow != null)
             {
-                // WindowNotificationManager doesn't need explicit disposal
                 var notificationManager = new WindowNotificationManager(_mainWindow);
                 notificationManager.Show(new Notification(title, message, NotificationType.Information));
             }
@@ -103,51 +116,51 @@ public class TrayService
             var config = ConfigService.Instance.GetConfig();
             var menu = new NativeMenu();
 
-            // Providers submenu
+            // Toggle window (first item so it's the default on platforms that support it)
+            var toggleItem = new NativeMenuItem { Header = WindowService.Instance.IsVisible ? "Hide NeuralDeck" : "Show NeuralDeck" };
+            toggleItem.Click += (s, e) => WindowService.Instance.ToggleWindow();
+            menu.Items.Add(toggleItem);
+
+            menu.Items.Add(new NativeMenuItemSeparator());
+
+            // Providers submenu — clicking a provider actually selects it and shows the window.
             var providersMenuItem = new NativeMenuItem { Header = "Providers" };
             var providersSubmenu = new NativeMenu();
 
-            foreach (var provider in config.Providers)
+            foreach (var provider in config.Providers
+                         .Where(p => p.Enabled)
+                         .OrderBy(p => p.Order))
             {
-                var item = new NativeMenuItem
-                {
-                    Header = provider.Name,
-                    IsEnabled = provider.Enabled
-                };
+                var captured = provider;
+                var item = new NativeMenuItem { Header = captured.Name };
                 item.Click += (s, e) =>
                 {
-                    Console.WriteLine($"[TrayService] Switch to provider: {provider.Name}");
+                    _mainViewModel?.SelectProvider(captured.Id);
+                    WindowService.Instance.ShowWindow();
                 };
                 providersSubmenu.Items.Add(item);
+            }
+
+            if (providersSubmenu.Items.Count == 0)
+            {
+                providersSubmenu.Items.Add(new NativeMenuItem { Header = "(no providers enabled)", IsEnabled = false });
             }
 
             providersMenuItem.Menu = providersSubmenu;
             menu.Items.Add(providersMenuItem);
 
-            menu.Items.Add(new NativeMenuItem { Header = "-" });
-
-            // Toggle window
-            var toggleItem = new NativeMenuItem { Header = "Show/Hide NeuralDeck" };
-            toggleItem.Click += (s, e) => WindowService.Instance.ToggleWindow();
-            menu.Items.Add(toggleItem);
+            menu.Items.Add(new NativeMenuItemSeparator());
 
             // Settings
-            var settingsItem = new NativeMenuItem { Header = "Settings" };
+            var settingsItem = new NativeMenuItem { Header = "Settings…" };
             settingsItem.Click += (s, e) => WindowService.Instance.OpenSettingsWindow();
             menu.Items.Add(settingsItem);
 
-            menu.Items.Add(new NativeMenuItem { Header = "-" });
+            menu.Items.Add(new NativeMenuItemSeparator());
 
-            // Quit
+            // Quit — proper clean shutdown through the application lifetime.
             var quitItem = new NativeMenuItem { Header = "Quit" };
-            quitItem.Click += (s, e) =>
-            {
-                if (_mainWindow != null)
-                {
-                    _mainWindow.Close();
-                }
-                Environment.Exit(0);
-            };
+            quitItem.Click += (s, e) => ShutdownApp();
             menu.Items.Add(quitItem);
 
             _trayIcon.Menu = menu;
@@ -158,16 +171,32 @@ public class TrayService
         }
     }
 
+    private static void ShutdownApp()
+    {
+        if (Application.Current?.ApplicationLifetime is
+            Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            desktop.Shutdown();
+        }
+        else
+        {
+            Environment.Exit(0);
+        }
+    }
+
     public void Dispose()
     {
+        try { ConfigService.Instance.ConfigChanged -= OnConfigChanged; } catch { }
         if (_trayIcon != null)
         {
+            _trayIcon.Clicked -= OnTrayClicked;
             _trayIcon.IsVisible = false;
             _trayIcon.Menu = null;
             _trayIcon.Dispose();
             _trayIcon = null;
         }
         _mainWindow = null;
+        _mainViewModel = null;
         _isInitialized = false;
     }
 }

@@ -110,9 +110,10 @@ public class OllamaService : IDisposable
         using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         using var reader = new StreamReader(stream);
 
-        while (!reader.EndOfStream && !cancellationToken.IsCancellationRequested)
+        while (!cancellationToken.IsCancellationRequested)
         {
             var line = await reader.ReadLineAsync(cancellationToken);
+            if (line == null) break; // End of stream
             if (string.IsNullOrWhiteSpace(line)) continue;
 
             try

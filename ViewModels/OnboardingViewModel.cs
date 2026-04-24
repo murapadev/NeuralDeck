@@ -28,7 +28,10 @@ public partial class OnboardingViewModel : ViewModelBase
     public OnboardingViewModel()
     {
         LoadProviders();
+        UpdateNavigation();
     }
+
+    public int TotalSteps => 2;
 
     private void LoadProviders()
     {

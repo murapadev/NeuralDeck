@@ -14,29 +14,22 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowChatView))]
     [NotifyPropertyChangedFor(nameof(ShowProviderView))]
-    private string _currentView = "chat";
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowChatView))]
-    [NotifyPropertyChangedFor(nameof(ShowProviderView))]
     private string _selectedProviderId = "ollama";
 
     [ObservableProperty] private bool _showOnboarding = false;
     [ObservableProperty] private bool _isPinned = true;
     [ObservableProperty] private ObservableCollection<ProviderDisplay> _enabledProviders = new();
     [ObservableProperty] private ChatViewModel? _chatViewModel;
-    [ObservableProperty] private SettingsViewModel? _settingsViewModel;
     [ObservableProperty] private OnboardingViewModel? _onboardingViewModel;
     [ObservableProperty] private ProviderConfig? _selectedProvider;
     [ObservableProperty] private WebBrowserViewModel? _webBrowserViewModel;
 
-    public bool ShowChatView => CurrentView == "chat" && SelectedProviderId == "ollama";
-    public bool ShowProviderView => CurrentView == "chat" && SelectedProviderId != "ollama";
+    public bool ShowChatView => SelectedProviderId == "ollama";
+    public bool ShowProviderView => SelectedProviderId != "ollama";
 
     public MainWindowViewModel()
     {
         ChatViewModel = new ChatViewModel();
-        SettingsViewModel = new SettingsViewModel();
         OnboardingViewModel = new OnboardingViewModel();
         WebBrowserViewModel = new WebBrowserViewModel();
         OnboardingViewModel.OnboardingComplete += (_, _) => OnOnboardingComplete();
@@ -89,12 +82,11 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             p.IsSelected = p.Id == SelectedProviderId;
     }
 
-    private void SelectProvider(string providerId)
+    internal void SelectProvider(string providerId)
     {
         SelectedProviderId = providerId;
         ConfigService.Instance.UpdateGeneral(lastProvider: providerId);
         UpdateSelectedProvider();
-        CurrentView = "chat";
 
         if (providerId != "ollama" && SelectedProvider != null)
             WebBrowserViewModel?.NavigateTo(SelectedProvider.Url);
@@ -111,14 +103,13 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private void OpenSettings()
     {
-        SettingsViewModel?.LoadSettings();
-        CurrentView = "settings";
+        WindowService.Instance.OpenSettingsWindow();
     }
 
     [RelayCommand]
     private void CloseSettings()
     {
-        CurrentView = "chat";
+        WindowService.Instance.CloseSettingsWindow();
     }
 
     [RelayCommand]

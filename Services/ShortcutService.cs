@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Threading;
+using NeuralDeck.ViewModels;
 using SharpHook;
 using SharpHook.Native;
 
@@ -15,6 +17,7 @@ public class ShortcutService : IDisposable
     private readonly List<KeyBinding> _keyBindings = new();
     private readonly HashSet<KeyCode> _pressedKeys = new();
     private Window? _window;
+    private MainWindowViewModel? _mainViewModel;
     private TaskPoolGlobalHook? _hook;
     private bool _isInitialized;
     private bool _disposed;
@@ -23,13 +26,15 @@ public class ShortcutService : IDisposable
 
     private ShortcutService() { }
 
-    public void Initialize(Window window)
+    public void Initialize(Window window, MainWindowViewModel? mainViewModel = null)
     {
         if (_isInitialized) return;
         _window = window;
+        _mainViewModel = mainViewModel;
         _isInitialized = true;
 
         TryStartGlobalHook();
+        ConfigService.Instance.ConfigChanged += (_, _) => Dispatcher.UIThread.Post(Refresh);
         Refresh();
     }
 
@@ -211,8 +216,21 @@ public class ShortcutService : IDisposable
     {
         UnregisterAll();
         var config = ConfigService.Instance.GetConfig();
+
         Register(config.Shortcuts.ToggleWindow, WindowService.Instance.ToggleWindow);
         Register(config.Shortcuts.OpenSettings, WindowService.Instance.OpenSettingsWindow);
+
+        // Per-provider hotkeys: 1..N map to the first N enabled providers in display order.
+        var enabled = config.Providers.Where(p => p.Enabled).OrderBy(p => p.Order).ToList();
+        for (int i = 0; i < Math.Min(enabled.Count, config.Shortcuts.Providers.Count); i++)
+        {
+            var providerId = enabled[i].Id;
+            Register(config.Shortcuts.Providers[i], () =>
+            {
+                _mainViewModel?.SelectProvider(providerId);
+                WindowService.Instance.ShowWindow();
+            });
+        }
     }
 
     public void Dispose()

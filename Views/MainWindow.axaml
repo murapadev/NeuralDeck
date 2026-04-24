@@ -5,6 +5,7 @@
         x:Class="NeuralDeck.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Title="NeuralDeck"
+        Icon="avares://NeuralDeck/Assets/Icons/app.png"
         Width="420" Height="700"
         MinWidth="380" MinHeight="500"
         Background="#09090b"
@@ -160,28 +161,6 @@
                     <!-- Embedded web browser for non-Ollama providers -->
                     <Grid IsVisible="{Binding ShowProviderView}">
                         <views:WebBrowserView DataContext="{Binding WebBrowserViewModel}"/>
-                    </Grid>
-
-                    <!-- Settings view with header -->
-                    <Grid IsVisible="{Binding CurrentView, Converter={StaticResource EqualityConverter}, ConverterParameter=settings}"
-                          RowDefinitions="Auto,*">
-                        <Border Grid.Row="0" Background="#18181b"
-                                BorderBrush="#27272a" BorderThickness="0,0,0,1"
-                                Padding="4,4">
-                            <Grid ColumnDefinitions="Auto,*">
-                                <Button Grid.Column="0" Width="36" Height="36" Padding="0"
-                                        Command="{Binding CloseSettingsCommand}"
-                                        ToolTip.Tip="Back">
-                                    <Path Width="16" Height="16" Stretch="Uniform" Fill="#71717a"
-                                          Data="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"/>
-                                </Button>
-                                <TextBlock Grid.Column="1" Text="Settings"
-                                           FontSize="14" FontWeight="SemiBold"
-                                           Foreground="#fafafa"
-                                           VerticalAlignment="Center" Margin="8,0"/>
-                            </Grid>
-                        </Border>
-                        <views:SettingsView Grid.Row="1" DataContext="{Binding SettingsViewModel}"/>
                     </Grid>
                 </Grid>
             </Grid>
