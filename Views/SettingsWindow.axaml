@@ -57,12 +57,9 @@
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8"
                             VerticalAlignment="Center" Margin="12,0">
-                    <Border Width="16" Height="16" CornerRadius="4" Background="#6366f1"
-                            VerticalAlignment="Center">
-                        <TextBlock Text="N" FontSize="10" FontWeight="Bold"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center"
-                                   Foreground="#fafafa"/>
-                    </Border>
+                    <Image Width="16" Height="16"
+                           VerticalAlignment="Center"
+                           Source="avares://NeuralDeck/Assets/Icons/app.png"/>
                     <TextBlock Text="NeuralDeck Settings" FontSize="11" Foreground="#a1a1aa"
                                VerticalAlignment="Center"/>
                 </StackPanel>

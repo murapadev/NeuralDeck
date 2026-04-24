@@ -15,12 +15,9 @@
             <StackPanel IsVisible="{Binding CurrentStep, Converter={StaticResource EqualityConverter}, ConverterParameter=0}"
                         VerticalAlignment="Center" HorizontalAlignment="Center"
                         Spacing="24" Margin="32">
-                <Border Width="88" Height="88" CornerRadius="22"
-                        Background="#6366f1" HorizontalAlignment="Center">
-                    <TextBlock Text="N" FontSize="44" FontWeight="Bold"
-                               HorizontalAlignment="Center" VerticalAlignment="Center"
-                               Foreground="#fafafa"/>
-                </Border>
+                <Image Width="88" Height="88"
+                       HorizontalAlignment="Center"
+                       Source="avares://NeuralDeck/Assets/Icons/app.png"/>
 
                 <StackPanel Spacing="8" HorizontalAlignment="Center">
                     <TextBlock Text="Welcome to NeuralDeck"
@@ -60,11 +57,12 @@
                                         <Border Grid.Column="0" Width="36" Height="36"
                                                 CornerRadius="9" Margin="0,0,12,0"
                                                 Background="{Binding Color, Converter={StaticResource StringToColorConverter}}">
-                                            <TextBlock Text="{Binding Name, Converter={StaticResource FirstTwoConverter}}"
-                                                       FontSize="11" FontWeight="Bold"
-                                                       HorizontalAlignment="Center"
-                                                       VerticalAlignment="Center"
-                                                       Foreground="#fafafa"/>
+                                            <Viewbox Width="20" Height="20" Stretch="Uniform">
+                                                <Path Data="{Binding Id, Converter={StaticResource ProviderIconConverter}}"
+                                                      Fill="#fafafa"
+                                                      Stroke="#fafafa"
+                                                      StrokeThickness="0.3"/>
+                                            </Viewbox>
                                         </Border>
                                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
                                             <TextBlock Text="{Binding Name}" FontSize="14"

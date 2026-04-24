@@ -109,6 +109,12 @@ public class ConfigService
             }
         }
 
+        // Migration: older configs stored Ollama with a pure-white color, which makes
+        // the white-on-white glyph invisible in the sidebar. Refresh it to the new default.
+        var ollama = config.Providers.FirstOrDefault(p => p.Id == "ollama");
+        if (ollama != null && string.Equals(ollama.Color, "#ffffff", StringComparison.OrdinalIgnoreCase))
+            ollama.Color = "#1f2937";
+
         // Ensure window config has valid values
         if (config.Window.Width < 300) config.Window.Width = AppConstants.DefaultWindowWidth;
         if (config.Window.Height < 400) config.Window.Height = AppConstants.DefaultWindowHeight;

@@ -17,5 +17,6 @@
         <converters:FirstTwoConverter x:Key="FirstTwoConverter"/>
         <converters:RoleToBrushConverter x:Key="RoleToBrushConverter"/>
         <converters:StepToDotConverter x:Key="StepToDotConverter"/>
+        <converters:ProviderIconConverter x:Key="ProviderIconConverter"/>
     </Application.Resources>
 </Application>

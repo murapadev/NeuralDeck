@@ -231,12 +231,9 @@
             <!-- About -->
             <ScrollViewer IsVisible="{Binding SelectedTab, Converter={StaticResource EqualityConverter}, ConverterParameter=about}">
                 <StackPanel Spacing="20" Margin="16" HorizontalAlignment="Center">
-                    <Border Width="72" Height="72" CornerRadius="18" Background="#6366f1"
-                            HorizontalAlignment="Center" Margin="0,24,0,0">
-                        <TextBlock Text="N" FontSize="36" FontWeight="Bold"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center"
-                                   Foreground="#fafafa"/>
-                    </Border>
+                    <Image Width="72" Height="72"
+                           HorizontalAlignment="Center" Margin="0,24,0,0"
+                           Source="avares://NeuralDeck/Assets/Icons/app.png"/>
                     <TextBlock Text="NeuralDeck" FontSize="22" FontWeight="Bold"
                                Foreground="#fafafa" HorizontalAlignment="Center"/>
                     <TextBlock Text="{Binding AppVersion, StringFormat='Version {0}'}"

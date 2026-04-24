@@ -30,7 +30,7 @@ public static class AppConstants
         new ProviderConfig { Id = "claude", Name = "Claude", Url = "https://claude.ai/new", Icon = "claude", Color = "#d97706", Enabled = true, Order = 2, IsCustom = false },
         new ProviderConfig { Id = "deepseek", Name = "DeepSeek", Url = "https://chat.deepseek.com", Icon = "deepseek", Color = "#3b82f6", Enabled = true, Order = 3, IsCustom = false },
         new ProviderConfig { Id = "perplexity", Name = "Perplexity", Url = "https://www.perplexity.ai", Icon = "perplexity", Color = "#22c55e", Enabled = true, Order = 4, IsCustom = false },
-        new ProviderConfig { Id = "ollama", Name = "Ollama", Url = "http://localhost:11434", Icon = "ollama", Color = "#ffffff", Enabled = true, Order = 5, IsCustom = false },
+        new ProviderConfig { Id = "ollama", Name = "Ollama", Url = "http://localhost:11434", Icon = "ollama", Color = "#1f2937", Enabled = true, Order = 5, IsCustom = false },
     };
 
     // Colors
