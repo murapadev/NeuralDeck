@@ -1,12 +1,12 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:NeuralDeck.ViewModels"
         xmlns:views="clr-namespace:NeuralDeck.Views"
         x:Class="NeuralDeck.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
         Title="NeuralDeck"
-        Width="420"
-        Height="700"
-        MinWidth="380"
-        MinHeight="500"
+        Width="420" Height="700"
+        MinWidth="380" MinHeight="500"
         Background="#09090b"
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaChromeHints="NoChrome"
@@ -20,26 +20,51 @@
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="#fafafa"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="Padding" Value="4"/>
+            <Setter Property="Cursor" Value="Hand"/>
         </Style>
-        <Style Selector="Button:pointerover">
+        <Style Selector="Button:pointerover /template/ ContentPresenter">
             <Setter Property="Background" Value="#27272a"/>
         </Style>
-        <Style Selector="Button:pressed">
+        <Style Selector="Button:pressed /template/ ContentPresenter">
             <Setter Property="Background" Value="#3f3f46"/>
+        </Style>
+        <Style Selector="ComboBox">
+            <Setter Property="Background" Value="#27272a"/>
+            <Setter Property="Foreground" Value="#fafafa"/>
+            <Setter Property="BorderBrush" Value="#3f3f46"/>
+        </Style>
+        <Style Selector="CheckBox">
+            <Setter Property="Foreground" Value="#d4d4d8"/>
+        </Style>
+        <Style Selector="TextBox">
+            <Setter Property="Background" Value="#27272a"/>
+            <Setter Property="Foreground" Value="#fafafa"/>
+            <Setter Property="BorderBrush" Value="#3f3f46"/>
+            <Setter Property="CaretBrush" Value="#6366f1"/>
         </Style>
     </Window.Styles>
 
-    <Grid RowDefinitions="*">
-        <Grid ColumnDefinitions="72,*">
+    <Grid>
+        <!-- Onboarding overlay (wrapper controls visibility against MainWindowViewModel) -->
+        <Grid IsVisible="{Binding ShowOnboarding}">
+            <views:OnboardingView DataContext="{Binding OnboardingViewModel}"/>
+        </Grid>
+
+        <!-- Main app -->
+        <Grid IsVisible="{Binding !ShowOnboarding}"
+              ColumnDefinitions="72,*">
+
             <!-- Sidebar -->
             <Border Grid.Column="0"
                     Background="#18181b"
                     BorderBrush="#27272a"
                     BorderThickness="0,0,1,0">
                 <Grid RowDefinitions="Auto,*,Auto">
-                    <!-- Logo Area -->
-                    <StackPanel Grid.Row="0" HorizontalAlignment="Center" Margin="0,16,0,0">
+
+                    <!-- Logo (drag handle) -->
+                    <StackPanel Grid.Row="0" HorizontalAlignment="Center"
+                                Margin="0,20,0,8">
                         <Border Width="40" Height="40" CornerRadius="10" Background="#6366f1">
                             <TextBlock Text="N" FontSize="20" FontWeight="Bold"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"
@@ -47,33 +72,145 @@
                         </Border>
                     </StackPanel>
 
-                    <!-- Provider Buttons -->
-                    <StackPanel Grid.Row="1" HorizontalAlignment="Center" Margin="0,16,0,0" Spacing="8">
-                        <Button Width="48" Height="48" Padding="0">
-                            <Border Width="40" Height="40" CornerRadius="10" Background="#f97316">
-                                <TextBlock Text="OL" FontSize="10" FontWeight="Bold"
-                                           HorizontalAlignment="Center" VerticalAlignment="Center"
-                                           Foreground="#fafafa"/>
-                            </Border>
+                    <!-- Provider buttons -->
+                    <ScrollViewer Grid.Row="1"
+                                  HorizontalScrollBarVisibility="Disabled"
+                                  VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding EnabledProviders}"
+                                      HorizontalAlignment="Center"
+                                      Margin="0,4">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Spacing="6"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:ProviderDisplay">
+                                    <Button Width="52" Height="52" Padding="4"
+                                            CornerRadius="12"
+                                            Command="{Binding SelectCommand}"
+                                            ToolTip.Tip="{Binding Name}">
+                                        <!-- Indigo ring when selected -->
+                                        <Border Width="44" Height="44" CornerRadius="11"
+                                                BorderThickness="2"
+                                                BorderBrush="{Binding IsSelected, Converter={StaticResource BoolToAccentConverter}}">
+                                            <Border Width="38" Height="38" CornerRadius="9"
+                                                    Background="{Binding Color, Converter={StaticResource StringToColorConverter}}">
+                                                <TextBlock Text="{Binding Name, Converter={StaticResource FirstTwoConverter}}"
+                                                           FontSize="10" FontWeight="Bold"
+                                                           HorizontalAlignment="Center"
+                                                           VerticalAlignment="Center"
+                                                           Foreground="#fafafa"/>
+                                            </Border>
+                                        </Border>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+
+                    <!-- Bottom buttons -->
+                    <StackPanel Grid.Row="2" HorizontalAlignment="Center"
+                                Margin="0,0,0,16" Spacing="4">
+                        <!-- Pin / Always-on-top toggle -->
+                        <Button Width="48" Height="48" Padding="0" CornerRadius="10"
+                                Command="{Binding TogglePinCommand}"
+                                ToolTip.Tip="Toggle Always on Top">
+                            <Path Width="18" Height="18" Stretch="Uniform"
+                                  Fill="{Binding IsPinned, Converter={StaticResource BoolToColorConverter}}"
+                                  Data="M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12Z"/>
+                        </Button>
+                        <!-- Settings -->
+                        <Button Width="48" Height="48" Padding="0" CornerRadius="10"
+                                Command="{Binding OpenSettingsCommand}"
+                                ToolTip.Tip="Settings">
+                            <Path Width="18" Height="18" Stretch="Uniform" Fill="#71717a"
+                                  Data="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z"/>
                         </Button>
                     </StackPanel>
-
-                    <!-- Settings Button -->
-                    <Button Grid.Row="2"
-                            HorizontalAlignment="Center"
-                            Margin="0,0,0,16"
-                            Width="48" Height="48"
-                            Padding="0">
-                        <Path Data="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z"
-                              Fill="#71717a"
-                              Width="24" Height="24"
-                              Stretch="Uniform"/>
-                    </Button>
                 </Grid>
             </Border>
 
-            <!-- Content Area -->
-            <views:ChatView Grid.Column="1"/>
+            <!-- Content area -->
+            <Grid Grid.Column="1" RowDefinitions="36,*">
+
+                <!-- Title bar (draggable) -->
+                <Border Grid.Row="0" Background="#0f0f11"
+                        BorderBrush="#27272a" BorderThickness="0,0,0,1"
+                        x:Name="TitleBar">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="NeuralDeck" FontSize="11" Foreground="#52525b"
+                                   VerticalAlignment="Center" Margin="12,0"/>
+                        <Button Grid.Column="1" Width="36" Height="36" Padding="0"
+                                Command="{Binding HideWindowCommand}"
+                                ToolTip.Tip="Hide window">
+                            <Path Width="12" Height="12" Stretch="Uniform" Fill="#71717a"
+                                  Data="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/>
+                        </Button>
+                    </Grid>
+                </Border>
+
+                <!-- View area -->
+                <Grid Grid.Row="1">
+                    <!-- Ollama chat view -->
+                    <Grid IsVisible="{Binding ShowChatView}">
+                        <views:ChatView DataContext="{Binding ChatViewModel}"/>
+                    </Grid>
+
+                    <!-- Non-Ollama provider placeholder -->
+                    <Grid IsVisible="{Binding ShowProviderView}">
+                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
+                                    Spacing="16" Margin="24">
+                            <Border Width="64" Height="64" CornerRadius="16"
+                                    HorizontalAlignment="Center"
+                                    Background="{Binding SelectedProvider.Color, Converter={StaticResource StringToColorConverter}}">
+                                <TextBlock Text="{Binding SelectedProvider.Name, Converter={StaticResource FirstTwoConverter}}"
+                                           FontSize="24" FontWeight="Bold"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                                           Foreground="#fafafa"/>
+                            </Border>
+                            <StackPanel Spacing="6" HorizontalAlignment="Center">
+                                <TextBlock Text="{Binding SelectedProvider.Name}"
+                                           FontSize="20" FontWeight="Bold"
+                                           Foreground="#fafafa" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{Binding SelectedProvider.Url}"
+                                           FontSize="11" Foreground="#52525b"
+                                           HorizontalAlignment="Center"/>
+                            </StackPanel>
+                            <TextBlock Text="Web integration coming in a future version"
+                                       FontSize="13" Foreground="#71717a"
+                                       HorizontalAlignment="Center" TextAlignment="Center"
+                                       TextWrapping="Wrap" MaxWidth="260"/>
+                            <Button Content="Open in browser"
+                                    Command="{Binding OpenProviderInBrowserCommand}"
+                                    Padding="16,8" Background="#27272a" Foreground="#fafafa"
+                                    CornerRadius="8" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Settings view with header -->
+                    <Grid IsVisible="{Binding CurrentView, Converter={StaticResource EqualityConverter}, ConverterParameter=settings}"
+                          RowDefinitions="Auto,*">
+                        <Border Grid.Row="0" Background="#18181b"
+                                BorderBrush="#27272a" BorderThickness="0,0,0,1"
+                                Padding="4,4">
+                            <Grid ColumnDefinitions="Auto,*">
+                                <Button Grid.Column="0" Width="36" Height="36" Padding="0"
+                                        Command="{Binding CloseSettingsCommand}"
+                                        ToolTip.Tip="Back">
+                                    <Path Width="16" Height="16" Stretch="Uniform" Fill="#71717a"
+                                          Data="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"/>
+                                </Button>
+                                <TextBlock Grid.Column="1" Text="Settings"
+                                           FontSize="14" FontWeight="SemiBold"
+                                           Foreground="#fafafa"
+                                           VerticalAlignment="Center" Margin="8,0"/>
+                            </Grid>
+                        </Border>
+                        <views:SettingsView Grid.Row="1" DataContext="{Binding SettingsViewModel}"/>
+                    </Grid>
+                </Grid>
+            </Grid>
         </Grid>
     </Grid>
 </Window>

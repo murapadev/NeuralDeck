@@ -76,9 +76,7 @@ public partial class OnboardingViewModel : ViewModelBase
     [RelayCommand]
     private void Finish()
     {
-        // Save provider selection
         ConfigService.Instance.UpdateProviders(Providers.ToList());
-        ConfigService.Instance.MarkFirstRunComplete();
         OnboardingComplete?.Invoke(this, EventArgs.Empty);
     }
 }

@@ -31,6 +31,7 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
 
     public ObservableCollection<ChatMessage> Messages { get; } = new();
     public ObservableCollection<OllamaModel> Models { get; } = new();
+    public bool HasMessages => Messages.Count > 0;
 
     private readonly OllamaService _ollamaService;
     private readonly ConfigService _configService;
@@ -42,6 +43,8 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
     {
         _ollamaService = OllamaService.Instance;
         _configService = ConfigService.Instance;
+
+        Messages.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasMessages));
 
         // Start connection check
         _ = CheckConnectionAsync();

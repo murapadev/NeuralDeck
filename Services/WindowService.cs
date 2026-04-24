@@ -34,9 +34,20 @@ public class WindowService
             }
         };
 
+        window.SizeChanged += (s, e) =>
+        {
+            SaveWindowSize((int)e.NewSize.Width, (int)e.NewSize.Height);
+        };
+
+        window.Deactivated += (s, e) =>
+        {
+            var config = ConfigService.Instance.GetConfig();
+            if (config.Window.HideOnBlur && _isWindowVisible)
+                HideWindow();
+        };
+
         window.Closing += (s, e) =>
         {
-            // Hide instead of close
             e.Cancel = true;
             HideWindow();
         };

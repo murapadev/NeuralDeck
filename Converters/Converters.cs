@@ -98,6 +98,33 @@ public class FirstTwoConverter : IValueConverter
     }
 }
 
+public class BoolToAccentConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        bool selected = value is bool b && b;
+        return selected
+            ? new SolidColorBrush(Color.Parse("#6366f1"))
+            : new SolidColorBrush(Colors.Transparent);
+    }
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotImplementedException();
+}
+
+public class RoleToBrushConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is string role && role == "user")
+            return new SolidColorBrush(Color.Parse("#1e1b4b"));
+        return new SolidColorBrush(Color.Parse("#27272a"));
+    }
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotImplementedException();
+}
+
 public class StepToDotConverter : IValueConverter
 {
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)

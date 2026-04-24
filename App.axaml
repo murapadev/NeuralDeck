@@ -10,10 +10,12 @@
 
     <Application.Resources>
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <converters:BoolToAccentConverter x:Key="BoolToAccentConverter"/>
         <converters:BoolToColorConverter x:Key="BoolToColorConverter"/>
         <converters:StringToColorConverter x:Key="StringToColorConverter"/>
         <converters:EqualityConverter x:Key="EqualityConverter"/>
         <converters:FirstTwoConverter x:Key="FirstTwoConverter"/>
+        <converters:RoleToBrushConverter x:Key="RoleToBrushConverter"/>
         <converters:StepToDotConverter x:Key="StepToDotConverter"/>
     </Application.Resources>
 </Application>

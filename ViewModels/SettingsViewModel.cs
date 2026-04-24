@@ -166,6 +166,26 @@ public partial class SettingsViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private void SelectTab(string tab)
+    {
+        SelectedTab = tab;
+    }
+
+    [RelayCommand]
+    private void SaveCurrentTab()
+    {
+        switch (SelectedTab)
+        {
+            case "general": SaveGeneral(); break;
+            case "appearance": SaveAppearance(); break;
+            case "shortcuts": SaveShortcuts(); break;
+            case "privacy": SavePrivacy(); break;
+            case "window": SaveWindow(); break;
+            case "providers": SaveProviders(); break;
+        }
+    }
+
+    [RelayCommand]
     private void OpenGitHub()
     {
         try
