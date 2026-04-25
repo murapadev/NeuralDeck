@@ -22,7 +22,16 @@ public class OllamaService : IDisposable
     {
         _httpClient = new HttpClient();
         _httpClient.Timeout = TimeSpan.FromSeconds(60);
-        _baseUrl = AppConstants.DefaultOllamaUrl;
+        _baseUrl = ConfigService.Instance.GetConfig().OllamaUrl?.TrimEnd('/')
+                   ?? AppConstants.DefaultOllamaUrl;
+
+        // Live-update the base URL whenever the user changes it in Settings.
+        ConfigService.Instance.ConfigChanged += (_, cfg) =>
+        {
+            var url = cfg.OllamaUrl?.TrimEnd('/');
+            if (!string.IsNullOrEmpty(url) && url != _baseUrl)
+                _baseUrl = url!;
+        };
     }
 
     public string BaseUrl

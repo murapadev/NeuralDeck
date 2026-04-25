@@ -77,7 +77,7 @@ public class ConfigService
     {
         return new AppConfig
         {
-            Version = "0.4.5",
+            Version = "0.5.0",
             Debug = false,
             FirstRun = true,
             LastProvider = null,
@@ -182,12 +182,14 @@ public class ConfigService
         bool? firstRun = null,
         string? lastProvider = null,
         bool? debug = null,
-        string? lastOllamaModel = null)
+        string? lastOllamaModel = null,
+        string? ollamaUrl = null)
     {
         if (firstRun.HasValue) _config.FirstRun = firstRun.Value;
         if (lastProvider != null) _config.LastProvider = lastProvider;
         if (debug.HasValue) _config.Debug = debug.Value;
         if (lastOllamaModel != null) _config.LastOllamaModel = lastOllamaModel;
+        if (!string.IsNullOrWhiteSpace(ollamaUrl)) _config.OllamaUrl = ollamaUrl.Trim();
         SaveConfig();
         ConfigChanged?.Invoke(this, _config);
     }

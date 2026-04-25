@@ -16,6 +16,9 @@ public partial class SettingsViewModel : ViewModelBase
     private bool _debugMode;
 
     [ObservableProperty]
+    private string _ollamaUrl = "http://localhost:11434";
+
+    [ObservableProperty]
     private string _theme = "dark";
 
     [ObservableProperty]
@@ -54,7 +57,23 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty]
     private double _windowOpacity = 1.0;
 
-    public string AppVersion { get; } = "0.4.5";
+    public string AppVersion { get; } = ResolveAppVersion();
+
+    private static string ResolveAppVersion()
+    {
+        // Read from the assembly version attribute (mirrors <Version> in NeuralDeck.csproj),
+        // so the About tab can never drift from the actual build number again.
+        var asm = typeof(SettingsViewModel).Assembly;
+        var info = asm.GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), false);
+        if (info.Length > 0 && info[0] is System.Reflection.AssemblyInformationalVersionAttribute infoAttr)
+        {
+            // Strip the "+commit-hash" suffix if present
+            var v = infoAttr.InformationalVersion;
+            var plus = v.IndexOf('+');
+            return plus > 0 ? v[..plus] : v;
+        }
+        return asm.GetName().Version?.ToString(3) ?? "0.0.0";
+    }
 
     [ObservableProperty] private bool _isAddingProvider = false;
     [ObservableProperty] private string _newProviderName = "";
@@ -78,6 +97,7 @@ public partial class SettingsViewModel : ViewModelBase
         var config = ConfigService.Instance.GetConfig();
 
         DebugMode = config.Debug;
+        OllamaUrl = string.IsNullOrWhiteSpace(config.OllamaUrl) ? "http://localhost:11434" : config.OllamaUrl;
         Theme = config.Appearance.Theme;
         Language = config.Appearance.Language;
         ShowProviderNames = config.Appearance.ShowProviderNames;
@@ -105,7 +125,7 @@ public partial class SettingsViewModel : ViewModelBase
     [RelayCommand]
     private void SaveGeneral()
     {
-        ConfigService.Instance.UpdateGeneral(debug: DebugMode);
+        ConfigService.Instance.UpdateGeneral(debug: DebugMode, ollamaUrl: OllamaUrl);
     }
 
     [RelayCommand]

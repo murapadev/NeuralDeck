@@ -40,9 +40,19 @@
             <ScrollViewer IsVisible="{Binding SelectedTab, Converter={StaticResource EqualityConverter}, ConverterParameter=general}">
                 <StackPanel Spacing="16" Margin="16">
                     <TextBlock Text="General" FontSize="16" FontWeight="SemiBold" Foreground="#fafafa"/>
+
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Ollama server URL" FontSize="12" Foreground="#71717a"/>
+                        <TextBox Text="{Binding OllamaUrl}" Width="320" HorizontalAlignment="Left"
+                                 Watermark="http://localhost:11434"/>
+                        <TextBlock Text="Where the local Ollama daemon listens. Leave default unless you've changed Ollama's bind address."
+                                   FontSize="11" Foreground="#52525b" TextWrapping="Wrap" MaxWidth="420"/>
+                    </StackPanel>
+
                     <CheckBox Content="Debug mode" IsChecked="{Binding DebugMode}" Foreground="#d4d4d8"/>
+
                     <Button Content="Save" Command="{Binding SaveGeneralCommand}"
-                            Padding="16,8" Background="#6366f1" Foreground="#fafafa"
+                            Padding="16,8" Background="{DynamicResource AccentBrush}" Foreground="#fafafa"
                             CornerRadius="6" HorizontalAlignment="Left"/>
                 </StackPanel>
             </ScrollViewer>
@@ -118,21 +128,34 @@
 
             <!-- Shortcuts -->
             <ScrollViewer IsVisible="{Binding SelectedTab, Converter={StaticResource EqualityConverter}, ConverterParameter=shortcuts}">
-                <StackPanel Spacing="16" Margin="16">
+                <StackPanel Spacing="14" Margin="16">
                     <TextBlock Text="Keyboard Shortcuts" FontSize="16" FontWeight="SemiBold" Foreground="#fafafa"/>
+                    <TextBlock Text="Modifiers: CommandOrControl, Shift, Alt, Meta. Separate with +."
+                               FontSize="11" Foreground="#71717a" TextWrapping="Wrap"/>
 
-                    <StackPanel Spacing="6">
+                    <StackPanel Spacing="4">
                         <TextBlock Text="Toggle window" FontSize="12" Foreground="#71717a"/>
-                        <TextBox Text="{Binding ToggleWindowShortcut}" Width="260" HorizontalAlignment="Left"/>
+                        <TextBox Text="{Binding ToggleWindowShortcut}" Width="280" HorizontalAlignment="Left"/>
                     </StackPanel>
 
-                    <StackPanel Spacing="6">
+                    <StackPanel Spacing="4">
                         <TextBlock Text="Open settings" FontSize="12" Foreground="#71717a"/>
-                        <TextBox Text="{Binding OpenSettingsShortcut}" Width="260" HorizontalAlignment="Left"/>
+                        <TextBox Text="{Binding OpenSettingsShortcut}" Width="280" HorizontalAlignment="Left"/>
                     </StackPanel>
+
+                    <Border Background="#18181b" CornerRadius="6" Padding="12,8">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Built-in shortcuts (read-only):" FontSize="11" Foreground="#a1a1aa"/>
+                            <TextBlock FontSize="11" Foreground="#71717a">
+                                <Run Text="• Ctrl+Shift+1..5 — switch to provider N"/><LineBreak/>
+                                <Run Text="• Ctrl+Q — quit NeuralDeck"/><LineBreak/>
+                                <Run Text="• Esc (in Settings) — close Settings window"/>
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
 
                     <Button Content="Save" Command="{Binding SaveShortcutsCommand}"
-                            Padding="16,8" Background="#6366f1" Foreground="#fafafa"
+                            Padding="16,8" Background="{DynamicResource AccentBrush}" Foreground="#fafafa"
                             CornerRadius="6" HorizontalAlignment="Left"/>
                 </StackPanel>
             </ScrollViewer>
@@ -144,7 +167,7 @@
                     <CheckBox Content="Clear data on close" IsChecked="{Binding ClearOnClose}" Foreground="#d4d4d8"/>
                     <CheckBox Content="Block trackers" IsChecked="{Binding BlockTrackers}" Foreground="#d4d4d8"/>
                     <Button Content="Save" Command="{Binding SavePrivacyCommand}"
-                            Padding="16,8" Background="#6366f1" Foreground="#fafafa"
+                            Padding="16,8" Background="{DynamicResource AccentBrush}" Foreground="#fafafa"
                             CornerRadius="6" HorizontalAlignment="Left"/>
                 </StackPanel>
             </ScrollViewer>
@@ -172,7 +195,7 @@
                     </StackPanel>
 
                     <Button Content="Save" Command="{Binding SaveWindowCommand}"
-                            Padding="16,8" Background="#6366f1" Foreground="#fafafa"
+                            Padding="16,8" Background="{DynamicResource AccentBrush}" Foreground="#fafafa"
                             CornerRadius="6" HorizontalAlignment="Left"/>
                 </StackPanel>
             </ScrollViewer>
@@ -192,12 +215,16 @@
                                     <Grid ColumnDefinitions="Auto,*,Auto,Auto">
                                         <Border Grid.Column="0" Width="32" Height="32"
                                                 CornerRadius="8" Margin="0,0,10,0"
-                                                Background="{Binding Color, Converter={StaticResource StringToColorConverter}}">
-                                            <TextBlock Text="{Binding Name, Converter={StaticResource FirstTwoConverter}}"
-                                                       FontSize="10" FontWeight="Bold"
-                                                       HorizontalAlignment="Center"
-                                                       VerticalAlignment="Center"
-                                                       Foreground="#fafafa"/>
+                                                Background="#27272a">
+                                            <Grid>
+                                                <Viewbox Width="18" Height="18" Stretch="Uniform">
+                                                    <Path Data="{Binding Id, Converter={StaticResource ProviderIconConverter}}"
+                                                          Fill="{Binding Color, Converter={StaticResource StringToColorConverter}}"/>
+                                                </Viewbox>
+                                                <Image Source="{Binding Id, Converter={StaticResource ProviderFaviconConverter}}"
+                                                       Width="24" Height="24" Stretch="Uniform"
+                                                       RenderOptions.BitmapInterpolationMode="HighQuality"/>
+                                            </Grid>
                                         </Border>
                                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                             <TextBlock Text="{Binding Name}" FontSize="13"
@@ -243,7 +270,7 @@
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <Button Content="Add" Command="{Binding ConfirmAddProviderCommand}"
-                                        Padding="16,6" Background="#6366f1" Foreground="#fafafa" CornerRadius="6"/>
+                                        Padding="16,6" Background="{DynamicResource AccentBrush}" Foreground="#fafafa" CornerRadius="6"/>
                                 <Button Content="Cancel" Command="{Binding CancelAddProviderCommand}"
                                         Padding="16,6" Background="#27272a" Foreground="#a1a1aa" CornerRadius="6"/>
                             </StackPanel>
@@ -257,7 +284,7 @@
                                 Padding="16,8" Background="#27272a" Foreground="#a1a1aa"
                                 CornerRadius="6"/>
                         <Button Content="Save" Command="{Binding SaveProvidersCommand}"
-                                Padding="16,8" Background="#6366f1" Foreground="#fafafa"
+                                Padding="16,8" Background="{DynamicResource AccentBrush}" Foreground="#fafafa"
                                 CornerRadius="6"/>
                     </StackPanel>
                 </StackPanel>

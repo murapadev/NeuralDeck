@@ -52,6 +52,7 @@ public class AppConfig
     public bool FirstRun { get; set; } = true;
     public string? LastProvider { get; set; }
     public string? LastOllamaModel { get; set; }
+    public string OllamaUrl { get; set; } = "http://localhost:11434";
     public WindowConfig Window { get; set; } = new();
     public ShortcutConfig Shortcuts { get; set; } = new();
     public List<ProviderConfig> Providers { get; set; } = new();
