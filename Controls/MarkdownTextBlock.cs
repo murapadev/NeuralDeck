@@ -1,8 +1,10 @@
 using System;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Documents;
+// Avalonia.Controls.Shapes.Path is used via fully-qualified name to avoid ambiguity with System.IO.Path
 using Avalonia.Layout;
 using Avalonia.Media;
 using NeuralDeck.Controls;
@@ -136,11 +138,49 @@ public sealed partial class MarkdownTextBlock : ContentControl
             }
         };
 
-        if (langLabel == null) return codeBody;
+        // Copy button — overlaid top-right on the code body
+        var capturedCode = code;
+        var copyBtn = new Button
+        {
+            Width = 26, Height = 26,
+            Padding = new Thickness(0),
+            CornerRadius = new CornerRadius(4),
+            Background = new SolidColorBrush(Color.Parse("#27272a")),
+            HorizontalAlignment = HorizontalAlignment.Right,
+            VerticalAlignment = VerticalAlignment.Top,
+            Margin = new Thickness(0, 6, 6, 0),
+            Opacity = 0.65,
+            Content = new Avalonia.Controls.Shapes.Path
+            {
+                Data = Geometry.Parse(
+                    "M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5" +
+                    "M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"),
+                Fill = new SolidColorBrush(Color.Parse("#a1a1aa")),
+                Width = 12, Height = 12,
+                Stretch = Stretch.Uniform
+            }
+        };
+        ToolTip.SetTip(copyBtn, "Copy code");
+        copyBtn.Click += async (s, _) =>
+        {
+            var btn = (Button)s!;
+            var clipboard = TopLevel.GetTopLevel(btn)?.Clipboard;
+            if (clipboard == null) return;
+            await clipboard.SetTextAsync(capturedCode);
+            btn.Opacity = 1.0;
+            await Task.Delay(700);
+            btn.Opacity = 0.65;
+        };
+
+        var codeWithButton = new Panel();
+        codeWithButton.Children.Add(codeBody);
+        codeWithButton.Children.Add(copyBtn);
+
+        if (langLabel == null) return codeWithButton;
 
         var wrapper = new StackPanel { Spacing = 0, Margin = new Thickness(0, 2, 0, 2) };
         wrapper.Children.Add(langLabel);
-        wrapper.Children.Add(codeBody);
+        wrapper.Children.Add(codeWithButton);
         return wrapper;
     }
 

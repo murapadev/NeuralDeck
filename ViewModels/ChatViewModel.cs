@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -15,6 +17,7 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
     private bool _isConnected;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanRegenerate))]
     private bool _isLoading;
 
     [ObservableProperty]
@@ -32,6 +35,8 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
     public ObservableCollection<ChatMessage> Messages { get; } = new();
     public ObservableCollection<OllamaModel> Models { get; } = new();
     public bool HasMessages => Messages.Count > 0;
+    public bool CanRegenerate => !IsLoading && Messages.Count >= 1
+                                 && Messages[^1].Role == "assistant";
 
     public string OllamaBaseUrl => _configService.GetConfig().OllamaUrl ?? AppConstants.DefaultOllamaUrl;
 
@@ -46,16 +51,18 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
         _ollamaService = OllamaService.Instance;
         _configService = ConfigService.Instance;
 
-        Messages.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasMessages));
+        Messages.CollectionChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(HasMessages));
+            OnPropertyChanged(nameof(CanRegenerate));
+        };
 
         // Restore persisted conversation history.
         foreach (var m in ConversationStore.Load())
             Messages.Add(m);
 
-        // Start connection check
         _ = CheckConnectionAsync();
 
-        // Periodic polling
         _pollCts = new CancellationTokenSource();
         _ = PollConnectionAsync(_pollCts.Token);
     }
@@ -68,18 +75,10 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
             {
                 await Task.Delay(AppConstants.OllamaPollIntervalMs, cancellationToken);
                 await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
-                {
-                    await CheckConnectionAsync();
-                });
+                    await CheckConnectionAsync());
             }
-            catch (OperationCanceledException)
-            {
-                break;
-            }
-            catch
-            {
-                // Continue polling even on errors
-            }
+            catch (OperationCanceledException) { break; }
+            catch { }
         }
     }
 
@@ -88,12 +87,10 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
     {
         IsLoadingModels = true;
         ConnectionStatus = "Connecting...";
-
         try
         {
             var connected = await _ollamaService.HealthCheckAsync();
             IsConnected = connected;
-
             if (connected)
             {
                 ConnectionStatus = "Connected";
@@ -123,9 +120,7 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
             var models = await _ollamaService.GetModelsAsync();
             Models.Clear();
             foreach (var model in models)
-            {
                 Models.Add(model);
-            }
 
             var preferred = SelectedModel?.Name ?? _configService.GetConfig().LastOllamaModel;
             SelectedModel = Models.FirstOrDefault(m => m.Name == preferred)
@@ -152,6 +147,26 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
             Content = userMessage,
             Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
         });
+
+        await RunChatAsync();
+    }
+
+    [RelayCommand]
+    private async Task RegenerateAsync()
+    {
+        if (!CanRegenerate || SelectedModel == null) return;
+
+        // Remove the last assistant message so it can be regenerated.
+        Messages.RemoveAt(Messages.Count - 1);
+        if (Messages.Count == 0) return;
+
+        await RunChatAsync();
+    }
+
+    // Shared streaming pipeline: builds history, adds assistant placeholder, streams.
+    private async Task RunChatAsync()
+    {
+        if (SelectedModel == null) return;
 
         var history = new List<ChatMessage>();
         var sysPrompt = _configService.GetConfig().OllamaSystemPrompt;
@@ -180,8 +195,6 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
                 history,
                 async chunk =>
                 {
-                    // Update Content in-place — avoids recreating the DataTemplate item
-                    // and rebuilding the MarkdownTextBlock on every token.
                     await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
                     {
                         lock (_messagesLock)
@@ -195,7 +208,7 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
         }
         catch (OperationCanceledException)
         {
-            // User pressed Stop — leave partial content as-is.
+            // User pressed Stop — partial content stays.
         }
         catch (Exception ex)
         {
@@ -208,7 +221,6 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
         }
         finally
         {
-            // Mark streaming done so MarkdownTextBlock renders the final response.
             await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
             {
                 lock (_messagesLock)
@@ -226,14 +238,8 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
 
     private void PersistConversation()
     {
-        try
-        {
-            ConversationStore.Save(Messages.ToList());
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[ChatViewModel] Persist failed: {ex.Message}");
-        }
+        try { ConversationStore.Save(Messages.ToList()); }
+        catch (Exception ex) { Console.WriteLine($"[ChatViewModel] Persist failed: {ex.Message}"); }
     }
 
     [RelayCommand]
@@ -244,16 +250,10 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
     }
 
     [RelayCommand]
-    private void CancelStream()
-    {
-        _chatCts?.Cancel();
-    }
+    private void CancelStream() => _chatCts?.Cancel();
 
     [RelayCommand]
-    private void SelectModel(OllamaModel model)
-    {
-        SelectedModel = model;
-    }
+    private void SelectModel(OllamaModel model) => SelectedModel = model;
 
     partial void OnSelectedModelChanged(OllamaModel? value)
     {

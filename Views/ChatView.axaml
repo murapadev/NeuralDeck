@@ -6,7 +6,7 @@
              x:Class="NeuralDeck.Views.ChatView"
              x:DataType="vm:ChatViewModel">
 
-    <Grid RowDefinitions="Auto,*,Auto">
+    <Grid RowDefinitions="Auto,*,Auto,Auto">
 
         <!-- Header: connection status + model selector -->
         <Border Grid.Row="0" Background="#18181b"
@@ -207,8 +207,27 @@
             </Panel>
         </ScrollViewer>
 
+        <!-- Regenerate bar — appears after the last assistant message -->
+        <Border Grid.Row="2"
+                IsVisible="{Binding CanRegenerate}"
+                Background="#18181b"
+                BorderBrush="#27272a" BorderThickness="0,1,0,0"
+                Padding="8,5">
+            <Button Command="{Binding RegenerateCommand}"
+                    HorizontalAlignment="Center"
+                    Padding="16,6" CornerRadius="6"
+                    Background="#27272a" Foreground="#a1a1aa"
+                    FontSize="12">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <Path Width="13" Height="13" Stretch="Uniform" Fill="#71717a"
+                          Data="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z"/>
+                    <TextBlock Text="Regenerate" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+        </Border>
+
         <!-- Input area -->
-        <Border Grid.Row="2" Background="#18181b"
+        <Border Grid.Row="3" Background="#18181b"
                 BorderBrush="#27272a" BorderThickness="0,1,0,0"
                 Padding="12,10">
             <Grid ColumnDefinitions="*,Auto">
