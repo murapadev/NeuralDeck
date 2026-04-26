@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using NeuralDeck.Models;
 using NeuralDeck.ViewModels;
@@ -117,6 +120,44 @@ public partial class ChatView : UserControl
             if (DataContext is ChatViewModel vm)
                 vm.SendMessageCommand.Execute(null);
         }
+    }
+
+    private async void OnExportClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not ChatViewModel vm || vm.Messages.Count == 0) return;
+        var topLevel = TopLevel.GetTopLevel(this);
+        if (topLevel == null) return;
+
+        var file = await topLevel.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = "Export conversation",
+            SuggestedFileName = $"neuraldeck_{DateTime.Now:yyyy-MM-dd_HH-mm}",
+            DefaultExtension = "md",
+            FileTypeChoices = new[]
+            {
+                new FilePickerFileType("Markdown") { Patterns = new[] { "*.md" } },
+                new FilePickerFileType("Plain text") { Patterns = new[] { "*.txt" } }
+            }
+        });
+
+        if (file == null) return;
+
+        var sb = new StringBuilder();
+        sb.AppendLine($"# NeuralDeck — Ollama chat export");
+        sb.AppendLine($"*Exported {DateTime.Now:yyyy-MM-dd HH:mm}*");
+        sb.AppendLine();
+
+        foreach (var msg in vm.Messages)
+        {
+            if (msg.Role == "system") continue;
+            sb.AppendLine($"### {(msg.IsUser ? "You" : "Ollama")}");
+            sb.AppendLine(msg.Content.TrimEnd());
+            sb.AppendLine();
+        }
+
+        await using var stream = await file.OpenWriteAsync();
+        await using var writer = new StreamWriter(stream, Encoding.UTF8);
+        await writer.WriteAsync(sb.ToString());
     }
 
     private async void OnCopyClick(object? sender, RoutedEventArgs e)

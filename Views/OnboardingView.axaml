@@ -59,7 +59,8 @@
                                                 Background="#27272a">
                                             <Grid>
                                                 <!-- Fallback glyph for custom providers -->
-                                                <Viewbox Width="20" Height="20" Stretch="Uniform">
+                                                <Viewbox Width="20" Height="20" Stretch="Uniform"
+                                                         IsVisible="{Binding Id, Converter={StaticResource ProviderGlyphVisibilityConverter}}">
                                                     <Path Data="{Binding Id, Converter={StaticResource ProviderIconConverter}}"
                                                           Fill="{Binding Color, Converter={StaticResource StringToColorConverter}}"/>
                                                 </Viewbox>

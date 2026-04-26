@@ -62,6 +62,20 @@
                                    FontSize="11" Foreground="#52525b" TextWrapping="Wrap" MaxWidth="420"/>
                     </StackPanel>
 
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="System prompt (Ollama)" FontSize="12" Foreground="#71717a"/>
+                        <TextBox Text="{Binding OllamaSystemPrompt}"
+                                 Width="320" HorizontalAlignment="Left"
+                                 MinHeight="72" MaxHeight="160"
+                                 AcceptsReturn="True"
+                                 TextWrapping="Wrap"
+                                 Watermark="You are a helpful assistant..."
+                                 FontFamily="Consolas,Monospace"
+                                 FontSize="11"/>
+                        <TextBlock Text="Injected as the system role before every Ollama conversation. Leave blank to use the model's default."
+                                   FontSize="11" Foreground="#52525b" TextWrapping="Wrap" MaxWidth="420"/>
+                    </StackPanel>
+
                     <CheckBox Content="Debug mode" IsChecked="{Binding DebugMode}" Foreground="#d4d4d8"/>
 
                     <Button Content="Save" Command="{Binding SaveGeneralCommand}"

@@ -42,14 +42,22 @@
                     </ComboBox.ItemTemplate>
                 </ComboBox>
 
-                <!-- Clear button -->
-                <Button Grid.Column="2" Padding="8,4"
-                        Command="{Binding ClearConversationCommand}"
-                        ToolTip.Tip="Clear conversation"
-                        IsVisible="{Binding IsConnected}">
-                    <Path Width="16" Height="16" Stretch="Uniform" Fill="#71717a"
-                          Data="M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9M7,6H17V19H7V6M9,8V17H11V8H9M13,8V17H15V8H13Z"/>
-                </Button>
+                <!-- Export + Clear buttons -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2"
+                            IsVisible="{Binding HasMessages}">
+                    <Button Padding="8,4"
+                            Click="OnExportClick"
+                            ToolTip.Tip="Export conversation">
+                        <Path Width="16" Height="16" Stretch="Uniform" Fill="#71717a"
+                              Data="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"/>
+                    </Button>
+                    <Button Padding="8,4"
+                            Command="{Binding ClearConversationCommand}"
+                            ToolTip.Tip="Clear conversation">
+                        <Path Width="16" Height="16" Stretch="Uniform" Fill="#71717a"
+                              Data="M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9M7,6H17V19H7V6M9,8V17H11V8H9M13,8V17H15V8H13Z"/>
+                    </Button>
+                </StackPanel>
             </Grid>
         </Border>
 

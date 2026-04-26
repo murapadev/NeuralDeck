@@ -19,6 +19,9 @@ public partial class SettingsViewModel : ViewModelBase
     private string _ollamaUrl = "http://localhost:11434";
 
     [ObservableProperty]
+    private string _ollamaSystemPrompt = "";
+
+    [ObservableProperty]
     private string _theme = "dark";
 
     [ObservableProperty]
@@ -98,6 +101,7 @@ public partial class SettingsViewModel : ViewModelBase
 
         DebugMode = config.Debug;
         OllamaUrl = string.IsNullOrWhiteSpace(config.OllamaUrl) ? "http://localhost:11434" : config.OllamaUrl;
+        OllamaSystemPrompt = config.OllamaSystemPrompt ?? "";
         Theme = config.Appearance.Theme;
         Language = config.Appearance.Language;
         ShowProviderNames = config.Appearance.ShowProviderNames;
@@ -125,7 +129,7 @@ public partial class SettingsViewModel : ViewModelBase
     [RelayCommand]
     private void SaveGeneral()
     {
-        ConfigService.Instance.UpdateGeneral(debug: DebugMode, ollamaUrl: OllamaUrl);
+        ConfigService.Instance.UpdateGeneral(debug: DebugMode, ollamaUrl: OllamaUrl, ollamaSystemPrompt: OllamaSystemPrompt);
     }
 
     [RelayCommand]

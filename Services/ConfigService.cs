@@ -208,13 +208,15 @@ public class ConfigService
         string? lastProvider = null,
         bool? debug = null,
         string? lastOllamaModel = null,
-        string? ollamaUrl = null)
+        string? ollamaUrl = null,
+        string? ollamaSystemPrompt = null)
     {
         if (firstRun.HasValue) _config.FirstRun = firstRun.Value;
         if (lastProvider != null) _config.LastProvider = lastProvider;
         if (debug.HasValue) _config.Debug = debug.Value;
         if (lastOllamaModel != null) _config.LastOllamaModel = lastOllamaModel;
         if (!string.IsNullOrWhiteSpace(ollamaUrl)) _config.OllamaUrl = ollamaUrl.Trim();
+        if (ollamaSystemPrompt != null) _config.OllamaSystemPrompt = ollamaSystemPrompt;
         SaveConfig();
         ConfigChanged?.Invoke(this, _config);
     }

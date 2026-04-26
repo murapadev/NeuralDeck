@@ -153,10 +153,13 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
             Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
         });
 
-        var history = Messages
+        var history = new List<ChatMessage>();
+        var sysPrompt = _configService.GetConfig().OllamaSystemPrompt;
+        if (!string.IsNullOrWhiteSpace(sysPrompt))
+            history.Add(new ChatMessage { Role = "system", Content = sysPrompt.Trim() });
+        history.AddRange(Messages
             .Where(m => m.Role != "system")
-            .Select(m => new ChatMessage { Role = m.Role, Content = m.Content })
-            .ToList();
+            .Select(m => new ChatMessage { Role = m.Role, Content = m.Content }));
 
         var assistantMessage = new ChatMessage
         {
