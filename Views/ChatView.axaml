@@ -37,7 +37,7 @@
                           FontSize="12">
                     <ComboBox.ItemTemplate>
                         <DataTemplate x:DataType="models:OllamaModel">
-                            <TextBlock Text="{Binding Name}" FontSize="12"/>
+                            <TextBlock Text="{Binding DisplayName}" FontSize="12" ToolTip.Tip="{Binding Name}"/>
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
                 </ComboBox>

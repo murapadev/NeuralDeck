@@ -27,6 +27,9 @@ public class OllamaModel
     public long Size { get; set; }
     public string Digest { get; set; } = string.Empty;
     public string ModifiedAt { get; set; } = string.Empty;
+
+    // Strip the ":latest" tag for display — other version tags (":7b", ":q4") are kept.
+    public string DisplayName => Name.EndsWith(":latest") ? Name[..^7] : Name;
 }
 
 public class NavigationState

@@ -151,4 +151,25 @@ public class MarkdownParserTests
         Assert.Single(blocks);
         Assert.Equal(BlockType.BulletList, blocks[0].Type);
     }
+
+    [Fact]
+    public void ParseParagraphWithLink_KeptAsText()
+    {
+        // Links are rendered inline by MarkdownTextBlock; the parser just sees a paragraph.
+        var blocks = MarkdownParser.Parse("See [Avalonia](https://avaloniaui.net) for details.");
+        Assert.Single(blocks);
+        Assert.Equal(BlockType.Paragraph, blocks[0].Type);
+        Assert.Contains("[Avalonia]", blocks[0].Content);
+    }
+
+    [Fact]
+    public void ParseCodeFence_IndentedCode_PreservesIndent()
+    {
+        var md = "```python\ndef hello():\n    return 42\n```";
+        var blocks = MarkdownParser.Parse(md);
+        Assert.Single(blocks);
+        Assert.Equal(BlockType.CodeFence, blocks[0].Type);
+        Assert.Equal("python", blocks[0].Language);
+        Assert.Contains("    return 42", blocks[0].Content);
+    }
 }

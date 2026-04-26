@@ -1,8 +1,11 @@
+using System.Collections.Specialized;
+using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
+using NeuralDeck.Models;
 using NeuralDeck.ViewModels;
 
 namespace NeuralDeck.Views;
@@ -11,6 +14,7 @@ public partial class ChatView : UserControl
 {
     private ChatViewModel? _messagesViewModel;
     private TextBox? _messageInput;
+    private bool _scrollPending;
 
     public ChatView()
     {
@@ -21,40 +25,58 @@ public partial class ChatView : UserControl
     private void OnDataContextChanged(object? sender, System.EventArgs e)
     {
         if (DataContext is ChatViewModel vm)
-        {
             SubscribeToMessages(vm);
-        }
         else
-        {
             UnsubscribeFromMessages();
-        }
     }
 
     private void SubscribeToMessages(ChatViewModel vm)
     {
         if (_messagesViewModel == vm) return;
-
         UnsubscribeFromMessages();
         _messagesViewModel = vm;
         vm.Messages.CollectionChanged += OnMessagesChanged;
+        foreach (var msg in vm.Messages)
+            msg.PropertyChanged += OnMessagePropertyChanged;
     }
 
     private void UnsubscribeFromMessages()
     {
         if (_messagesViewModel != null)
+        {
             _messagesViewModel.Messages.CollectionChanged -= OnMessagesChanged;
+            foreach (var msg in _messagesViewModel.Messages)
+                msg.PropertyChanged -= OnMessagePropertyChanged;
+        }
         _messagesViewModel = null;
     }
 
-    private void OnMessagesChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+    private void OnMessagesChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
+        if (e.NewItems != null)
+            foreach (ChatMessage msg in e.NewItems)
+                msg.PropertyChanged += OnMessagePropertyChanged;
+        if (e.OldItems != null)
+            foreach (ChatMessage msg in e.OldItems)
+                msg.PropertyChanged -= OnMessagePropertyChanged;
         ScrollToBottom();
+    }
+
+    private void OnMessagePropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        // Scroll on every streaming token. Coalesced via _scrollPending flag so
+        // rapid token bursts only queue one scroll action at a time.
+        if (e.PropertyName == nameof(ChatMessage.Content))
+            ScrollToBottom();
     }
 
     private void ScrollToBottom()
     {
+        if (_scrollPending) return;
+        _scrollPending = true;
         Dispatcher.UIThread.Post(() =>
         {
+            _scrollPending = false;
             var sv = this.FindControl<ScrollViewer>("MessagesScrollViewer");
             if (sv != null)
                 sv.SetCurrentValue(ScrollViewer.OffsetProperty,

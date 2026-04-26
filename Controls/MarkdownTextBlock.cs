@@ -38,7 +38,16 @@ public sealed partial class MarkdownTextBlock : ContentControl
     {
         base.OnPropertyChanged(change);
         if (change.Property == TextProperty || change.Property == BaseSizeProperty)
+        {
+            // Skip rebuild when hidden — we're behind an IsStreaming=true SelectableTextBlock.
+            // Rebuild is triggered below when IsVisible flips back to true.
+            if (IsVisible) Rebuild();
+        }
+        else if (change.Property == IsVisibleProperty && IsVisible)
+        {
+            // Streaming just ended and this control became visible — build the final markdown.
             Rebuild();
+        }
     }
 
     private void Rebuild()
@@ -190,8 +199,8 @@ public sealed partial class MarkdownTextBlock : ContentControl
 
     // ── Inline parser ────────────────────────────────────────────────────────
 
-    // Matches **bold**, *italic*, `code` — in priority order (bold before italic).
-    [GeneratedRegex(@"\*\*(.+?)\*\*|`([^`]+)`|\*(.+?)\*")]
+    // Matches **bold**, `code`, *italic*, [link](url) — in priority order.
+    [GeneratedRegex(@"\*\*(.+?)\*\*|`([^`]+)`|\*(.+?)\*|\[([^\]]+)\]\(([^)]+)\)")]
     private static partial Regex InlineRegex();
 
     private static readonly FontFamily MonoFamily =
@@ -217,6 +226,12 @@ public sealed partial class MarkdownTextBlock : ContentControl
                 });
             else if (m.Groups[3].Success)               // *italic*
                 tb.Inlines!.Add(new Run(m.Groups[3].Value) { FontStyle = FontStyle.Italic });
+            else if (m.Groups[4].Success)               // [text](url)
+                tb.Inlines!.Add(new Run(m.Groups[4].Value)
+                {
+                    Foreground = new SolidColorBrush(Color.Parse("#818cf8")),
+                    TextDecorations = TextDecorations.Underline
+                });
 
             last = m.Index + m.Length;
         }
