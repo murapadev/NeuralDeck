@@ -195,6 +195,8 @@ public class WindowService
         {
             if (_settingsWindow?.DataContext is IDisposable d) d.Dispose();
             _settingsWindow = null;
+            // Bring the main window back to the foreground so the user can keep working.
+            Dispatcher.UIThread.Post(() => _mainWindow?.Activate());
         };
 
         // Make sure the settings window is centered and above the main window on first open.

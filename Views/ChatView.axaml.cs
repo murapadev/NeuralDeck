@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -115,5 +117,18 @@ public partial class ChatView : UserControl
             if (DataContext is ChatViewModel vm)
                 vm.SendMessageCommand.Execute(null);
         }
+    }
+
+    private async void OnCopyClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button btn || btn.Tag is not string text) return;
+        var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
+        if (clipboard == null) return;
+        await clipboard.SetTextAsync(text);
+        // Brief visual feedback: flash the button to full opacity then fade back.
+        var prev = btn.Opacity;
+        btn.Opacity = 1.0;
+        await Task.Delay(600);
+        btn.Opacity = prev;
     }
 }

@@ -91,26 +91,38 @@
                             <DataTemplate x:DataType="models:ChatMessage">
                                 <Grid Margin="0,6">
                                     <!-- Assistant message (left, neutral tile) -->
-                                    <Border IsVisible="{Binding !IsUser}"
-                                            CornerRadius="10,10,10,2"
-                                            Padding="14,10"
-                                            Background="#27272a"
-                                            HorizontalAlignment="Left"
-                                            MaxWidth="520">
-                                        <Panel>
-                                            <!-- While Ollama is streaming: fast plain text (no markdown parse per token) -->
-                                            <SelectableTextBlock Text="{Binding Content}"
-                                                                 IsVisible="{Binding IsStreaming}"
-                                                                 TextWrapping="Wrap"
-                                                                 Foreground="#e4e4e7"
-                                                                 FontSize="13"
-                                                                 LineHeight="19"/>
-                                            <!-- After streaming completes: full markdown rendering -->
-                                            <controls:MarkdownTextBlock Text="{Binding Content}"
-                                                                        IsVisible="{Binding !IsStreaming}"
-                                                                        BaseSize="13"/>
-                                        </Panel>
-                                    </Border>
+                                    <Grid IsVisible="{Binding !IsUser}"
+                                          HorizontalAlignment="Left" MaxWidth="520">
+                                        <Border CornerRadius="10,10,10,2"
+                                                Padding="14,10"
+                                                Background="#27272a">
+                                            <Panel>
+                                                <!-- While Ollama is streaming: fast plain text (no markdown parse per token) -->
+                                                <SelectableTextBlock Text="{Binding Content}"
+                                                                     IsVisible="{Binding IsStreaming}"
+                                                                     TextWrapping="Wrap"
+                                                                     Foreground="#e4e4e7"
+                                                                     FontSize="13"
+                                                                     LineHeight="19"/>
+                                                <!-- After streaming completes: full markdown rendering -->
+                                                <controls:MarkdownTextBlock Text="{Binding Content}"
+                                                                            IsVisible="{Binding !IsStreaming}"
+                                                                            BaseSize="13"/>
+                                            </Panel>
+                                        </Border>
+                                        <!-- Copy button — top-right overlay, visible only when not streaming -->
+                                        <Button IsVisible="{Binding !IsStreaming}"
+                                                HorizontalAlignment="Right" VerticalAlignment="Top"
+                                                Margin="0,4,4,0"
+                                                Width="22" Height="22" Padding="0" CornerRadius="4"
+                                                Opacity="0.45"
+                                                Tag="{Binding Content}"
+                                                Click="OnCopyClick"
+                                                ToolTip.Tip="Copy message">
+                                            <Path Width="11" Height="11" Stretch="Uniform" Fill="#a1a1aa"
+                                                  Data="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"/>
+                                        </Button>
+                                    </Grid>
                                     <!-- User message (right, accent-tinted) -->
                                     <Border IsVisible="{Binding IsUser}"
                                             CornerRadius="10,10,2,10"
@@ -131,17 +143,56 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <!-- Loading indicator -->
+                    <!-- Loading indicator (animated pulsing dots) -->
                     <Border IsVisible="{Binding IsLoading}"
                             HorizontalAlignment="Left"
                             Margin="8,4"
                             CornerRadius="8,8,8,2"
-                            Padding="12,10"
+                            Padding="12,12"
                             Background="#27272a">
-                        <StackPanel Orientation="Horizontal" Spacing="4">
-                            <Ellipse Width="6" Height="6" Fill="#6366f1"/>
-                            <Ellipse Width="6" Height="6" Fill="#6366f1" Opacity="0.6"/>
-                            <Ellipse Width="6" Height="6" Fill="#6366f1" Opacity="0.3"/>
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                            <Ellipse Width="7" Height="7" Fill="{DynamicResource AccentBrush}">
+                                <Ellipse.Styles>
+                                    <Style Selector="Ellipse">
+                                        <Style.Animations>
+                                            <Animation Duration="0:0:1.2" IterationCount="Infinite">
+                                                <KeyFrame Cue="0%"><Setter Property="Opacity" Value="1"/></KeyFrame>
+                                                <KeyFrame Cue="33%"><Setter Property="Opacity" Value="0.2"/></KeyFrame>
+                                                <KeyFrame Cue="66%"><Setter Property="Opacity" Value="1"/></KeyFrame>
+                                                <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1"/></KeyFrame>
+                                            </Animation>
+                                        </Style.Animations>
+                                    </Style>
+                                </Ellipse.Styles>
+                            </Ellipse>
+                            <Ellipse Width="7" Height="7" Fill="{DynamicResource AccentBrush}">
+                                <Ellipse.Styles>
+                                    <Style Selector="Ellipse">
+                                        <Style.Animations>
+                                            <Animation Duration="0:0:1.2" Delay="0:0:0.4" IterationCount="Infinite">
+                                                <KeyFrame Cue="0%"><Setter Property="Opacity" Value="1"/></KeyFrame>
+                                                <KeyFrame Cue="33%"><Setter Property="Opacity" Value="0.2"/></KeyFrame>
+                                                <KeyFrame Cue="66%"><Setter Property="Opacity" Value="1"/></KeyFrame>
+                                                <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1"/></KeyFrame>
+                                            </Animation>
+                                        </Style.Animations>
+                                    </Style>
+                                </Ellipse.Styles>
+                            </Ellipse>
+                            <Ellipse Width="7" Height="7" Fill="{DynamicResource AccentBrush}">
+                                <Ellipse.Styles>
+                                    <Style Selector="Ellipse">
+                                        <Style.Animations>
+                                            <Animation Duration="0:0:1.2" Delay="0:0:0.8" IterationCount="Infinite">
+                                                <KeyFrame Cue="0%"><Setter Property="Opacity" Value="1"/></KeyFrame>
+                                                <KeyFrame Cue="33%"><Setter Property="Opacity" Value="0.2"/></KeyFrame>
+                                                <KeyFrame Cue="66%"><Setter Property="Opacity" Value="1"/></KeyFrame>
+                                                <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1"/></KeyFrame>
+                                            </Animation>
+                                        </Style.Animations>
+                                    </Style>
+                                </Ellipse.Styles>
+                            </Ellipse>
                         </StackPanel>
                     </Border>
                 </StackPanel>
