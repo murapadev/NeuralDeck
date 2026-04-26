@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="NeuralDeck.csproj" />
+  <Project Path="NeuralDeck.Tests/NeuralDeck.Tests.csproj" />
+</Solution>

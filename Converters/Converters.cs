@@ -269,7 +269,20 @@ public class ProviderIconConverter : IValueConverter
 
         // Ollama → friendly llama silhouette
         ["ollama"] = "M 8 3 L 8 7 L 6 7 L 6 12 L 8 12 L 8 20 L 11 20 L 11 13 L 14 13 L 14 20 L 17 20 L 17 9 " +
-                     "C 17 6 15 4 12 4 L 10 4 L 10 3 Z"
+                     "C 17 6 15 4 12 4 L 10 4 L 10 3 Z",
+
+        // Grok (xAI) → stylised X
+        ["grok"] = "M 5 4 L 10.5 12 L 5 20 L 7.5 20 L 12 14.5 L 16.5 20 L 19 20 L 13.5 12 L 19 4 L 16.5 4 L 12 9.5 L 7.5 4 Z",
+
+        // Copilot → circular arc-wings
+        ["copilot"] = "M 12 3 A 9 9 0 0 1 21 12 A 9 9 0 0 1 12 21 A 9 9 0 0 1 3 12 A 9 9 0 0 1 12 3 Z " +
+                      "M 9 12 A 3 3 0 1 0 15 12 A 3 3 0 1 0 9 12 Z",
+
+        // Mistral → three horizontal bars (AI wave pattern)
+        ["mistral"] = "M 4 8 L 20 8 M 4 12 L 16 12 M 4 16 L 20 16",
+
+        // Meta → infinity / M shape
+        ["meta"] = "M 3 14 C 3 10 6 8 9 10 L 12 12 L 15 10 C 18 8 21 10 21 14 C 21 18 18 16 15 14 L 12 12 L 9 14 C 6 16 3 18 3 14 Z"
     };
 
     private static readonly string FallbackData = "M 4 4 L 20 4 L 20 20 L 4 20 Z"; // square fallback
