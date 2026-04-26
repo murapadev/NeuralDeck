@@ -93,8 +93,19 @@
                                             Background="#27272a"
                                             HorizontalAlignment="Left"
                                             MaxWidth="520">
-                                        <controls:MarkdownTextBlock Text="{Binding Content}"
-                                                                    BaseSize="13"/>
+                                        <Panel>
+                                            <!-- While Ollama is streaming: fast plain text (no markdown parse per token) -->
+                                            <SelectableTextBlock Text="{Binding Content}"
+                                                                 IsVisible="{Binding IsStreaming}"
+                                                                 TextWrapping="Wrap"
+                                                                 Foreground="#e4e4e7"
+                                                                 FontSize="13"
+                                                                 LineHeight="19"/>
+                                            <!-- After streaming completes: full markdown rendering -->
+                                            <controls:MarkdownTextBlock Text="{Binding Content}"
+                                                                        IsVisible="{Binding !IsStreaming}"
+                                                                        BaseSize="13"/>
+                                        </Panel>
                                     </Border>
                                     <!-- User message (right, accent-tinted) -->
                                     <Border IsVisible="{Binding IsUser}"

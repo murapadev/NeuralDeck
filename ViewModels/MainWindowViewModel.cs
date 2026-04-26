@@ -137,6 +137,12 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         WindowService.Instance.HideWindow();
     }
 
+    internal void ReloadCurrentView()
+    {
+        if (SelectedProviderId == "ollama") return;
+        WebBrowserViewModel?.ReloadAction?.Invoke();
+    }
+
     private void OnConfigChanged(object? sender, AppConfig config)
     {
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>

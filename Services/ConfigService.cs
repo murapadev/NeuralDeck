@@ -1,5 +1,7 @@
 using System;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using NeuralDeck.Models;
@@ -73,11 +75,24 @@ public class ConfigService
         }
     }
 
+    private static string GetAssemblyVersion()
+    {
+        var asm = typeof(ConfigService).Assembly;
+        var attr = asm.GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>();
+        if (attr != null)
+        {
+            var v = attr.InformationalVersion;
+            var plus = v.IndexOf('+');
+            return plus > 0 ? v[..plus] : v;
+        }
+        return asm.GetName().Version?.ToString(3) ?? "0.6.0";
+    }
+
     private AppConfig CreateDefaultConfig()
     {
         return new AppConfig
         {
-            Version = "0.5.0",
+            Version = GetAssemblyVersion(),
             Debug = false,
             FirstRun = true,
             LastProvider = null,

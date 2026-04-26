@@ -177,8 +177,19 @@
             <ScrollViewer IsVisible="{Binding SelectedTab, Converter={StaticResource EqualityConverter}, ConverterParameter=privacy}">
                 <StackPanel Spacing="16" Margin="16">
                     <TextBlock Text="Privacy" FontSize="16" FontWeight="SemiBold" Foreground="#fafafa"/>
-                    <CheckBox Content="Clear data on close" IsChecked="{Binding ClearOnClose}" Foreground="#d4d4d8"/>
-                    <CheckBox Content="Block trackers" IsChecked="{Binding BlockTrackers}" Foreground="#d4d4d8"/>
+
+                    <StackPanel Spacing="4">
+                        <CheckBox Content="Clear Ollama history on close" IsChecked="{Binding ClearOnClose}" Foreground="#d4d4d8"/>
+                        <TextBlock Text="Deletes the local Ollama conversation history file (~/.config/NeuralDeck/ollama-history.json) when the app exits. Web provider sessions (cookies, cache) are managed by the OS WebView and are not affected."
+                                   FontSize="11" Foreground="#52525b" TextWrapping="Wrap" MaxWidth="460" Margin="24,0,0,0"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="4">
+                        <CheckBox Content="Block trackers (web providers)" IsChecked="{Binding BlockTrackers}" Foreground="#d4d4d8"/>
+                        <TextBlock Text="Enables the system WebView's built-in content filtering when available. Effect depends on OS and WebKit version."
+                                   FontSize="11" Foreground="#52525b" TextWrapping="Wrap" MaxWidth="460" Margin="24,0,0,0"/>
+                    </StackPanel>
+
                     <Button Content="Save" Command="{Binding SavePrivacyCommand}"
                             Padding="16,8" Background="{DynamicResource AccentBrush}" Foreground="#fafafa"
                             CornerRadius="6" HorizontalAlignment="Left"/>

@@ -177,11 +177,11 @@ public class ShortcutService : IDisposable
         "8" => KeyCode.Vc8,
         "9" => KeyCode.Vc9,
         "0" => KeyCode.Vc0,
-        "F1" => KeyCode.VcF1,
-        "F2" => KeyCode.VcF2,
-        "F3" => KeyCode.VcF3,
-        "F4" => KeyCode.VcF4,
-        "F5" => KeyCode.VcF5,
+        "F1"  => KeyCode.VcF1,
+        "F2"  => KeyCode.VcF2,
+        "F3"  => KeyCode.VcF3,
+        "F4"  => KeyCode.VcF4,
+        "F5"  => KeyCode.VcF5,
         "F6" => KeyCode.VcF6,
         "F7" => KeyCode.VcF7,
         "F8" => KeyCode.VcF8,
@@ -287,6 +287,10 @@ public class ShortcutService : IDisposable
 
         // Ctrl+Q — clean shutdown through WindowService.
         Register("CommandOrControl+Q", WindowService.Instance.ShutdownApplication);
+
+        // Ctrl+R / F5 — reload current web provider.
+        Register(config.Shortcuts.Reload, () => _mainViewModel?.ReloadCurrentView());
+        Register("F5", () => _mainViewModel?.ReloadCurrentView());
 
         // Per-provider hotkeys: 1..N map to the first N enabled providers in display order.
         var enabled = config.Providers.Where(p => p.Enabled).OrderBy(p => p.Order).ToList();

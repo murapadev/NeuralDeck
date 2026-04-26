@@ -160,6 +160,7 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
         {
             Role = "assistant",
             Content = "",
+            IsStreaming = true,
             Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
         };
         Messages.Add(assistantMessage);
@@ -174,20 +175,14 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
                 history,
                 async chunk =>
                 {
+                    // Update Content in-place — avoids recreating the DataTemplate item
+                    // and rebuilding the MarkdownTextBlock on every token.
                     await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
                     {
                         lock (_messagesLock)
                         {
                             if (Messages.Count > 0)
-                            {
-                                var last = Messages[^1];
-                                Messages[^1] = new ChatMessage
-                                {
-                                    Role = last.Role,
-                                    Content = last.Content + chunk,
-                                    Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
-                                };
-                            }
+                                Messages[^1].Content += chunk;
                         }
                     });
                 },
@@ -195,7 +190,7 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
         }
         catch (OperationCanceledException)
         {
-            // Cancelled
+            // User pressed Stop — leave partial content as-is.
         }
         catch (Exception ex)
         {
@@ -203,18 +198,20 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
             lock (_messagesLock)
             {
                 if (Messages.Count > 0)
-                {
-                    Messages[^1] = new ChatMessage
-                    {
-                        Role = "assistant",
-                        Content = "⚠️ **Error**: Could not connect to Ollama.",
-                        Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
-                    };
-                }
+                    Messages[^1].Content = "⚠️ **Error**: Could not connect to Ollama.";
             }
         }
         finally
         {
+            // Mark streaming done so MarkdownTextBlock renders the final response.
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                lock (_messagesLock)
+                {
+                    if (Messages.Count > 0)
+                        Messages[^1].IsStreaming = false;
+                }
+            });
             IsLoading = false;
             _chatCts?.Dispose();
             _chatCts = null;

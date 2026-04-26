@@ -8,9 +8,8 @@ using NeuralDeck.Models;
 namespace NeuralDeck.Services;
 
 /// <summary>
-/// Applies user appearance settings (theme variant and accent color) to the live app at runtime.
-/// The accent color is published as an application-level resource <c>AccentBrush</c> / <c>AccentColor</c>
-/// so XAML bindings that resolve {DynamicResource AccentBrush} get updated automatically.
+/// Applies user appearance settings (theme, accent color, font size) to the live app at runtime.
+/// Resources published here are DynamicResource-accessible from all AXAML files.
 /// </summary>
 public sealed class ThemeService
 {
@@ -29,19 +28,19 @@ public sealed class ThemeService
     public void ApplyFromConfig()
     {
         var config = ConfigService.Instance.GetConfig();
-        Apply(config.Appearance.Theme, config.Appearance.AccentColor);
+        Apply(config.Appearance.Theme, config.Appearance.AccentColor, config.Appearance.FontSize);
     }
 
     /// <summary>
-    /// Apply a specific theme and accent right now (used by Settings live-preview so the user
-    /// sees the change immediately, before — or without — clicking Save).
+    /// Apply theme, accent and font size immediately (used by Settings live-preview).
     /// </summary>
-    public void Apply(string? theme, string? accentHex)
+    public void Apply(string? theme, string? accentHex, string? fontSize = null)
     {
         Dispatcher.UIThread.Post(() =>
         {
             ApplyTheme(theme);
             ApplyAccent(accentHex);
+            ApplyFontSize(fontSize);
         });
     }
 
@@ -52,9 +51,9 @@ public sealed class ThemeService
 
         app.RequestedThemeVariant = theme?.ToLowerInvariant() switch
         {
-            "light" => ThemeVariant.Light,
-            "dark" => ThemeVariant.Dark,
-            _ => ThemeVariant.Default, // "system" / null falls back to OS
+            "light"  => ThemeVariant.Light,
+            "dark"   => ThemeVariant.Dark,
+            _        => ThemeVariant.Default
         };
     }
 
@@ -69,8 +68,24 @@ public sealed class ThemeService
         try { color = Color.Parse(hex); }
         catch { color = Color.Parse(AppConstants.DefaultAccentColor); }
 
-        // Publish as app-level resources so DynamicResource consumers update live.
         app.Resources["AccentColor"] = color;
         app.Resources["AccentBrush"] = new SolidColorBrush(color);
+    }
+
+    private static void ApplyFontSize(string? size)
+    {
+        var app = Application.Current;
+        if (app == null) return;
+
+        double pts = size?.ToLowerInvariant() switch
+        {
+            "small"  => 11.0,
+            "large"  => 15.0,
+            _        => 13.0
+        };
+
+        // Published as DynamicResource so styles referencing {DynamicResource BaseFontSize}
+        // update live without a restart.
+        app.Resources["BaseFontSize"] = pts;
     }
 }

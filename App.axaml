@@ -6,12 +6,24 @@
 
     <Application.Styles>
         <FluentTheme />
+        <!-- Controls without an explicit FontSize inherit BaseFontSize at runtime -->
+        <Style Selector="TextBlock">
+            <Setter Property="FontSize" Value="{DynamicResource BaseFontSize}"/>
+        </Style>
+        <Style Selector="SelectableTextBlock">
+            <Setter Property="FontSize" Value="{DynamicResource BaseFontSize}"/>
+        </Style>
+        <Style Selector="TextBox">
+            <Setter Property="FontSize" Value="{DynamicResource BaseFontSize}"/>
+        </Style>
     </Application.Styles>
 
     <Application.Resources>
-        <!-- Accent color is reassigned at runtime by ThemeService from config.Appearance.AccentColor -->
+        <!-- Both reassigned at runtime by ThemeService from Appearance config -->
         <Color x:Key="AccentColor">#6366f1</Color>
         <SolidColorBrush x:Key="AccentBrush" Color="#6366f1"/>
+        <!-- Default 13pt; updated live by ThemeService when user changes FontSize setting -->
+        <x:Double x:Key="BaseFontSize">13</x:Double>
 
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
         <converters:BoolToAccentConverter x:Key="BoolToAccentConverter"/>

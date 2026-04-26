@@ -1,10 +1,23 @@
+using System.Text.Json.Serialization;
+using CommunityToolkit.Mvvm.ComponentModel;
+
 namespace NeuralDeck.Models;
 
-public class ChatMessage
+public partial class ChatMessage : ObservableObject
 {
     public string Role { get; set; } = "user";
-    public string Content { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    private string _content = string.Empty;
+
     public long? Timestamp { get; set; }
+
+    // UI-only flag: true while Ollama is still streaming tokens into this message.
+    // Not persisted to JSON.
+    [ObservableProperty]
+    [JsonIgnore]
+    private bool _isStreaming;
+
     public bool IsUser => Role == "user";
 }
 
