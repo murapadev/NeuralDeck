@@ -60,7 +60,9 @@ public class WindowService
         window.Deactivated += (s, e) =>
         {
             var config = ConfigService.Instance.GetConfig();
-            if (config.Window.HideOnBlur && _isWindowVisible)
+            // Don't hide while the settings window has focus — it's an owned dialog.
+            if (config.Window.HideOnBlur && _isWindowVisible
+                && (_settingsWindow == null || !_settingsWindow.IsVisible))
                 HideWindow();
         };
 
