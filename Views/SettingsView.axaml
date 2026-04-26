@@ -244,7 +244,8 @@
                                                 CornerRadius="8" Margin="0,0,10,0"
                                                 Background="#27272a">
                                             <Grid>
-                                                <Viewbox Width="18" Height="18" Stretch="Uniform">
+                                                <Viewbox Width="18" Height="18" Stretch="Uniform"
+                                                         IsVisible="{Binding Id, Converter={StaticResource ProviderGlyphVisibilityConverter}}">
                                                     <Path Data="{Binding Id, Converter={StaticResource ProviderIconConverter}}"
                                                           Fill="{Binding Color, Converter={StaticResource StringToColorConverter}}"/>
                                                 </Viewbox>

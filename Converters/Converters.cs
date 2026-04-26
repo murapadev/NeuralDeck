@@ -208,7 +208,7 @@ public class StepToDotConverter : IValueConverter
 public class ProviderFaviconConverter : IValueConverter
 {
     private static readonly Dictionary<string, Bitmap?> Cache = new(StringComparer.OrdinalIgnoreCase);
-    private static readonly HashSet<string> KnownIds = new(StringComparer.OrdinalIgnoreCase)
+    internal static readonly HashSet<string> KnownIds = new(StringComparer.OrdinalIgnoreCase)
     { "chatgpt", "gemini", "claude", "deepseek", "perplexity", "ollama" };
 
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
@@ -234,6 +234,19 @@ public class ProviderFaviconConverter : IValueConverter
     }
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => Avalonia.Data.BindingOperations.DoNothing;
+}
+
+/// <summary>
+/// Returns true (show glyph) only when a provider has no bundled favicon.
+/// Hides the fallback glyph for the six built-in providers that have real favicons.
+/// </summary>
+public class ProviderGlyphVisibilityConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => !ProviderFaviconConverter.KnownIds.Contains(value?.ToString() ?? "");
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         => Avalonia.Data.BindingOperations.DoNothing;
 }
 

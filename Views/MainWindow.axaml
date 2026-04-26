@@ -94,8 +94,9 @@
                                             <Border Width="38" Height="38" CornerRadius="9"
                                                     Background="#27272a">
                                                 <Grid>
-                                                    <!-- Fallback geometric glyph for custom providers -->
-                                                    <Viewbox Width="22" Height="22" Stretch="Uniform">
+                                                    <!-- Fallback geometric glyph — hidden when a real favicon is available -->
+                                                    <Viewbox Width="22" Height="22" Stretch="Uniform"
+                                                             IsVisible="{Binding Id, Converter={StaticResource ProviderGlyphVisibilityConverter}}">
                                                         <Path Data="{Binding Id, Converter={StaticResource ProviderIconConverter}}"
                                                               Fill="{Binding Color, Converter={StaticResource StringToColorConverter}}"/>
                                                     </Viewbox>

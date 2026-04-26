@@ -35,6 +35,7 @@
         <converters:StepToDotConverter x:Key="StepToDotConverter"/>
         <converters:ProviderIconConverter x:Key="ProviderIconConverter"/>
         <converters:ProviderFaviconConverter x:Key="ProviderFaviconConverter"/>
+        <converters:ProviderGlyphVisibilityConverter x:Key="ProviderGlyphVisibilityConverter"/>
         <converters:BoolToOpacityConverter x:Key="BoolToOpacityConverter"/>
         <converters:TabForegroundConverter x:Key="TabForegroundConverter"/>
         <converters:TabBackgroundConverter x:Key="TabBackgroundConverter"/>
