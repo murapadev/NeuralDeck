@@ -18,6 +18,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     [ObservableProperty] private bool _showOnboarding = false;
     [ObservableProperty] private bool _isPinned = true;
+    [ObservableProperty] private string _currentProviderName = "NeuralDeck";
     [ObservableProperty] private ObservableCollection<ProviderDisplay> _enabledProviders = new();
     [ObservableProperty] private ChatViewModel? _chatViewModel;
     [ObservableProperty] private OnboardingViewModel? _onboardingViewModel;
@@ -60,18 +61,34 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private void LoadProviders(AppConfig config)
     {
         EnabledProviders.Clear();
-        foreach (var provider in config.Providers.Where(p => p.Enabled).OrderBy(p => p.Order))
+        var ordered = config.Providers.Where(p => p.Enabled).OrderBy(p => p.Order).ToList();
+        for (int i = 0; i < ordered.Count; i++)
         {
-            var captured = provider;
+            var captured = ordered[i];
+            var shortcutIndex = i < config.Shortcuts.Providers.Count ? i : -1;
+            var hint = shortcutIndex >= 0
+                ? BuildShortcutHint(captured.Name, config.Shortcuts.Providers[shortcutIndex])
+                : captured.Name;
+
             EnabledProviders.Add(new ProviderDisplay
             {
                 Name = captured.Name,
                 Color = captured.Color,
                 Id = captured.Id,
                 IsSelected = captured.Id == SelectedProviderId,
+                ShortcutHint = hint,
                 SelectCommand = new RelayCommand(() => SelectProvider(captured.Id))
             });
         }
+    }
+
+    private static string BuildShortcutHint(string name, string shortcut)
+    {
+        // Convert "CommandOrControl+Shift+1" → "Ctrl+Shift+1" for display
+        var display = shortcut
+            .Replace("CommandOrControl", "Ctrl", StringComparison.OrdinalIgnoreCase)
+            .Replace("Control", "Ctrl", StringComparison.OrdinalIgnoreCase);
+        return $"{name}  ({display})";
     }
 
     private void UpdateSelectedProvider(AppConfig? config = null)
@@ -80,6 +97,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         SelectedProvider = config.Providers.FirstOrDefault(p => p.Id == SelectedProviderId);
         foreach (var p in EnabledProviders)
             p.IsSelected = p.Id == SelectedProviderId;
+
+        CurrentProviderName = SelectedProvider?.Name ?? "NeuralDeck";
     }
 
     internal void SelectProvider(string providerId)
@@ -151,5 +170,6 @@ public partial class ProviderDisplay : ObservableObject
     public string Name { get; set; } = "";
     public string Color { get; set; } = "#6366f1";
     public string Id { get; set; } = "";
+    public string ShortcutHint { get; set; } = "";
     public ICommand SelectCommand { get; set; } = null!;
 }

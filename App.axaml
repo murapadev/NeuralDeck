@@ -24,5 +24,7 @@
         <converters:ProviderIconConverter x:Key="ProviderIconConverter"/>
         <converters:ProviderFaviconConverter x:Key="ProviderFaviconConverter"/>
         <converters:BoolToOpacityConverter x:Key="BoolToOpacityConverter"/>
+        <converters:TabForegroundConverter x:Key="TabForegroundConverter"/>
+        <converters:TabBackgroundConverter x:Key="TabBackgroundConverter"/>
     </Application.Resources>
 </Application>

@@ -250,6 +250,7 @@ public partial class SettingsViewModel : ViewModelBase
     [RelayCommand]
     private void SelectTab(string tab)
     {
+        SaveCurrentTab();
         SelectedTab = tab;
     }
 

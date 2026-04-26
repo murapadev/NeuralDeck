@@ -6,90 +6,36 @@ on:
   pull_request:
     branches: [main, develop]
 
-# Cancel in-progress runs for the same branch
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  test:
-    name: Test on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        node-version: [20.x]
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run linter
-        run: npm run lint
-
-      - name: Type check
-        run: npx tsc --noEmit
-
-      # Run tests with coverage only on Ubuntu, regular tests on other platforms
-      - name: Run tests
-        if: matrix.os != 'ubuntu-latest'
-        run: npm test
-
-      - name: Run tests with coverage
-        if: matrix.os == 'ubuntu-latest'
-        run: npm run test:coverage
-
   build:
     name: Build on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
-    needs: test
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
         with:
-          node-version: 20.x
-          cache: 'npm'
+          dotnet-version: '10.x'
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install WebKitGTK (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y libwebkit2gtk-4.1-dev
 
-      - name: Build TypeScript
-        run: npx tsc
+      - name: Restore
+        run: dotnet restore
 
-      - name: Build frontend
-        run: npx vite build
-
-      # Cache electron-builder to speed up subsequent builds
-      - name: Cache electron-builder
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/electron
-            ~/.cache/electron-builder
-          key: ${{ runner.os }}-electron-builder-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-electron-builder-
-
-      - name: Test electron-builder (dry run)
-        if: matrix.os == 'ubuntu-latest'
-        run: npx electron-builder --linux --dir
+      - name: Build
+        run: dotnet build --no-restore -c Release

@@ -115,6 +115,40 @@ public class BoolToOpacityConverter : IValueConverter
         => Avalonia.Data.BindingOperations.DoNothing;
 }
 
+/// <summary>
+/// Returns white (#fafafa) when the bound string equals ConverterParameter, dim gray (#71717a) otherwise.
+/// Used for settings tab button foreground highlighting.
+/// </summary>
+public class TabForegroundConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        bool active = value?.ToString() == parameter?.ToString();
+        return new SolidColorBrush(active ? Color.Parse("#fafafa") : Color.Parse("#71717a"));
+    }
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => Avalonia.Data.BindingOperations.DoNothing;
+}
+
+/// <summary>
+/// Returns a subtle highlight (#27272a) when active, transparent otherwise.
+/// Used for settings tab button background.
+/// </summary>
+public class TabBackgroundConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        bool active = value?.ToString() == parameter?.ToString();
+        return active
+            ? new SolidColorBrush(Color.Parse("#27272a"))
+            : new SolidColorBrush(Colors.Transparent);
+    }
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => Avalonia.Data.BindingOperations.DoNothing;
+}
+
 public class BoolToAccentConverter : IValueConverter
 {
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)

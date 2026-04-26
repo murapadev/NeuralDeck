@@ -88,7 +88,7 @@
                                     <Button Width="52" Height="52" Padding="4"
                                             CornerRadius="12"
                                             Command="{Binding SelectCommand}"
-                                            ToolTip.Tip="{Binding Name}">
+                                            ToolTip.Tip="{Binding ShortcutHint}">
                                         <Grid Width="44" Height="44">
                                             <!-- Neutral tile frame (always visible) -->
                                             <Border Width="38" Height="38" CornerRadius="9"
@@ -149,7 +149,7 @@
                         BorderBrush="#27272a" BorderThickness="0,0,0,1"
                         x:Name="TitleBar">
                     <Grid ColumnDefinitions="*,Auto">
-                        <TextBlock Text="NeuralDeck" FontSize="11" Foreground="#52525b"
+                        <TextBlock Text="{Binding CurrentProviderName}" FontSize="11" Foreground="#52525b"
                                    VerticalAlignment="Center" Margin="12,0"/>
                         <Button Grid.Column="1" Width="36" Height="36" Padding="0"
                                 Command="{Binding HideWindowCommand}"

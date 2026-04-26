@@ -3,14 +3,14 @@ name: Release
 on:
   push:
     tags:
-      - 'v*' # Trigger on version tags like v0.1.0
+      - 'v*'
 
 permissions:
   contents: write
 
 jobs:
   release:
-    name: Release on ${{ matrix.os }}
+    name: Publish ${{ matrix.rid }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     strategy:
@@ -18,80 +18,59 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            platform: linux
+            rid: linux-x64
           - os: windows-latest
-            platform: windows
+            rid: win-x64
           - os: macos-latest
-            platform: macos
+            rid: osx-x64
+          - os: macos-latest
+            rid: osx-arm64
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
         with:
-          node-version: 20.x
-          cache: 'npm'
+          dotnet-version: '10.x'
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install WebKitGTK (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y libwebkit2gtk-4.1-dev
 
-      - name: Run linter
-        run: npm run lint
+      - name: Restore
+        run: dotnet restore
 
-      - name: Type check
-        run: npx tsc --noEmit
+      - name: Publish self-contained
+        run: >
+          dotnet publish -c Release
+          -r ${{ matrix.rid }}
+          --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -o publish/${{ matrix.rid }}
 
-      - name: Run tests
-        run: npm test
+      - name: Archive (Linux / macOS)
+        if: runner.os != 'Windows'
+        run: |
+          cd publish/${{ matrix.rid }}
+          tar -czf ../../NeuralDeck-${{ github.ref_name }}-${{ matrix.rid }}.tar.gz .
 
-      # Cache electron and electron-builder for faster builds
-      - name: Cache electron-builder
-        uses: actions/cache@v4
+      - name: Archive (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Compress-Archive -Path publish/${{ matrix.rid }}/* `
+            -DestinationPath NeuralDeck-${{ github.ref_name }}-${{ matrix.rid }}.zip
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          path: |
-            ~/.cache/electron
-            ~/.cache/electron-builder
-            ~/Library/Caches/electron
-            ~/Library/Caches/electron-builder
-            ~/AppData/Local/electron/Cache
-            ~/AppData/Local/electron-builder/Cache
-          key: ${{ runner.os }}-electron-builder-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-electron-builder-
-
-      - name: Build and release (Linux)
-        if: matrix.platform == 'linux'
+          generate_release_notes: true
+          files: |
+            NeuralDeck-*.tar.gz
+            NeuralDeck-*.zip
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
-        run: npm run build:linux -- --publish=always
-
-      - name: Build and release (Windows)
-        if: matrix.platform == 'windows'
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
-        run: npm run build:win -- --publish=always
-
-      - name: Build and release (macOS)
-        if: matrix.platform == 'macos'
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
-          # Uncomment these when you have Apple Developer certificates
-          # APPLE_ID: ${{ secrets.APPLE_ID }}
-          # APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          # CSC_LINK: ${{ secrets.CSC_LINK }}
-          # CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
-        run: npm run build:mac -- --publish=always
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.platform }}-build
-          path: |
-            release/*.exe
-            release/*.AppImage
-            release/*.deb
-            release/*.dmg
-            release/*.zip
-          if-no-files-found: ignore
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

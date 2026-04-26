@@ -17,19 +17,32 @@
             <StackPanel Orientation="Horizontal" Spacing="2">
                 <Button Content="General" Padding="12,6" FontSize="12" CornerRadius="6"
                         Command="{Binding SelectTabCommand}" CommandParameter="general"
-                        Foreground="{Binding SelectedTab, Converter={StaticResource EqualityConverter}, ConverterParameter=general}"/>
+                        Foreground="{Binding SelectedTab, Converter={StaticResource TabForegroundConverter}, ConverterParameter=general}"
+                        Background="{Binding SelectedTab, Converter={StaticResource TabBackgroundConverter}, ConverterParameter=general}"/>
                 <Button Content="Appearance" Padding="12,6" FontSize="12" CornerRadius="6"
-                        Command="{Binding SelectTabCommand}" CommandParameter="appearance"/>
+                        Command="{Binding SelectTabCommand}" CommandParameter="appearance"
+                        Foreground="{Binding SelectedTab, Converter={StaticResource TabForegroundConverter}, ConverterParameter=appearance}"
+                        Background="{Binding SelectedTab, Converter={StaticResource TabBackgroundConverter}, ConverterParameter=appearance}"/>
                 <Button Content="Shortcuts" Padding="12,6" FontSize="12" CornerRadius="6"
-                        Command="{Binding SelectTabCommand}" CommandParameter="shortcuts"/>
+                        Command="{Binding SelectTabCommand}" CommandParameter="shortcuts"
+                        Foreground="{Binding SelectedTab, Converter={StaticResource TabForegroundConverter}, ConverterParameter=shortcuts}"
+                        Background="{Binding SelectedTab, Converter={StaticResource TabBackgroundConverter}, ConverterParameter=shortcuts}"/>
                 <Button Content="Privacy" Padding="12,6" FontSize="12" CornerRadius="6"
-                        Command="{Binding SelectTabCommand}" CommandParameter="privacy"/>
+                        Command="{Binding SelectTabCommand}" CommandParameter="privacy"
+                        Foreground="{Binding SelectedTab, Converter={StaticResource TabForegroundConverter}, ConverterParameter=privacy}"
+                        Background="{Binding SelectedTab, Converter={StaticResource TabBackgroundConverter}, ConverterParameter=privacy}"/>
                 <Button Content="Window" Padding="12,6" FontSize="12" CornerRadius="6"
-                        Command="{Binding SelectTabCommand}" CommandParameter="window"/>
+                        Command="{Binding SelectTabCommand}" CommandParameter="window"
+                        Foreground="{Binding SelectedTab, Converter={StaticResource TabForegroundConverter}, ConverterParameter=window}"
+                        Background="{Binding SelectedTab, Converter={StaticResource TabBackgroundConverter}, ConverterParameter=window}"/>
                 <Button Content="Providers" Padding="12,6" FontSize="12" CornerRadius="6"
-                        Command="{Binding SelectTabCommand}" CommandParameter="providers"/>
+                        Command="{Binding SelectTabCommand}" CommandParameter="providers"
+                        Foreground="{Binding SelectedTab, Converter={StaticResource TabForegroundConverter}, ConverterParameter=providers}"
+                        Background="{Binding SelectedTab, Converter={StaticResource TabBackgroundConverter}, ConverterParameter=providers}"/>
                 <Button Content="About" Padding="12,6" FontSize="12" CornerRadius="6"
-                        Command="{Binding SelectTabCommand}" CommandParameter="about"/>
+                        Command="{Binding SelectTabCommand}" CommandParameter="about"
+                        Foreground="{Binding SelectedTab, Converter={StaticResource TabForegroundConverter}, ConverterParameter=about}"
+                        Background="{Binding SelectedTab, Converter={StaticResource TabBackgroundConverter}, ConverterParameter=about}"/>
             </StackPanel>
         </ScrollViewer>
 
