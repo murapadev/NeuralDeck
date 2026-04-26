@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -124,13 +125,43 @@ public partial class WebBrowserView : UserControl
         _viewModel?.OnNavigationStarted(e.Request);
     }
 
-    private void OnNavigationCompleted(object? sender, WebViewNavigationCompletedEventArgs e)
+    private async void OnNavigationCompleted(object? sender, WebViewNavigationCompletedEventArgs e)
     {
         if (Browser == null) return;
-        _viewModel?.OnNavigationCompleted(
-            Browser.Source,
-            Browser.CanGoBack,
-            Browser.CanGoForward);
+        _viewModel?.OnNavigationCompleted(Browser.Source, Browser.CanGoBack, Browser.CanGoForward);
+        await InjectStylesAsync();
+        await FetchPageTitleAsync();
+    }
+
+    private async Task InjectStylesAsync()
+    {
+        if (Browser == null) return;
+        const string css = @"(function(){
+  var s=document.getElementById('__nd_s');
+  if(s)return;
+  s=document.createElement('style');
+  s.id='__nd_s';
+  s.textContent='::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-track{background:#1a1a1d}::-webkit-scrollbar-thumb{background:#3f3f46;border-radius:4px}::-webkit-scrollbar-thumb:hover{background:#52525b}';
+  document.head&&document.head.appendChild(s);
+})();";
+        try { await Browser.InvokeScript(css); }
+        catch { /* silently skip if injection fails */ }
+    }
+
+    private async Task FetchPageTitleAsync()
+    {
+        if (Browser == null || _viewModel == null) return;
+        try
+        {
+            var raw = await Browser.InvokeScript("document.title");
+            if (raw == null) return;
+            // WebKit returns a JSON-encoded string — strip surrounding quotes if present.
+            var title = raw.Length >= 2 && raw[0] == '"' && raw[^1] == '"'
+                ? raw[1..^1]
+                : raw;
+            _viewModel.SetPageTitle(title);
+        }
+        catch { /* ignore — page may not have loaded yet */ }
     }
 
     private void OnNewWindowRequested(object? sender, WebViewNewWindowRequestedEventArgs e)

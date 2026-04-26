@@ -11,6 +11,7 @@ public partial class WebBrowserViewModel : ViewModelBase
     [ObservableProperty] private bool _canGoBack;
     [ObservableProperty] private bool _canGoForward;
     [ObservableProperty] private string _statusText = "";
+    [ObservableProperty] private string _pageTitle = "";
     [ObservableProperty] private bool _showFallback;
     [ObservableProperty] private string _fallbackMessage = "";
 
@@ -36,6 +37,9 @@ public partial class WebBrowserViewModel : ViewModelBase
 
     [RelayCommand]
     private void Reload() => ReloadAction?.Invoke();
+
+    [RelayCommand]
+    private void Go() => NavigateTo(AddressBarText);
 
     [RelayCommand]
     private void OpenInBrowser()
@@ -89,11 +93,18 @@ public partial class WebBrowserViewModel : ViewModelBase
     public void OnNavigationCompleted(Uri? currentUrl, bool canGoBack, bool canGoForward)
     {
         IsLoading = false;
-        StatusText = "";
         if (currentUrl != null)
             AddressBarText = currentUrl.ToString();
         CanGoBack = canGoBack;
         CanGoForward = canGoForward;
+        StatusText = PageTitle.Length > 0 ? $"{PageTitle}  •  {currentUrl?.Host}" : (currentUrl?.Host ?? "");
+    }
+
+    public void SetPageTitle(string title)
+    {
+        PageTitle = title;
+        var host = NormalizeUrl(AddressBarText)?.Host ?? "";
+        StatusText = title.Length > 0 && host.Length > 0 ? $"{title}  •  {host}" : title;
     }
 
     public void ShowFallbackMessage(string message)
