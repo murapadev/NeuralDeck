@@ -63,13 +63,17 @@
                             Spacing="12" Margin="24">
                     <Path Width="48" Height="48" Stretch="Uniform" Fill="#3f3f46"
                           HorizontalAlignment="Center"
-                          Data="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M11,16.5L6.5,12L7.91,10.59L11,13.67L16.59,8.09L18,9.5L11,16.5Z"/>
-                    <TextBlock Text="Ollama not connected" FontSize="14"
-                               Foreground="#71717a" HorizontalAlignment="Center"/>
-                    <TextBlock Text="Make sure Ollama is running on localhost:11434"
-                               FontSize="12" Foreground="#52525b"
+                          Data="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M13,7H11V9H13V7M13,11H11V17H13V11Z"/>
+                    <TextBlock Text="Ollama not connected" FontSize="14" FontWeight="Medium"
+                               Foreground="#a1a1aa" HorizontalAlignment="Center"/>
+                    <TextBlock Text="{Binding OllamaBaseUrl, StringFormat='Trying {0}'}"
+                               FontSize="11" Foreground="#52525b"
                                HorizontalAlignment="Center" TextWrapping="Wrap"
                                TextAlignment="Center"/>
+                    <Button Content="Retry" Command="{Binding CheckConnectionCommand}"
+                            Padding="20,8" Background="#27272a" Foreground="#a1a1aa"
+                            CornerRadius="8" HorizontalAlignment="Center"
+                            IsEnabled="{Binding !IsLoadingModels}"/>
                 </StackPanel>
 
                 <StackPanel IsVisible="{Binding IsConnected}">

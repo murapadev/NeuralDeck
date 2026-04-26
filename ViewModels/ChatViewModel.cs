@@ -33,6 +33,8 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
     public ObservableCollection<OllamaModel> Models { get; } = new();
     public bool HasMessages => Messages.Count > 0;
 
+    public string OllamaBaseUrl => _configService.GetConfig().OllamaUrl ?? AppConstants.DefaultOllamaUrl;
+
     private readonly OllamaService _ollamaService;
     private readonly ConfigService _configService;
     private CancellationTokenSource? _chatCts;

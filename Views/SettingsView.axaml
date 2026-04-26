@@ -82,11 +82,12 @@
                                   Width="200" HorizontalAlignment="Left"/>
                     </StackPanel>
 
-                    <StackPanel Spacing="6">
-                        <TextBlock Text="Language" FontSize="12" Foreground="#71717a"/>
+                    <StackPanel Spacing="4" Opacity="0.5">
+                        <TextBlock Text="Language  (coming soon)" FontSize="12" Foreground="#71717a"/>
                         <ComboBox ItemsSource="{Binding LanguageOptions}"
                                   SelectedItem="{Binding Language}"
-                                  Width="200" HorizontalAlignment="Left"/>
+                                  Width="200" HorizontalAlignment="Left"
+                                  IsEnabled="False"/>
                     </StackPanel>
 
                     <StackPanel Spacing="6">
