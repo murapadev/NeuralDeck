@@ -125,12 +125,9 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
                 Models.Add(model);
             }
 
-            // Prefer the user's previously selected model if it still exists.
-            if (SelectedModel == null && Models.Count > 0)
-            {
-                var preferred = _configService.GetConfig().LastOllamaModel;
-                SelectedModel = Models.FirstOrDefault(m => m.Name == preferred) ?? Models[0];
-            }
+            var preferred = SelectedModel?.Name ?? _configService.GetConfig().LastOllamaModel;
+            SelectedModel = Models.FirstOrDefault(m => m.Name == preferred)
+                            ?? Models.FirstOrDefault();
         }
         catch (Exception ex)
         {
@@ -147,7 +144,6 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
         var userMessage = InputText.Trim();
         InputText = string.Empty;
 
-        // Add user message
         Messages.Add(new ChatMessage
         {
             Role = "user",
@@ -155,7 +151,11 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
             Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
         });
 
-        // Add placeholder for assistant
+        var history = Messages
+            .Where(m => m.Role != "system")
+            .Select(m => new ChatMessage { Role = m.Role, Content = m.Content })
+            .ToList();
+
         var assistantMessage = new ChatMessage
         {
             Role = "assistant",
@@ -169,11 +169,6 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
 
         try
         {
-            var history = Messages
-                .Where(m => m.Role != "system")
-                .Select(m => new ChatMessage { Role = m.Role, Content = m.Content })
-                .ToList();
-
             await _ollamaService.ChatAsync(
                 SelectedModel.Name,
                 history,

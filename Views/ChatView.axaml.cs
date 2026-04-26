@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Threading;
 using NeuralDeck.ViewModels;
 
@@ -8,6 +9,9 @@ namespace NeuralDeck.Views;
 
 public partial class ChatView : UserControl
 {
+    private ChatViewModel? _messagesViewModel;
+    private TextBox? _messageInput;
+
     public ChatView()
     {
         InitializeComponent();
@@ -18,8 +22,33 @@ public partial class ChatView : UserControl
     {
         if (DataContext is ChatViewModel vm)
         {
-            vm.Messages.CollectionChanged += (_, _) => ScrollToBottom();
+            SubscribeToMessages(vm);
         }
+        else
+        {
+            UnsubscribeFromMessages();
+        }
+    }
+
+    private void SubscribeToMessages(ChatViewModel vm)
+    {
+        if (_messagesViewModel == vm) return;
+
+        UnsubscribeFromMessages();
+        _messagesViewModel = vm;
+        vm.Messages.CollectionChanged += OnMessagesChanged;
+    }
+
+    private void UnsubscribeFromMessages()
+    {
+        if (_messagesViewModel != null)
+            _messagesViewModel.Messages.CollectionChanged -= OnMessagesChanged;
+        _messagesViewModel = null;
+    }
+
+    private void OnMessagesChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+    {
+        ScrollToBottom();
     }
 
     private void ScrollToBottom()
@@ -33,12 +62,27 @@ public partial class ChatView : UserControl
         }, DispatcherPriority.Background);
     }
 
-    protected override void OnLoaded(Avalonia.Interactivity.RoutedEventArgs e)
+    protected override void OnLoaded(RoutedEventArgs e)
     {
         base.OnLoaded(e);
-        var input = this.FindControl<TextBox>("MessageInput");
-        if (input != null)
-            input.KeyDown += OnInputKeyDown;
+        _messageInput = this.FindControl<TextBox>("MessageInput");
+        if (_messageInput != null)
+        {
+            _messageInput.KeyDown -= OnInputKeyDown;
+            _messageInput.KeyDown += OnInputKeyDown;
+        }
+
+        if (DataContext is ChatViewModel vm)
+            SubscribeToMessages(vm);
+    }
+
+    protected override void OnUnloaded(RoutedEventArgs e)
+    {
+        base.OnUnloaded(e);
+        if (_messageInput != null)
+            _messageInput.KeyDown -= OnInputKeyDown;
+        _messageInput = null;
+        UnsubscribeFromMessages();
     }
 
     private void OnInputKeyDown(object? sender, KeyEventArgs e)

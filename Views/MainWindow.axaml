@@ -9,6 +9,7 @@
         Width="420" Height="700"
         MinWidth="380" MinHeight="500"
         Background="#09090b"
+        SystemDecorations="None"
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaChromeHints="NoChrome"
         ExtendClientAreaTitleBarHeightHint="0"

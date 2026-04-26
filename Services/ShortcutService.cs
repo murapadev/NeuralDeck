@@ -4,6 +4,7 @@ using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Threading;
+using NeuralDeck.Models;
 using NeuralDeck.ViewModels;
 using SharpHook;
 using SharpHook.Native;
@@ -16,6 +17,8 @@ public class ShortcutService : IDisposable
     private readonly Dictionary<string, Action> _registeredShortcuts = new();
     private readonly List<KeyBinding> _keyBindings = new();
     private readonly HashSet<KeyCode> _pressedKeys = new();
+    private readonly HashSet<string> _triggeredShortcuts = new(StringComparer.OrdinalIgnoreCase);
+    private readonly object _shortcutLock = new();
     private Window? _window;
     private MainWindowViewModel? _mainViewModel;
     private TaskPoolGlobalHook? _hook;
@@ -34,8 +37,13 @@ public class ShortcutService : IDisposable
         _isInitialized = true;
 
         TryStartGlobalHook();
-        ConfigService.Instance.ConfigChanged += (_, _) => Dispatcher.UIThread.Post(Refresh);
+        ConfigService.Instance.ConfigChanged += OnConfigChanged;
         Refresh();
+    }
+
+    private void OnConfigChanged(object? sender, AppConfig config)
+    {
+        Dispatcher.UIThread.Post(Refresh);
     }
 
     private void TryStartGlobalHook()
@@ -63,20 +71,32 @@ public class ShortcutService : IDisposable
 
     private void OnGlobalKeyPressed(object? sender, KeyboardHookEventArgs e)
     {
-        _pressedKeys.Add(e.Data.KeyCode);
+        var actions = new List<Action>();
 
-        foreach (var (accelerator, action) in _registeredShortcuts)
+        lock (_shortcutLock)
         {
-            if (MatchesAccelerator(accelerator))
+            _pressedKeys.Add(e.Data.KeyCode);
+
+            foreach (var (accelerator, action) in _registeredShortcuts)
             {
-                Dispatcher.UIThread.InvokeAsync(action);
+                if (MatchesAccelerator(accelerator) && _triggeredShortcuts.Add(accelerator))
+                    actions.Add(action);
             }
         }
+
+        foreach (var action in actions)
+            Dispatcher.UIThread.InvokeAsync(action);
     }
 
     private void OnGlobalKeyReleased(object? sender, KeyboardHookEventArgs e)
     {
-        _pressedKeys.Remove(e.Data.KeyCode);
+        lock (_shortcutLock)
+        {
+            _pressedKeys.Remove(e.Data.KeyCode);
+
+            foreach (var accelerator in _triggeredShortcuts.Where(a => !MatchesAccelerator(a)).ToList())
+                _triggeredShortcuts.Remove(accelerator);
+        }
     }
 
     private bool MatchesAccelerator(string accelerator)
@@ -121,34 +141,73 @@ public class ShortcutService : IDisposable
     {
         "SPACE" => KeyCode.VcSpace,
         "," => KeyCode.VcComma,
-        "A" => KeyCode.VcA, "B" => KeyCode.VcB, "C" => KeyCode.VcC,
-        "D" => KeyCode.VcD, "E" => KeyCode.VcE, "F" => KeyCode.VcF,
-        "G" => KeyCode.VcG, "H" => KeyCode.VcH, "I" => KeyCode.VcI,
-        "J" => KeyCode.VcJ, "K" => KeyCode.VcK, "L" => KeyCode.VcL,
-        "M" => KeyCode.VcM, "N" => KeyCode.VcN, "O" => KeyCode.VcO,
-        "P" => KeyCode.VcP, "Q" => KeyCode.VcQ, "R" => KeyCode.VcR,
-        "S" => KeyCode.VcS, "T" => KeyCode.VcT, "U" => KeyCode.VcU,
-        "V" => KeyCode.VcV, "W" => KeyCode.VcW, "X" => KeyCode.VcX,
-        "Y" => KeyCode.VcY, "Z" => KeyCode.VcZ,
-        "1" => KeyCode.Vc1, "2" => KeyCode.Vc2, "3" => KeyCode.Vc3,
-        "4" => KeyCode.Vc4, "5" => KeyCode.Vc5, "6" => KeyCode.Vc6,
-        "7" => KeyCode.Vc7, "8" => KeyCode.Vc8, "9" => KeyCode.Vc9,
+        "A" => KeyCode.VcA,
+        "B" => KeyCode.VcB,
+        "C" => KeyCode.VcC,
+        "D" => KeyCode.VcD,
+        "E" => KeyCode.VcE,
+        "F" => KeyCode.VcF,
+        "G" => KeyCode.VcG,
+        "H" => KeyCode.VcH,
+        "I" => KeyCode.VcI,
+        "J" => KeyCode.VcJ,
+        "K" => KeyCode.VcK,
+        "L" => KeyCode.VcL,
+        "M" => KeyCode.VcM,
+        "N" => KeyCode.VcN,
+        "O" => KeyCode.VcO,
+        "P" => KeyCode.VcP,
+        "Q" => KeyCode.VcQ,
+        "R" => KeyCode.VcR,
+        "S" => KeyCode.VcS,
+        "T" => KeyCode.VcT,
+        "U" => KeyCode.VcU,
+        "V" => KeyCode.VcV,
+        "W" => KeyCode.VcW,
+        "X" => KeyCode.VcX,
+        "Y" => KeyCode.VcY,
+        "Z" => KeyCode.VcZ,
+        "1" => KeyCode.Vc1,
+        "2" => KeyCode.Vc2,
+        "3" => KeyCode.Vc3,
+        "4" => KeyCode.Vc4,
+        "5" => KeyCode.Vc5,
+        "6" => KeyCode.Vc6,
+        "7" => KeyCode.Vc7,
+        "8" => KeyCode.Vc8,
+        "9" => KeyCode.Vc9,
         "0" => KeyCode.Vc0,
-        "F1" => KeyCode.VcF1, "F2" => KeyCode.VcF2, "F3" => KeyCode.VcF3,
-        "F4" => KeyCode.VcF4, "F5" => KeyCode.VcF5, "F6" => KeyCode.VcF6,
-        "F7" => KeyCode.VcF7, "F8" => KeyCode.VcF8, "F9" => KeyCode.VcF9,
-        "F10" => KeyCode.VcF10, "F11" => KeyCode.VcF11, "F12" => KeyCode.VcF12,
-        "LEFT" => KeyCode.VcLeft, "RIGHT" => KeyCode.VcRight,
-        "UP" => KeyCode.VcUp, "DOWN" => KeyCode.VcDown,
+        "F1" => KeyCode.VcF1,
+        "F2" => KeyCode.VcF2,
+        "F3" => KeyCode.VcF3,
+        "F4" => KeyCode.VcF4,
+        "F5" => KeyCode.VcF5,
+        "F6" => KeyCode.VcF6,
+        "F7" => KeyCode.VcF7,
+        "F8" => KeyCode.VcF8,
+        "F9" => KeyCode.VcF9,
+        "F10" => KeyCode.VcF10,
+        "F11" => KeyCode.VcF11,
+        "F12" => KeyCode.VcF12,
+        "LEFT" => KeyCode.VcLeft,
+        "RIGHT" => KeyCode.VcRight,
+        "UP" => KeyCode.VcUp,
+        "DOWN" => KeyCode.VcDown,
         _ => null
     };
 
     public void Register(string accelerator, Action callback)
     {
-        if (string.IsNullOrEmpty(accelerator) || _registeredShortcuts.ContainsKey(accelerator))
+        if (string.IsNullOrEmpty(accelerator))
             return;
 
-        _registeredShortcuts[accelerator] = callback;
+        lock (_shortcutLock)
+        {
+            if (_registeredShortcuts.ContainsKey(accelerator))
+                return;
+
+            _registeredShortcuts[accelerator] = callback;
+        }
 
         // Also register as in-window fallback
         if (_window != null)
@@ -209,7 +268,13 @@ public class ShortcutService : IDisposable
             foreach (var kb in _keyBindings)
                 _window.KeyBindings.Remove(kb);
         _keyBindings.Clear();
-        _registeredShortcuts.Clear();
+
+        lock (_shortcutLock)
+        {
+            _registeredShortcuts.Clear();
+            _triggeredShortcuts.Clear();
+            _pressedKeys.Clear();
+        }
     }
 
     public void Refresh()
@@ -220,15 +285,8 @@ public class ShortcutService : IDisposable
         Register(config.Shortcuts.ToggleWindow, WindowService.Instance.ToggleWindow);
         Register(config.Shortcuts.OpenSettings, WindowService.Instance.OpenSettingsWindow);
 
-        // Ctrl+Q — clean shutdown through the application lifetime.
-        Register("CommandOrControl+Q", () =>
-        {
-            if (Avalonia.Application.Current?.ApplicationLifetime is
-                Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
-            {
-                desktop.Shutdown();
-            }
-        });
+        // Ctrl+Q — clean shutdown through WindowService.
+        Register("CommandOrControl+Q", WindowService.Instance.ShutdownApplication);
 
         // Per-provider hotkeys: 1..N map to the first N enabled providers in display order.
         var enabled = config.Providers.Where(p => p.Enabled).OrderBy(p => p.Order).ToList();
@@ -255,6 +313,7 @@ public class ShortcutService : IDisposable
             _hook.Dispose();
             _hook = null;
         }
+        ConfigService.Instance.ConfigChanged -= OnConfigChanged;
         _window = null;
     }
 }

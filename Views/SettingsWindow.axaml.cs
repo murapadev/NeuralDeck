@@ -1,6 +1,5 @@
 using Avalonia.Controls;
 using Avalonia.Input;
-using Avalonia.Interactivity;
 
 namespace NeuralDeck.Views;
 
@@ -10,11 +9,7 @@ public partial class SettingsWindow : Window
     {
         InitializeComponent();
         KeyDown += OnKeyDown;
-    }
 
-    protected override void OnLoaded(RoutedEventArgs e)
-    {
-        base.OnLoaded(e);
         var titleBar = this.FindControl<Border>("TitleBar");
         if (titleBar != null)
             titleBar.PointerPressed += OnTitleBarPressed;

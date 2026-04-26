@@ -15,6 +15,7 @@ public class WindowService
     private Window? _mainWindow;
     private Window? _settingsWindow;
     private bool _isWindowVisible;
+    private bool _allowClose;
     private Timer? _sizeDebounceTimer;
 
     public static WindowService Instance => _instance ??= new WindowService();
@@ -28,6 +29,12 @@ public class WindowService
     {
         _mainWindow = window;
         _isWindowVisible = window.IsVisible;
+
+        window.Opened += (s, e) =>
+        {
+            _isWindowVisible = true;
+            WindowShown?.Invoke(this, EventArgs.Empty);
+        };
 
         window.PositionChanged += (s, e) =>
         {
@@ -59,6 +66,12 @@ public class WindowService
 
         window.Closing += (s, e) =>
         {
+            if (_allowClose)
+            {
+                _isWindowVisible = false;
+                return;
+            }
+
             e.Cancel = true;
             HideWindow();
         };
@@ -195,6 +208,28 @@ public class WindowService
     {
         _settingsWindow?.Close();
         _settingsWindow = null;
+    }
+
+    public void PrepareForShutdown()
+    {
+        _allowClose = true;
+        _sizeDebounceTimer?.Dispose();
+        _sizeDebounceTimer = null;
+    }
+
+    public void ShutdownApplication()
+    {
+        PrepareForShutdown();
+
+        if (Application.Current?.ApplicationLifetime is
+            Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            desktop.Shutdown();
+        }
+        else
+        {
+            Environment.Exit(0);
+        }
     }
 
     public void SaveWindowSize(int width, int height)

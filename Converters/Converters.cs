@@ -25,7 +25,7 @@ public class BoolToVisibilityConverter : IValueConverter
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        throw new NotImplementedException();
+        return Avalonia.Data.BindingOperations.DoNothing;
     }
 }
 
@@ -42,7 +42,7 @@ public class BoolToColorConverter : IValueConverter
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        throw new NotImplementedException();
+        return Avalonia.Data.BindingOperations.DoNothing;
     }
 }
 
@@ -66,7 +66,7 @@ public class StringToColorConverter : IValueConverter
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        throw new NotImplementedException();
+        return Avalonia.Data.BindingOperations.DoNothing;
     }
 }
 
@@ -98,7 +98,7 @@ public class FirstTwoConverter : IValueConverter
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        throw new NotImplementedException();
+        return Avalonia.Data.BindingOperations.DoNothing;
     }
 }
 
@@ -112,7 +112,7 @@ public class BoolToOpacityConverter : IValueConverter
         => value is bool b && b ? 1.0 : 0.0;
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
-        => throw new NotImplementedException();
+        => Avalonia.Data.BindingOperations.DoNothing;
 }
 
 public class BoolToAccentConverter : IValueConverter
@@ -132,7 +132,7 @@ public class BoolToAccentConverter : IValueConverter
     }
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
-        => throw new NotImplementedException();
+        => Avalonia.Data.BindingOperations.DoNothing;
 }
 
 public class RoleToBrushConverter : IValueConverter
@@ -145,7 +145,7 @@ public class RoleToBrushConverter : IValueConverter
     }
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
-        => throw new NotImplementedException();
+        => Avalonia.Data.BindingOperations.DoNothing;
 }
 
 public class StepToDotConverter : IValueConverter
@@ -161,7 +161,7 @@ public class StepToDotConverter : IValueConverter
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        throw new NotImplementedException();
+        return Avalonia.Data.BindingOperations.DoNothing;
     }
 }
 
@@ -200,7 +200,7 @@ public class ProviderFaviconConverter : IValueConverter
     }
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
-        => throw new NotImplementedException();
+        => Avalonia.Data.BindingOperations.DoNothing;
 }
 
 /// <summary>
@@ -255,5 +255,5 @@ public class ProviderIconConverter : IValueConverter
     }
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
-        => throw new NotImplementedException();
+        => Avalonia.Data.BindingOperations.DoNothing;
 }

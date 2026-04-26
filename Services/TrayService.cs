@@ -158,7 +158,7 @@ public class TrayService : IDisposable
 
             menu.Items.Add(new NativeMenuItemSeparator());
 
-            // Quit — proper clean shutdown through the application lifetime.
+            // Quit through WindowService so the main window's hide-on-close handler allows it.
             var quitItem = new NativeMenuItem { Header = "Quit" };
             quitItem.Click += (s, e) => ShutdownApp();
             menu.Items.Add(quitItem);
@@ -173,20 +173,12 @@ public class TrayService : IDisposable
 
     private static void ShutdownApp()
     {
-        if (Application.Current?.ApplicationLifetime is
-            Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
-        {
-            desktop.Shutdown();
-        }
-        else
-        {
-            Environment.Exit(0);
-        }
+        WindowService.Instance.ShutdownApplication();
     }
 
     public void Dispose()
     {
-        try { ConfigService.Instance.ConfigChanged -= OnConfigChanged; } catch { }
+        ConfigService.Instance.ConfigChanged -= OnConfigChanged;
         if (_trayIcon != null)
         {
             _trayIcon.Clicked -= OnTrayClicked;

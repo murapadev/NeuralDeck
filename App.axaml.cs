@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using NeuralDeck.Services;
@@ -20,6 +21,8 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
+
             _mainWindowViewModel = new MainWindowViewModel();
             var mainWindow = new MainWindow
             {
@@ -34,14 +37,20 @@ public partial class App : Application
             try
             {
                 var config = ConfigService.Instance.GetConfig();
+                mainWindow.Width = config.Window.Width;
+                mainWindow.Height = config.Window.Height;
                 mainWindow.Topmost = config.Window.AlwaysOnTop;
                 mainWindow.Opacity = config.Window.Opacity;
                 var (x, y) = WindowService.Instance.CalculateWindowPosition();
                 mainWindow.Position = new PixelPoint(x, y);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[App] Failed to apply startup config: {ex.Message}");
+            }
 
             desktop.MainWindow = mainWindow;
+            desktop.ShutdownRequested += (_, _) => WindowService.Instance.PrepareForShutdown();
             desktop.Exit += OnExit;
         }
 
@@ -56,7 +65,13 @@ public partial class App : Application
             TrayService.Instance.Dispose();
             ShortcutService.Instance?.Dispose();
             _mainWindowViewModel?.Dispose();
+
+            if (ConfigService.Instance.GetConfig().Privacy.ClearOnClose)
+                ConversationStore.Clear();
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[App] Exit cleanup failed: {ex.Message}");
+        }
     }
 }

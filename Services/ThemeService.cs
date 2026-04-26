@@ -53,8 +53,8 @@ public sealed class ThemeService
         app.RequestedThemeVariant = theme?.ToLowerInvariant() switch
         {
             "light" => ThemeVariant.Light,
-            "dark"  => ThemeVariant.Dark,
-            _        => ThemeVariant.Default, // "system" / null falls back to OS
+            "dark" => ThemeVariant.Dark,
+            _ => ThemeVariant.Default, // "system" / null falls back to OS
         };
     }
 

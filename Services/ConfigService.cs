@@ -99,6 +99,12 @@ public class ConfigService
 
     private AppConfig NormalizeConfig(AppConfig config)
     {
+        config.Window ??= new WindowConfig();
+        config.Shortcuts ??= new ShortcutConfig();
+        config.Providers ??= new List<ProviderConfig>();
+        config.Privacy ??= new PrivacyConfig();
+        config.Appearance ??= new AppearanceConfig();
+
         // Ensure all required providers exist
         var existingIds = config.Providers.Select(p => p.Id).ToHashSet();
         foreach (var defaultProvider in AppConstants.DefaultProviders)
@@ -116,12 +122,16 @@ public class ConfigService
             ollama.Color = "#1f2937";
 
         // Ensure window config has valid values
-        if (config.Window.Width < 300) config.Window.Width = AppConstants.DefaultWindowWidth;
-        if (config.Window.Height < 400) config.Window.Height = AppConstants.DefaultWindowHeight;
+        if (config.Window.Width < AppConstants.MinWindowWidth) config.Window.Width = AppConstants.DefaultWindowWidth;
+        if (config.Window.Height < AppConstants.MinWindowHeight) config.Window.Height = AppConstants.DefaultWindowHeight;
         if (config.Window.Opacity < 0.1 || config.Window.Opacity > 1.0) config.Window.Opacity = 1.0;
+        if (!IsKnownWindowPosition(config.Window.Position)) config.Window.Position = "near-tray";
 
         return config;
     }
+
+    private static bool IsKnownWindowPosition(string? position) =>
+        position is "near-tray" or "top-left" or "top-right" or "bottom-left" or "bottom-right" or "center" or "remember";
 
     public void SaveConfig()
     {
