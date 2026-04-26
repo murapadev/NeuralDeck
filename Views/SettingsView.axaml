@@ -163,6 +163,7 @@
                             <TextBlock FontSize="11" Foreground="#71717a">
                                 <Run Text="• Ctrl+Shift+1..N — switch to provider N"/><LineBreak/>
                                 <Run Text="• Ctrl+R or F5 — reload current web view"/><LineBreak/>
+                                <Run Text="• Ctrl+Left / Ctrl+Right — browser back / forward"/><LineBreak/>
                                 <Run Text="• Ctrl+Q — quit NeuralDeck"/><LineBreak/>
                                 <Run Text="• Esc or Ctrl+W — close Settings window"/>
                             </TextBlock>

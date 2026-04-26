@@ -292,6 +292,10 @@ public class ShortcutService : IDisposable
         Register(config.Shortcuts.Reload, () => _mainViewModel?.ReloadCurrentView());
         Register("F5", () => _mainViewModel?.ReloadCurrentView());
 
+        // Browser back / forward.
+        Register(config.Shortcuts.GoBack, () => _mainViewModel?.GoBackInView());
+        Register(config.Shortcuts.GoForward, () => _mainViewModel?.GoForwardInView());
+
         // Per-provider hotkeys: 1..N map to the first N enabled providers in display order.
         var enabled = config.Providers.Where(p => p.Enabled).OrderBy(p => p.Order).ToList();
         for (int i = 0; i < Math.Min(enabled.Count, config.Shortcuts.Providers.Count); i++)

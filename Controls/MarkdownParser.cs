@@ -15,7 +15,8 @@ public static class MarkdownParser
         CodeFence,
         BulletList,
         NumberedList,
-        HorizontalRule
+        HorizontalRule,
+        Blockquote
     }
 
     public sealed record Block(BlockType Type, string Content, string? Language = null);
@@ -80,6 +81,21 @@ public static class MarkdownParser
                     i++;
                 }
                 blocks.Add(new Block(BlockType.NumberedList, string.Join("\n", items)));
+                continue;
+            }
+
+            // ── Blockquote ───────────────────────────────────────────────
+            if (line.StartsWith("> ") || line == ">")
+            {
+                var qlines = new List<string>();
+                while (i < lines.Length)
+                {
+                    var l = lines[i].TrimEnd();
+                    if (l.StartsWith("> ")) { qlines.Add(l[2..]); i++; }
+                    else if (l == ">") { qlines.Add(""); i++; }
+                    else break;
+                }
+                blocks.Add(new Block(BlockType.Blockquote, string.Join("\n", qlines)));
                 continue;
             }
 

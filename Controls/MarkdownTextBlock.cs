@@ -72,6 +72,7 @@ public sealed partial class MarkdownTextBlock : ContentControl
         MarkdownParser.BlockType.CodeFence     => BuildCodeFence(block.Content, block.Language, size),
         MarkdownParser.BlockType.BulletList    => BuildItemList(block.Content, size, ordered: false),
         MarkdownParser.BlockType.NumberedList  => BuildItemList(block.Content, size, ordered: true),
+        MarkdownParser.BlockType.Blockquote    => BuildBlockquote(block.Content, size),
         MarkdownParser.BlockType.HorizontalRule => new Border
         {
             Height = 1,
@@ -182,6 +183,34 @@ public sealed partial class MarkdownTextBlock : ContentControl
         }
 
         return panel;
+    }
+
+    private static Control BuildBlockquote(string content, double size)
+    {
+        var inner = new StackPanel { Spacing = 4 };
+        foreach (var line in content.Split('\n'))
+        {
+            var tb = new TextBlock
+            {
+                FontSize = size,
+                Foreground = new SolidColorBrush(Color.Parse("#a1a1aa")),
+                FontStyle = FontStyle.Italic,
+                TextWrapping = TextWrapping.Wrap,
+                LineHeight = size * 1.5
+            };
+            AddInlines(tb, line, size);
+            inner.Children.Add(tb);
+        }
+        return new Border
+        {
+            BorderThickness = new Thickness(3, 0, 0, 0),
+            BorderBrush = new SolidColorBrush(Color.Parse("#3f3f46")),
+            Padding = new Thickness(12, 6),
+            Margin = new Thickness(0, 2),
+            Background = new SolidColorBrush(Color.Parse("#18181b")),
+            CornerRadius = new CornerRadius(0, 4, 4, 0),
+            Child = inner
+        };
     }
 
     private static TextBlock BuildParagraph(string text, double size)

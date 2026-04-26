@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-04-26
+
+### Added
+- **WebView: JS injection** — dark scrollbar CSS injected via `InvokeScript` on every
+  page load; idempotent (checks for existing `__nd_s` style element)
+- **WebView: page title** — `document.title` fetched after each navigation and displayed
+  in the status bar as `"Page Title  •  host"`; address bar tooltip also shows the title
+- **WebView: Go button** — explicit `→` navigation button next to the address bar
+  (Enter key still works as before)
+- **Markdown: blockquotes** — `> text` renders as a left-border panel with italic text
+- **Markdown: links** — `[text](url)` rendered as indigo underlined text inline
+- **Shortcuts: Ctrl+Left / Ctrl+Right** — browser back / forward now registered from
+  `ShortcutConfig.GoBack` / `GoForward` (were defined in schema but never wired up)
+- **18 unit tests** (up from 14) — added blockquote, link-in-paragraph, indented code fence
+
+### Changed
+- **Streaming scroll fix** — `ChatView` now subscribes to each `ChatMessage.PropertyChanged`
+  so the scroll view follows token updates during streaming (previously stuck at position
+  from when the message was first added)
+- **Scroll coalescing** — rapid token bursts queue at most one scroll action at a time
+  via `_scrollPending` flag
+- **MarkdownTextBlock performance** — `Rebuild()` is skipped while `IsVisible=false`
+  (hidden behind the streaming `SelectableTextBlock`); rebuilds on `IsVisible→true`.
+  Eliminates hundreds of redundant markdown parses during a streaming response
+- **Ollama model display** — ComboBox shows `DisplayName` (`:latest` stripped); full
+  name still visible as a tooltip
+- **Disconnected state** — shows the actual configured Ollama URL being tried, plus
+  a `Retry` button that fires `CheckConnectionCommand`; button disabled while a check
+  is in flight
+- Language setting in Appearance tab labelled "(coming soon)" and disabled — it has
+  never applied a translation; making the UI honest about it
+- Shortcuts tab: added `Ctrl+Left/Right` (back/forward) and corrected `Ctrl+W` entry
+- Status bar text dimmed to `#52525b` (less visually heavy than before)
+
 ## [0.6.0] - 2026-04-26
 
 ### Added

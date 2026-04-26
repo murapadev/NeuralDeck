@@ -143,6 +143,18 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         WebBrowserViewModel?.ReloadAction?.Invoke();
     }
 
+    internal void GoBackInView()
+    {
+        if (SelectedProviderId == "ollama") return;
+        WebBrowserViewModel?.GoBackAction?.Invoke();
+    }
+
+    internal void GoForwardInView()
+    {
+        if (SelectedProviderId == "ollama") return;
+        WebBrowserViewModel?.GoForwardAction?.Invoke();
+    }
+
     private void OnConfigChanged(object? sender, AppConfig config)
     {
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>

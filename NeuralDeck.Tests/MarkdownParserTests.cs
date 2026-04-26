@@ -172,4 +172,23 @@ public class MarkdownParserTests
         Assert.Equal("python", blocks[0].Language);
         Assert.Contains("    return 42", blocks[0].Content);
     }
+
+    [Fact]
+    public void ParseBlockquote_SingleLine()
+    {
+        var blocks = MarkdownParser.Parse("> This is a quote");
+        Assert.Single(blocks);
+        Assert.Equal(BlockType.Blockquote, blocks[0].Type);
+        Assert.Equal("This is a quote", blocks[0].Content);
+    }
+
+    [Fact]
+    public void ParseBlockquote_MultiLine_GroupedTogether()
+    {
+        var md = "> Line one\n> Line two\n> Line three";
+        var blocks = MarkdownParser.Parse(md);
+        Assert.Single(blocks);
+        Assert.Equal(BlockType.Blockquote, blocks[0].Type);
+        Assert.Equal(3, blocks[0].Content.Split('\n').Length);
+    }
 }
