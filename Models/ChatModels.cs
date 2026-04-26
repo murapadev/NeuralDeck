@@ -19,6 +19,10 @@ public partial class ChatMessage : ObservableObject
     private bool _isStreaming;
 
     public bool IsUser => Role == "user";
+
+    public string TimeLabel => Timestamp.HasValue
+        ? DateTimeOffset.FromUnixTimeMilliseconds(Timestamp.Value).LocalDateTime.ToString("HH:mm")
+        : "";
 }
 
 public class OllamaModel

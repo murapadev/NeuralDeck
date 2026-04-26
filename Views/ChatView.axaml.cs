@@ -101,6 +101,22 @@ public partial class ChatView : UserControl
 
         if (DataContext is ChatViewModel vm)
             SubscribeToMessages(vm);
+
+        FocusInput();
+    }
+
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        // Auto-focus the input whenever the chat panel becomes visible (user switches to Ollama).
+        if (change.Property == IsVisibleProperty && IsVisible)
+            FocusInput();
+    }
+
+    private void FocusInput()
+    {
+        if (_messageInput != null && DataContext is ChatViewModel vm && vm.IsConnected)
+            _messageInput.Focus();
     }
 
     protected override void OnUnloaded(RoutedEventArgs e)
@@ -120,6 +136,17 @@ public partial class ChatView : UserControl
             if (DataContext is ChatViewModel vm)
                 vm.SendMessageCommand.Execute(null);
         }
+    }
+
+    private void OnSuggestClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button btn || btn.Tag is not string prompt) return;
+        if (DataContext is ChatViewModel vm)
+            vm.InputText = prompt + " ";
+        _messageInput?.Focus();
+        // Move caret to end
+        if (_messageInput != null)
+            _messageInput.CaretIndex = _messageInput.Text?.Length ?? 0;
     }
 
     private async void OnExportClick(object? sender, RoutedEventArgs e)
