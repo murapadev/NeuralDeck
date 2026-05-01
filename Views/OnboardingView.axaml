@@ -1,31 +1,130 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="clr-namespace:NeuralDeck.ViewModels"
+             xmlns:models="clr-namespace:NeuralDeck.Models"
              x:Class="NeuralDeck.Views.OnboardingView"
-             x:DataType="vm:OnboardingViewModel">
+             x:DataType="vm:OnboardingViewModel"
+             Background="#09090b">
 
-    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="24">
-        <!-- Logo -->
-        <Border Width="96" Height="96" CornerRadius="24"
-                Background="#6366f1" HorizontalAlignment="Center">
-            <TextBlock Text="N" FontSize="48" FontWeight="Bold"
-                       HorizontalAlignment="Center" VerticalAlignment="Center"
-                       Foreground="#fafafa"/>
+    <Grid RowDefinitions="*,Auto">
+
+        <!-- Step content -->
+        <Grid Grid.Row="0">
+
+            <!-- Step 0: Welcome -->
+            <StackPanel IsVisible="{Binding CurrentStep, Converter={StaticResource EqualityConverter}, ConverterParameter=0}"
+                        VerticalAlignment="Center" HorizontalAlignment="Center"
+                        Spacing="24" Margin="32">
+                <Image Width="88" Height="88"
+                       HorizontalAlignment="Center"
+                       Source="avares://NeuralDeck/Assets/Icons/app.png"/>
+
+                <StackPanel Spacing="8" HorizontalAlignment="Center">
+                    <TextBlock Text="Welcome to NeuralDeck"
+                               FontSize="26" FontWeight="Bold"
+                               Foreground="#fafafa" HorizontalAlignment="Center"/>
+                    <TextBlock Text="Your invisible AI command center"
+                               FontSize="15" Foreground="#71717a"
+                               HorizontalAlignment="Center"/>
+                </StackPanel>
+
+                <StackPanel Spacing="10" HorizontalAlignment="Center">
+                    <TextBlock FontSize="13" Foreground="#a1a1aa" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="320">
+                        Access ChatGPT, Gemini, Claude, and more from a floating window that's always available via a global shortcut.
+                    </TextBlock>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Step 1: Provider selection -->
+            <Grid IsVisible="{Binding CurrentStep, Converter={StaticResource EqualityConverter}, ConverterParameter=1}"
+                  RowDefinitions="Auto,*"
+                  Margin="24">
+                <StackPanel Grid.Row="0" Spacing="4" Margin="0,16,0,16">
+                    <TextBlock Text="Choose your providers"
+                               FontSize="20" FontWeight="Bold"
+                               Foreground="#fafafa"/>
+                    <TextBlock Text="Select which AI services you want to use"
+                               FontSize="13" Foreground="#71717a"/>
+                </StackPanel>
+
+                <ScrollViewer Grid.Row="1">
+                    <ItemsControl ItemsSource="{Binding Providers}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="models:ProviderConfig">
+                                <Border Background="#18181b" CornerRadius="10"
+                                        Padding="14,12" Margin="0,0,0,8">
+                                    <Grid ColumnDefinitions="Auto,*,Auto">
+                                        <Border Grid.Column="0" Width="36" Height="36"
+                                                CornerRadius="9" Margin="0,0,12,0"
+                                                Background="#27272a">
+                                            <Grid>
+                                                <!-- Fallback glyph for custom providers -->
+                                                <Viewbox Width="20" Height="20" Stretch="Uniform">
+                                                    <Path Data="{Binding Id, Converter={StaticResource ProviderIconConverter}}"
+                                                          Fill="{Binding Color, Converter={StaticResource StringToColorConverter}}"/>
+                                                </Viewbox>
+                                                <!-- Real brand favicon on top -->
+                                                <Image Source="{Binding Id, Converter={StaticResource ProviderFaviconConverter}}"
+                                                       Width="28" Height="28" Stretch="Uniform"
+                                                       RenderOptions.BitmapInterpolationMode="HighQuality"/>
+                                            </Grid>
+                                        </Border>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                                            <TextBlock Text="{Binding Name}" FontSize="14"
+                                                       FontWeight="Medium" Foreground="#fafafa"/>
+                                            <TextBlock Text="{Binding Url}" FontSize="11"
+                                                       Foreground="#52525b"/>
+                                        </StackPanel>
+                                        <CheckBox Grid.Column="2" IsChecked="{Binding Enabled}"
+                                                  VerticalAlignment="Center"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+        </Grid>
+
+        <!-- Navigation footer -->
+        <Border Grid.Row="1" Background="#18181b"
+                BorderBrush="#27272a" BorderThickness="0,1,0,0"
+                Padding="24,16">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <!-- Back button -->
+                <Button Grid.Column="0" Content="Back"
+                        Command="{Binding BackCommand}"
+                        IsVisible="{Binding CanGoBack}"
+                        Padding="20,10" Background="#27272a"
+                        Foreground="#fafafa" CornerRadius="8"
+                        FontSize="14"/>
+
+                <!-- Step dots -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal"
+                            HorizontalAlignment="Center" Spacing="8"
+                            VerticalAlignment="Center">
+                    <Ellipse Width="8" Height="8"
+                             Fill="{Binding CurrentStep, Converter={StaticResource StepToDotConverter}, ConverterParameter=0}"/>
+                    <Ellipse Width="8" Height="8"
+                             Fill="{Binding CurrentStep, Converter={StaticResource StepToDotConverter}, ConverterParameter=1}"/>
+                </StackPanel>
+
+                <!-- Next / Finish button -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                    <Button Content="Next →"
+                            Command="{Binding NextCommand}"
+                            IsVisible="{Binding CanGoNext}"
+                            Padding="20,10" Background="#6366f1"
+                            Foreground="#fafafa" CornerRadius="8"
+                            FontSize="14"/>
+                    <Button Content="Get Started"
+                            Command="{Binding FinishCommand}"
+                            IsVisible="{Binding ShowFinishButton}"
+                            Padding="20,10" Background="#6366f1"
+                            Foreground="#fafafa" CornerRadius="8"
+                            FontSize="14"/>
+                </StackPanel>
+            </Grid>
         </Border>
-
-        <!-- Title -->
-        <StackPanel Spacing="8" HorizontalAlignment="Center">
-            <TextBlock Text="NeuralDeck"
-                       FontSize="32" FontWeight="Bold"
-                       Foreground="#fafafa" HorizontalAlignment="Center"/>
-            <TextBlock Text="Your invisible AI command center"
-                       FontSize="16" Foreground="#71717a"
-                       HorizontalAlignment="Center"/>
-        </StackPanel>
-
-        <!-- Get Started Button -->
-        <Button Content="Get Started" Command="{Binding FinishCommand}" Padding="32,16" FontSize="16"
-                Background="#fafafa" Foreground="#09090b"
-                HorizontalAlignment="Center" Margin="0,24,0,0"/>
-    </StackPanel>
+    </Grid>
 </UserControl>

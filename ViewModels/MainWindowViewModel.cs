@@ -1,6 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using NeuralDeck.Models;
@@ -10,30 +11,29 @@ namespace NeuralDeck.ViewModels;
 
 public partial class MainWindowViewModel : ViewModelBase, IDisposable
 {
-    private readonly Action _onOnboardingComplete;
-
     [ObservableProperty]
-    private string _currentView = "chat";
+    [NotifyPropertyChangedFor(nameof(ShowChatView))]
+    [NotifyPropertyChangedFor(nameof(ShowProviderView))]
+    private string _selectedProviderId = "ollama";
 
-    [ObservableProperty]
-    private bool _isLoading = false;
+    [ObservableProperty] private bool _showOnboarding = false;
+    [ObservableProperty] private bool _isPinned = true;
+    [ObservableProperty] private ObservableCollection<ProviderDisplay> _enabledProviders = new();
+    [ObservableProperty] private ChatViewModel? _chatViewModel;
+    [ObservableProperty] private OnboardingViewModel? _onboardingViewModel;
+    [ObservableProperty] private ProviderConfig? _selectedProvider;
+    [ObservableProperty] private WebBrowserViewModel? _webBrowserViewModel;
 
-    [ObservableProperty]
-    private bool _showOnboarding = false;
+    public bool ShowChatView => SelectedProviderId == "ollama";
+    public bool ShowProviderView => SelectedProviderId != "ollama";
 
-    [ObservableProperty]
-    private bool _isPinned = true;
-
-    [ObservableProperty]
-    private ObservableCollection<ProviderDisplay> _enabledProviders = new();
-
-    [ObservableProperty]
-    private ChatViewModel? _chatViewModel;
-
-    public MainWindowViewModel(Action? onOnboardingComplete = null)
+    public MainWindowViewModel()
     {
-        _onOnboardingComplete = onOnboardingComplete ?? (() => { });
         ChatViewModel = new ChatViewModel();
+        OnboardingViewModel = new OnboardingViewModel();
+        WebBrowserViewModel = new WebBrowserViewModel();
+        OnboardingViewModel.OnboardingComplete += (_, _) => OnOnboardingComplete();
+        ConfigService.Instance.ConfigChanged += OnConfigChanged;
         LoadConfig();
     }
 
@@ -43,19 +43,13 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         {
             var config = ConfigService.Instance.GetConfig();
             ShowOnboarding = config.FirstRun;
-
-            EnabledProviders.Clear();
-            foreach (var provider in config.Providers.Where(p => p.Enabled))
-            {
-                EnabledProviders.Add(new ProviderDisplay
-                {
-                    Name = provider.Name,
-                    Color = provider.Color,
-                    Enabled = provider.Enabled
-                });
-            }
-
+            SelectedProviderId = config.LastProvider ?? "ollama";
             IsPinned = config.Window.AlwaysOnTop;
+            LoadProviders(config);
+            UpdateSelectedProvider(config);
+
+            if (SelectedProviderId != "ollama" && SelectedProvider != null)
+                WebBrowserViewModel?.NavigateTo(SelectedProvider.Url);
         }
         catch
         {
@@ -63,50 +57,99 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         }
     }
 
+    private void LoadProviders(AppConfig config)
+    {
+        EnabledProviders.Clear();
+        foreach (var provider in config.Providers.Where(p => p.Enabled).OrderBy(p => p.Order))
+        {
+            var captured = provider;
+            EnabledProviders.Add(new ProviderDisplay
+            {
+                Name = captured.Name,
+                Color = captured.Color,
+                Id = captured.Id,
+                IsSelected = captured.Id == SelectedProviderId,
+                SelectCommand = new RelayCommand(() => SelectProvider(captured.Id))
+            });
+        }
+    }
+
+    private void UpdateSelectedProvider(AppConfig? config = null)
+    {
+        config ??= ConfigService.Instance.GetConfig();
+        SelectedProvider = config.Providers.FirstOrDefault(p => p.Id == SelectedProviderId);
+        foreach (var p in EnabledProviders)
+            p.IsSelected = p.Id == SelectedProviderId;
+    }
+
+    internal void SelectProvider(string providerId)
+    {
+        SelectedProviderId = providerId;
+        ConfigService.Instance.UpdateGeneral(lastProvider: providerId);
+        UpdateSelectedProvider();
+
+        if (providerId != "ollama" && SelectedProvider != null)
+            WebBrowserViewModel?.NavigateTo(SelectedProvider.Url);
+    }
+
     [RelayCommand]
     private void TogglePin()
     {
         IsPinned = !IsPinned;
+        WindowService.Instance.SetAlwaysOnTop(IsPinned);
+        ConfigService.Instance.UpdateWindow(w => w.AlwaysOnTop = IsPinned);
     }
 
     [RelayCommand]
     private void OpenSettings()
     {
-        CurrentView = "settings";
-    }
-
-    [RelayCommand]
-    private void SelectProvider(ProviderDisplay? provider)
-    {
-        if (provider != null)
-        {
-            CurrentView = "chat";
-        }
+        WindowService.Instance.OpenSettingsWindow();
     }
 
     [RelayCommand]
     private void CloseSettings()
     {
-        CurrentView = "chat";
+        WindowService.Instance.CloseSettingsWindow();
+    }
+
+    [RelayCommand]
+    private void HideWindow()
+    {
+        WindowService.Instance.HideWindow();
+    }
+
+    private void OnConfigChanged(object? sender, AppConfig config)
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            LoadProviders(config);
+            UpdateSelectedProvider(config);
+        });
     }
 
     public void OnOnboardingComplete()
     {
         ShowOnboarding = false;
-        _onOnboardingComplete();
         ConfigService.Instance.MarkFirstRunComplete();
+        var config = ConfigService.Instance.GetConfig();
+        LoadProviders(config);
+        UpdateSelectedProvider(config);
     }
 
     public void Dispose()
     {
+        ConfigService.Instance.ConfigChanged -= OnConfigChanged;
         ChatViewModel?.Dispose();
         ChatViewModel = null;
+        WebBrowserViewModel = null;
     }
 }
 
-public class ProviderDisplay
+public partial class ProviderDisplay : ObservableObject
 {
+    [ObservableProperty] private bool _isSelected;
     public string Name { get; set; } = "";
     public string Color { get; set; } = "#6366f1";
-    public bool Enabled { get; set; }
+    public string Id { get; set; } = "";
+    public ICommand SelectCommand { get; set; } = null!;
 }

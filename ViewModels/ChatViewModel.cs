@@ -31,6 +31,7 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
 
     public ObservableCollection<ChatMessage> Messages { get; } = new();
     public ObservableCollection<OllamaModel> Models { get; } = new();
+    public bool HasMessages => Messages.Count > 0;
 
     private readonly OllamaService _ollamaService;
     private readonly ConfigService _configService;
@@ -42,6 +43,12 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
     {
         _ollamaService = OllamaService.Instance;
         _configService = ConfigService.Instance;
+
+        Messages.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasMessages));
+
+        // Restore persisted conversation history.
+        foreach (var m in ConversationStore.Load())
+            Messages.Add(m);
 
         // Start connection check
         _ = CheckConnectionAsync();
@@ -57,7 +64,7 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
         {
             try
             {
-                await Task.Delay(Constants.OllamaPollIntervalMs, cancellationToken);
+                await Task.Delay(AppConstants.OllamaPollIntervalMs, cancellationToken);
                 await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
                 {
                     await CheckConnectionAsync();
@@ -118,11 +125,9 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
                 Models.Add(model);
             }
 
-            // Select first model if none selected
-            if (SelectedModel == null && Models.Count > 0)
-            {
-                SelectedModel = Models[0];
-            }
+            var preferred = SelectedModel?.Name ?? _configService.GetConfig().LastOllamaModel;
+            SelectedModel = Models.FirstOrDefault(m => m.Name == preferred)
+                            ?? Models.FirstOrDefault();
         }
         catch (Exception ex)
         {
@@ -139,7 +144,6 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
         var userMessage = InputText.Trim();
         InputText = string.Empty;
 
-        // Add user message
         Messages.Add(new ChatMessage
         {
             Role = "user",
@@ -147,7 +151,11 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
             Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
         });
 
-        // Add placeholder for assistant
+        var history = Messages
+            .Where(m => m.Role != "system")
+            .Select(m => new ChatMessage { Role = m.Role, Content = m.Content })
+            .ToList();
+
         var assistantMessage = new ChatMessage
         {
             Role = "assistant",
@@ -161,11 +169,6 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
 
         try
         {
-            var history = Messages
-                .Where(m => m.Role != "system")
-                .Select(m => new ChatMessage { Role = m.Role, Content = m.Content })
-                .ToList();
-
             await _ollamaService.ChatAsync(
                 SelectedModel.Name,
                 history,
@@ -215,6 +218,19 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
             IsLoading = false;
             _chatCts?.Dispose();
             _chatCts = null;
+            PersistConversation();
+        }
+    }
+
+    private void PersistConversation()
+    {
+        try
+        {
+            ConversationStore.Save(Messages.ToList());
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ChatViewModel] Persist failed: {ex.Message}");
         }
     }
 
@@ -222,6 +238,13 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
     private void ClearConversation()
     {
         Messages.Clear();
+        ConversationStore.Clear();
+    }
+
+    [RelayCommand]
+    private void CancelStream()
+    {
+        _chatCts?.Cancel();
     }
 
     [RelayCommand]
@@ -232,7 +255,8 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
 
     partial void OnSelectedModelChanged(OllamaModel? value)
     {
-        // Model selection persistence would be implemented here
+        if (value != null)
+            _configService.UpdateGeneral(lastOllamaModel: value.Name);
     }
 
     public string FormatModelSize(long bytes) => OllamaService.FormatModelSize(bytes);
@@ -240,6 +264,7 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
 
     public void Dispose()
     {
+        PersistConversation();
         _pollCts?.Cancel();
         _pollCts?.Dispose();
         _pollCts = null;

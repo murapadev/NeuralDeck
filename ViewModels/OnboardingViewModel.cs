@@ -28,7 +28,10 @@ public partial class OnboardingViewModel : ViewModelBase
     public OnboardingViewModel()
     {
         LoadProviders();
+        UpdateNavigation();
     }
+
+    public int TotalSteps => 2;
 
     private void LoadProviders()
     {
@@ -76,9 +79,7 @@ public partial class OnboardingViewModel : ViewModelBase
     [RelayCommand]
     private void Finish()
     {
-        // Save provider selection
         ConfigService.Instance.UpdateProviders(Providers.ToList());
-        ConfigService.Instance.MarkFirstRunComplete();
         OnboardingComplete?.Invoke(this, EventArgs.Empty);
     }
 }

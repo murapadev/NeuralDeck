@@ -77,21 +77,21 @@ public class ConfigService
     {
         return new AppConfig
         {
-            Version = "0.4.5",
+            Version = "0.5.0",
             Debug = false,
             FirstRun = true,
             LastProvider = null,
             Window = new WindowConfig
             {
-                Width = Constants.DefaultWindowWidth,
-                Height = Constants.DefaultWindowHeight,
+                Width = AppConstants.DefaultWindowWidth,
+                Height = AppConstants.DefaultWindowHeight,
                 Position = "near-tray",
                 AlwaysOnTop = true,
                 HideOnBlur = true,
                 Opacity = 1.0
             },
             Shortcuts = new ShortcutConfig(),
-            Providers = Constants.DefaultProviders.Select(p => p.Clone()).ToList(),
+            Providers = AppConstants.DefaultProviders.Select(p => p.Clone()).ToList(),
             Privacy = new PrivacyConfig(),
             Appearance = new AppearanceConfig()
         };
@@ -99,9 +99,15 @@ public class ConfigService
 
     private AppConfig NormalizeConfig(AppConfig config)
     {
+        config.Window ??= new WindowConfig();
+        config.Shortcuts ??= new ShortcutConfig();
+        config.Providers ??= new List<ProviderConfig>();
+        config.Privacy ??= new PrivacyConfig();
+        config.Appearance ??= new AppearanceConfig();
+
         // Ensure all required providers exist
         var existingIds = config.Providers.Select(p => p.Id).ToHashSet();
-        foreach (var defaultProvider in Constants.DefaultProviders)
+        foreach (var defaultProvider in AppConstants.DefaultProviders)
         {
             if (!existingIds.Contains(defaultProvider.Id))
             {
@@ -109,13 +115,23 @@ public class ConfigService
             }
         }
 
+        // Migration: older configs stored Ollama with a pure-white color, which makes
+        // the white-on-white glyph invisible in the sidebar. Refresh it to the new default.
+        var ollama = config.Providers.FirstOrDefault(p => p.Id == "ollama");
+        if (ollama != null && string.Equals(ollama.Color, "#ffffff", StringComparison.OrdinalIgnoreCase))
+            ollama.Color = "#1f2937";
+
         // Ensure window config has valid values
-        if (config.Window.Width < 300) config.Window.Width = Constants.DefaultWindowWidth;
-        if (config.Window.Height < 400) config.Window.Height = Constants.DefaultWindowHeight;
+        if (config.Window.Width < AppConstants.MinWindowWidth) config.Window.Width = AppConstants.DefaultWindowWidth;
+        if (config.Window.Height < AppConstants.MinWindowHeight) config.Window.Height = AppConstants.DefaultWindowHeight;
         if (config.Window.Opacity < 0.1 || config.Window.Opacity > 1.0) config.Window.Opacity = 1.0;
+        if (!IsKnownWindowPosition(config.Window.Position)) config.Window.Position = "near-tray";
 
         return config;
     }
+
+    private static bool IsKnownWindowPosition(string? position) =>
+        position is "near-tray" or "top-left" or "top-right" or "bottom-left" or "bottom-right" or "center" or "remember";
 
     public void SaveConfig()
     {
@@ -172,11 +188,18 @@ public class ConfigService
         ConfigChanged?.Invoke(this, _config);
     }
 
-    public void UpdateGeneral(bool? firstRun = null, string? lastProvider = null, bool? debug = null)
+    public void UpdateGeneral(
+        bool? firstRun = null,
+        string? lastProvider = null,
+        bool? debug = null,
+        string? lastOllamaModel = null,
+        string? ollamaUrl = null)
     {
         if (firstRun.HasValue) _config.FirstRun = firstRun.Value;
         if (lastProvider != null) _config.LastProvider = lastProvider;
         if (debug.HasValue) _config.Debug = debug.Value;
+        if (lastOllamaModel != null) _config.LastOllamaModel = lastOllamaModel;
+        if (!string.IsNullOrWhiteSpace(ollamaUrl)) _config.OllamaUrl = ollamaUrl.Trim();
         SaveConfig();
         ConfigChanged?.Invoke(this, _config);
     }

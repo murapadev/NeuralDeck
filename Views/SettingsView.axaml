@@ -1,35 +1,322 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="NeuralDeck.Views.SettingsView">
+             xmlns:vm="clr-namespace:NeuralDeck.ViewModels"
+             xmlns:models="clr-namespace:NeuralDeck.Models"
+             x:Class="NeuralDeck.Views.SettingsView"
+             x:DataType="vm:SettingsViewModel"
+             Background="#09090b">
 
-    <Grid RowDefinitions="Auto,*">
-        <!-- Header -->
-        <Border Grid.Row="0" Background="#18181b" Padding="16,12">
-            <StackPanel Orientation="Horizontal" Spacing="8">
-                <Path Data="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z"
-                      Fill="#71717a" Width="20" Height="20" Stretch="Uniform"/>
-                <TextBlock Text="Settings" FontSize="18" FontWeight="SemiBold" Foreground="#fafafa" VerticalAlignment="Center"/>
-            </StackPanel>
-        </Border>
+    <Grid RowDefinitions="Auto,*,Auto">
 
-        <!-- Content -->
-        <ScrollViewer Grid.Row="1" Padding="24">
-            <StackPanel Spacing="24">
-                <TextBlock Text="General" FontSize="16" FontWeight="SemiBold" Foreground="#fafafa"/>
-                <CheckBox Content="Debug Mode" Foreground="#fafafa"/>
-
-                <TextBlock Text="Appearance" FontSize="16" FontWeight="SemiBold" Foreground="#fafafa"/>
-                <StackPanel Spacing="8">
-                    <TextBlock Text="Theme" FontSize="12" Foreground="#71717a"/>
-                    <ComboBox Width="200">
-                        <ComboBoxItem Content="Dark" IsSelected="True"/>
-                        <ComboBoxItem Content="Light"/>
-                    </ComboBox>
-                </StackPanel>
-
-                <TextBlock Text="About" FontSize="16" FontWeight="SemiBold" Foreground="#fafafa"/>
-                <TextBlock Text="Version 1.0.0" FontSize="12" Foreground="#71717a"/>
+        <!-- Tab bar -->
+        <ScrollViewer Grid.Row="0"
+                      HorizontalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Disabled"
+                      Background="#18181b"
+                      Padding="8,6">
+            <StackPanel Orientation="Horizontal" Spacing="2">
+                <Button Content="General" Padding="12,6" FontSize="12" CornerRadius="6"
+                        Command="{Binding SelectTabCommand}" CommandParameter="general"
+                        Foreground="{Binding SelectedTab, Converter={StaticResource EqualityConverter}, ConverterParameter=general}"/>
+                <Button Content="Appearance" Padding="12,6" FontSize="12" CornerRadius="6"
+                        Command="{Binding SelectTabCommand}" CommandParameter="appearance"/>
+                <Button Content="Shortcuts" Padding="12,6" FontSize="12" CornerRadius="6"
+                        Command="{Binding SelectTabCommand}" CommandParameter="shortcuts"/>
+                <Button Content="Privacy" Padding="12,6" FontSize="12" CornerRadius="6"
+                        Command="{Binding SelectTabCommand}" CommandParameter="privacy"/>
+                <Button Content="Window" Padding="12,6" FontSize="12" CornerRadius="6"
+                        Command="{Binding SelectTabCommand}" CommandParameter="window"/>
+                <Button Content="Providers" Padding="12,6" FontSize="12" CornerRadius="6"
+                        Command="{Binding SelectTabCommand}" CommandParameter="providers"/>
+                <Button Content="About" Padding="12,6" FontSize="12" CornerRadius="6"
+                        Command="{Binding SelectTabCommand}" CommandParameter="about"/>
             </StackPanel>
         </ScrollViewer>
+
+        <!-- Tab content -->
+        <Grid Grid.Row="1">
+
+            <!-- General -->
+            <ScrollViewer IsVisible="{Binding SelectedTab, Converter={StaticResource EqualityConverter}, ConverterParameter=general}">
+                <StackPanel Spacing="16" Margin="16">
+                    <TextBlock Text="General" FontSize="16" FontWeight="SemiBold" Foreground="#fafafa"/>
+
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Ollama server URL" FontSize="12" Foreground="#71717a"/>
+                        <TextBox Text="{Binding OllamaUrl}" Width="320" HorizontalAlignment="Left"
+                                 Watermark="http://localhost:11434"/>
+                        <TextBlock Text="Where the local Ollama daemon listens. Leave default unless you've changed Ollama's bind address."
+                                   FontSize="11" Foreground="#52525b" TextWrapping="Wrap" MaxWidth="420"/>
+                    </StackPanel>
+
+                    <CheckBox Content="Debug mode" IsChecked="{Binding DebugMode}" Foreground="#d4d4d8"/>
+
+                    <Button Content="Save" Command="{Binding SaveGeneralCommand}"
+                            Padding="16,8" Background="{DynamicResource AccentBrush}" Foreground="#fafafa"
+                            CornerRadius="6" HorizontalAlignment="Left"/>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Appearance -->
+            <ScrollViewer IsVisible="{Binding SelectedTab, Converter={StaticResource EqualityConverter}, ConverterParameter=appearance}">
+                <StackPanel Spacing="16" Margin="16">
+                    <TextBlock Text="Appearance" FontSize="16" FontWeight="SemiBold" Foreground="#fafafa"/>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Theme" FontSize="12" Foreground="#71717a"/>
+                        <ComboBox ItemsSource="{Binding ThemeOptions}"
+                                  SelectedItem="{Binding Theme}"
+                                  Width="200" HorizontalAlignment="Left"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Language" FontSize="12" Foreground="#71717a"/>
+                        <ComboBox ItemsSource="{Binding LanguageOptions}"
+                                  SelectedItem="{Binding Language}"
+                                  Width="200" HorizontalAlignment="Left"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Font size" FontSize="12" Foreground="#71717a"/>
+                        <ComboBox ItemsSource="{Binding FontSizeOptions}"
+                                  SelectedItem="{Binding FontSize}"
+                                  Width="200" HorizontalAlignment="Left"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Accent color" FontSize="12" Foreground="#71717a"/>
+                        <ListBox ItemsSource="{Binding ColorOptions}"
+                                 SelectedItem="{Binding AccentColor}"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 Padding="0">
+                            <ListBox.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" Spacing="4"/>
+                                </ItemsPanelTemplate>
+                            </ListBox.ItemsPanel>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate x:DataType="x:String">
+                                    <Border Width="28" Height="28" CornerRadius="14"
+                                            Background="{Binding ., Converter={StaticResource StringToColorConverter}}"
+                                            ToolTip.Tip="{Binding .}"/>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                            <ListBox.Styles>
+                                <Style Selector="ListBoxItem">
+                                    <Setter Property="Padding" Value="2"/>
+                                    <Setter Property="CornerRadius" Value="16"/>
+                                    <Setter Property="Background" Value="Transparent"/>
+                                </Style>
+                                <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="BorderBrush" Value="#fafafa"/>
+                                    <Setter Property="BorderThickness" Value="2"/>
+                                    <Setter Property="CornerRadius" Value="16"/>
+                                </Style>
+                            </ListBox.Styles>
+                        </ListBox>
+                    </StackPanel>
+
+                    <CheckBox Content="Show provider names" IsChecked="{Binding ShowProviderNames}" Foreground="#d4d4d8"/>
+
+                    <Button Content="Save" Command="{Binding SaveAppearanceCommand}"
+                            Padding="16,8" Background="{DynamicResource AccentBrush}" Foreground="#fafafa"
+                            CornerRadius="6" HorizontalAlignment="Left"/>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Shortcuts -->
+            <ScrollViewer IsVisible="{Binding SelectedTab, Converter={StaticResource EqualityConverter}, ConverterParameter=shortcuts}">
+                <StackPanel Spacing="14" Margin="16">
+                    <TextBlock Text="Keyboard Shortcuts" FontSize="16" FontWeight="SemiBold" Foreground="#fafafa"/>
+                    <TextBlock Text="Modifiers: CommandOrControl, Shift, Alt, Meta. Separate with +."
+                               FontSize="11" Foreground="#71717a" TextWrapping="Wrap"/>
+
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Toggle window" FontSize="12" Foreground="#71717a"/>
+                        <TextBox Text="{Binding ToggleWindowShortcut}" Width="280" HorizontalAlignment="Left"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Open settings" FontSize="12" Foreground="#71717a"/>
+                        <TextBox Text="{Binding OpenSettingsShortcut}" Width="280" HorizontalAlignment="Left"/>
+                    </StackPanel>
+
+                    <Border Background="#18181b" CornerRadius="6" Padding="12,8">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Built-in shortcuts (read-only):" FontSize="11" Foreground="#a1a1aa"/>
+                            <TextBlock FontSize="11" Foreground="#71717a">
+                                <Run Text="• Ctrl+Shift+1..5 — switch to provider N"/><LineBreak/>
+                                <Run Text="• Ctrl+Q — quit NeuralDeck"/><LineBreak/>
+                                <Run Text="• Esc (in Settings) — close Settings window"/>
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+
+                    <Button Content="Save" Command="{Binding SaveShortcutsCommand}"
+                            Padding="16,8" Background="{DynamicResource AccentBrush}" Foreground="#fafafa"
+                            CornerRadius="6" HorizontalAlignment="Left"/>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Privacy -->
+            <ScrollViewer IsVisible="{Binding SelectedTab, Converter={StaticResource EqualityConverter}, ConverterParameter=privacy}">
+                <StackPanel Spacing="16" Margin="16">
+                    <TextBlock Text="Privacy" FontSize="16" FontWeight="SemiBold" Foreground="#fafafa"/>
+                    <CheckBox Content="Clear data on close" IsChecked="{Binding ClearOnClose}" Foreground="#d4d4d8"/>
+                    <CheckBox Content="Block trackers" IsChecked="{Binding BlockTrackers}" Foreground="#d4d4d8"/>
+                    <Button Content="Save" Command="{Binding SavePrivacyCommand}"
+                            Padding="16,8" Background="{DynamicResource AccentBrush}" Foreground="#fafafa"
+                            CornerRadius="6" HorizontalAlignment="Left"/>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Window -->
+            <ScrollViewer IsVisible="{Binding SelectedTab, Converter={StaticResource EqualityConverter}, ConverterParameter=window}">
+                <StackPanel Spacing="16" Margin="16">
+                    <TextBlock Text="Window" FontSize="16" FontWeight="SemiBold" Foreground="#fafafa"/>
+                    <CheckBox Content="Always on top" IsChecked="{Binding AlwaysOnTop}" Foreground="#d4d4d8"/>
+                    <CheckBox Content="Hide on blur" IsChecked="{Binding HideOnBlur}" Foreground="#d4d4d8"/>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Position" FontSize="12" Foreground="#71717a"/>
+                        <ComboBox ItemsSource="{Binding PositionOptions}"
+                                  SelectedItem="{Binding WindowPosition}"
+                                  Width="200" HorizontalAlignment="Left"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="{Binding WindowOpacity, StringFormat='Opacity: {0:P0}'}"
+                                   FontSize="12" Foreground="#71717a"/>
+                        <Slider Value="{Binding WindowOpacity}"
+                                Minimum="0.1" Maximum="1.0"
+                                Width="260" HorizontalAlignment="Left"/>
+                    </StackPanel>
+
+                    <Button Content="Save" Command="{Binding SaveWindowCommand}"
+                            Padding="16,8" Background="{DynamicResource AccentBrush}" Foreground="#fafafa"
+                            CornerRadius="6" HorizontalAlignment="Left"/>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Providers -->
+            <ScrollViewer IsVisible="{Binding SelectedTab, Converter={StaticResource EqualityConverter}, ConverterParameter=providers}">
+                <StackPanel Spacing="16" Margin="16">
+                    <TextBlock Text="Providers" FontSize="16" FontWeight="SemiBold" Foreground="#fafafa"/>
+                    <TextBlock Text="Enable or disable AI providers. Custom providers open in the embedded browser."
+                               FontSize="12" Foreground="#71717a" TextWrapping="Wrap"/>
+
+                    <ItemsControl ItemsSource="{Binding Providers}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="models:ProviderConfig">
+                                <Border Background="#18181b" CornerRadius="8"
+                                        Padding="12,10" Margin="0,0,0,6">
+                                    <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                                        <Border Grid.Column="0" Width="32" Height="32"
+                                                CornerRadius="8" Margin="0,0,10,0"
+                                                Background="#27272a">
+                                            <Grid>
+                                                <Viewbox Width="18" Height="18" Stretch="Uniform">
+                                                    <Path Data="{Binding Id, Converter={StaticResource ProviderIconConverter}}"
+                                                          Fill="{Binding Color, Converter={StaticResource StringToColorConverter}}"/>
+                                                </Viewbox>
+                                                <Image Source="{Binding Id, Converter={StaticResource ProviderFaviconConverter}}"
+                                                       Width="24" Height="24" Stretch="Uniform"
+                                                       RenderOptions.BitmapInterpolationMode="HighQuality"/>
+                                            </Grid>
+                                        </Border>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name}" FontSize="13"
+                                                       FontWeight="Medium" Foreground="#fafafa"/>
+                                            <TextBlock Text="{Binding Url}" FontSize="11"
+                                                       Foreground="#52525b" TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
+                                        <CheckBox Grid.Column="2" IsChecked="{Binding Enabled}"
+                                                  VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <!-- Delete button – only for custom providers -->
+                                        <Button Grid.Column="3"
+                                                Width="28" Height="28" Padding="0" CornerRadius="6"
+                                                IsVisible="{Binding IsCustom}"
+                                                VerticalAlignment="Center"
+                                                ToolTip.Tip="Remove provider"
+                                                Command="{Binding $parent[ItemsControl].((vm:SettingsViewModel)DataContext).RemoveProviderCommand}"
+                                                CommandParameter="{Binding}">
+                                            <Path Width="10" Height="10" Stretch="Uniform" Fill="#ef4444"
+                                                  Data="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/>
+                                        </Button>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- Add provider form -->
+                    <Border IsVisible="{Binding IsAddingProvider}"
+                            Background="#18181b" CornerRadius="8" Padding="12">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="New provider" FontSize="13" FontWeight="Medium" Foreground="#fafafa"/>
+                            <TextBox Text="{Binding NewProviderName}"
+                                     Watermark="Name (e.g. Mistral)"
+                                     Height="32" FontSize="12"/>
+                            <TextBox Text="{Binding NewProviderUrl}"
+                                     Watermark="URL (e.g. https://chat.mistral.ai)"
+                                     Height="32" FontSize="12"/>
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="Color" FontSize="11" Foreground="#71717a"/>
+                                <ComboBox ItemsSource="{Binding ColorOptions}"
+                                          SelectedItem="{Binding NewProviderColor}"
+                                          Width="160" HorizontalAlignment="Left"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button Content="Add" Command="{Binding ConfirmAddProviderCommand}"
+                                        Padding="16,6" Background="{DynamicResource AccentBrush}" Foreground="#fafafa" CornerRadius="6"/>
+                                <Button Content="Cancel" Command="{Binding CancelAddProviderCommand}"
+                                        Padding="16,6" Background="#27272a" Foreground="#a1a1aa" CornerRadius="6"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Action buttons -->
+                    <StackPanel Orientation="Horizontal" Spacing="8"
+                                IsVisible="{Binding !IsAddingProvider}">
+                        <Button Content="Add custom provider" Command="{Binding ShowAddProviderFormCommand}"
+                                Padding="16,8" Background="#27272a" Foreground="#a1a1aa"
+                                CornerRadius="6"/>
+                        <Button Content="Save" Command="{Binding SaveProvidersCommand}"
+                                Padding="16,8" Background="{DynamicResource AccentBrush}" Foreground="#fafafa"
+                                CornerRadius="6"/>
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- About -->
+            <ScrollViewer IsVisible="{Binding SelectedTab, Converter={StaticResource EqualityConverter}, ConverterParameter=about}">
+                <StackPanel Spacing="20" Margin="16" HorizontalAlignment="Center">
+                    <Image Width="72" Height="72"
+                           HorizontalAlignment="Center" Margin="0,24,0,0"
+                           Source="avares://NeuralDeck/Assets/Icons/app.png"/>
+                    <TextBlock Text="NeuralDeck" FontSize="22" FontWeight="Bold"
+                               Foreground="#fafafa" HorizontalAlignment="Center"/>
+                    <TextBlock Text="{Binding AppVersion, StringFormat='Version {0}'}"
+                               FontSize="13" Foreground="#71717a" HorizontalAlignment="Center"/>
+                    <TextBlock Text="Your AI command center"
+                               FontSize="13" Foreground="#52525b" HorizontalAlignment="Center"/>
+                    <Button Content="View on GitHub" Command="{Binding OpenGitHubCommand}"
+                            Padding="20,10" Background="#27272a" Foreground="#fafafa"
+                            CornerRadius="8" HorizontalAlignment="Center"/>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+
+        <!-- Bottom active-tab indicator -->
+        <Border Grid.Row="2" Background="#18181b"
+                BorderBrush="#27272a" BorderThickness="0,1,0,0"
+                Padding="16,8">
+            <TextBlock FontSize="11" Foreground="#52525b">
+                <Run Text="Config: "/>
+                <Run Text="{Binding AppVersion, Mode=OneWay, StringFormat='v{0}'}"/>
+            </TextBlock>
+        </Border>
     </Grid>
 </UserControl>

@@ -1,64 +1,184 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="clr-namespace:NeuralDeck.ViewModels"
+             xmlns:models="clr-namespace:NeuralDeck.Models"
              x:Class="NeuralDeck.Views.ChatView"
              x:DataType="vm:ChatViewModel">
 
     <Grid RowDefinitions="Auto,*,Auto">
-        <!-- Header -->
-        <Border Grid.Row="0"
-                Background="#18181b"
-                BorderBrush="#27272a"
-                BorderThickness="0,0,0,1"
-                Padding="16,12">
-            <Grid ColumnDefinitions="*,Auto">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Ellipse Width="8" Height="8" Fill="#22c55e" VerticalAlignment="Center"/>
-                    <TextBlock Text="Connected" FontSize="12" Foreground="#71717a" VerticalAlignment="Center"/>
+
+        <!-- Header: connection status + model selector -->
+        <Border Grid.Row="0" Background="#18181b"
+                BorderBrush="#27272a" BorderThickness="0,0,0,1"
+                Padding="12,10">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <!-- Connection status -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6"
+                            VerticalAlignment="Center">
+                    <Ellipse Width="8" Height="8"
+                             Fill="{Binding IsConnected, Converter={StaticResource BoolToColorConverter}}"
+                             VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding ConnectionStatus}"
+                               FontSize="12" Foreground="#71717a"
+                               VerticalAlignment="Center"/>
                 </StackPanel>
 
-                <Button Grid.Column="1" Padding="8">
-                    <Path Data="M3,6H5V5A1,1 0 0,1 6,4H8A1,1 0 0,1 9,5V6H17A1,1 0 0,0 18,5V3H6V5H3V19H17V17H5V19H3V6M7,9V11H13V9H7M7,13V15H11V13H7Z"
-                          Fill="#71717a" Width="16" Height="16" Stretch="Uniform"/>
+                <!-- Model selector -->
+                <ComboBox Grid.Column="1"
+                          ItemsSource="{Binding Models}"
+                          SelectedItem="{Binding SelectedModel}"
+                          IsVisible="{Binding IsConnected}"
+                          HorizontalAlignment="Center"
+                          MaxWidth="160"
+                          Background="#27272a"
+                          Foreground="#fafafa"
+                          BorderBrush="#3f3f46"
+                          FontSize="12">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="models:OllamaModel">
+                            <TextBlock Text="{Binding Name}" FontSize="12"/>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+
+                <!-- Clear button -->
+                <Button Grid.Column="2" Padding="8,4"
+                        Command="{Binding ClearConversationCommand}"
+                        ToolTip.Tip="Clear conversation"
+                        IsVisible="{Binding IsConnected}">
+                    <Path Width="16" Height="16" Stretch="Uniform" Fill="#71717a"
+                          Data="M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9M7,6H17V19H7V6M9,8V17H11V8H9M13,8V17H15V8H13Z"/>
                 </Button>
             </Grid>
         </Border>
 
-        <!-- Messages Area -->
-        <ScrollViewer Grid.Row="1" Padding="16,8">
-            <StackPanel>
-                <TextBlock Text="Welcome to NeuralDeck! Start typing to chat with Ollama."
-                           FontSize="14" Foreground="#71717a"
-                           HorizontalAlignment="Center" Margin="0,100,0,0"/>
-            </StackPanel>
+        <!-- Messages area -->
+        <ScrollViewer Grid.Row="1" x:Name="MessagesScrollViewer"
+                      Padding="0" Background="#09090b">
+            <Panel>
+                <!-- Empty state -->
+                <StackPanel IsVisible="{Binding !IsConnected}"
+                            VerticalAlignment="Center" HorizontalAlignment="Center"
+                            Spacing="12" Margin="24">
+                    <Path Width="48" Height="48" Stretch="Uniform" Fill="#3f3f46"
+                          HorizontalAlignment="Center"
+                          Data="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M11,16.5L6.5,12L7.91,10.59L11,13.67L16.59,8.09L18,9.5L11,16.5Z"/>
+                    <TextBlock Text="Ollama not connected" FontSize="14"
+                               Foreground="#71717a" HorizontalAlignment="Center"/>
+                    <TextBlock Text="Make sure Ollama is running on localhost:11434"
+                               FontSize="12" Foreground="#52525b"
+                               HorizontalAlignment="Center" TextWrapping="Wrap"
+                               TextAlignment="Center"/>
+                </StackPanel>
+
+                <StackPanel IsVisible="{Binding IsConnected}">
+                    <!-- Welcome message when no messages -->
+                    <TextBlock IsVisible="{Binding !HasMessages}"
+                               Text="Start a conversation with Ollama"
+                               FontSize="13" Foreground="#71717a"
+                               HorizontalAlignment="Center"
+                               Margin="0,80,0,0"/>
+
+                    <!-- Message list -->
+                    <ItemsControl ItemsSource="{Binding Messages}"
+                                  Margin="10,8">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="models:ChatMessage">
+                                <Grid Margin="0,6">
+                                    <!-- Assistant message (left, neutral tile) -->
+                                    <Border IsVisible="{Binding !IsUser}"
+                                            CornerRadius="10,10,10,2"
+                                            Padding="14,10"
+                                            Background="#27272a"
+                                            HorizontalAlignment="Left"
+                                            MaxWidth="520">
+                                        <TextBlock Text="{Binding Content}"
+                                                   TextWrapping="Wrap"
+                                                   Foreground="#e4e4e7"
+                                                   FontSize="13"
+                                                   LineHeight="20"/>
+                                    </Border>
+                                    <!-- User message (right, accent-tinted) -->
+                                    <Border IsVisible="{Binding IsUser}"
+                                            CornerRadius="10,10,2,10"
+                                            Padding="14,10"
+                                            Background="#1e1b4b"
+                                            BorderBrush="{DynamicResource AccentBrush}"
+                                            BorderThickness="0,0,0,0"
+                                            HorizontalAlignment="Right"
+                                            MaxWidth="520">
+                                        <TextBlock Text="{Binding Content}"
+                                                   TextWrapping="Wrap"
+                                                   Foreground="#e0e7ff"
+                                                   FontSize="13"
+                                                   LineHeight="20"/>
+                                    </Border>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- Loading indicator -->
+                    <Border IsVisible="{Binding IsLoading}"
+                            HorizontalAlignment="Left"
+                            Margin="8,4"
+                            CornerRadius="8,8,8,2"
+                            Padding="12,10"
+                            Background="#27272a">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <Ellipse Width="6" Height="6" Fill="#6366f1"/>
+                            <Ellipse Width="6" Height="6" Fill="#6366f1" Opacity="0.6"/>
+                            <Ellipse Width="6" Height="6" Fill="#6366f1" Opacity="0.3"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Panel>
         </ScrollViewer>
 
-        <!-- Input Area -->
-        <Border Grid.Row="2"
-                Background="#18181b"
-                BorderBrush="#27272a"
-                BorderThickness="0,1,0,0"
-                Padding="16,12">
+        <!-- Input area -->
+        <Border Grid.Row="2" Background="#18181b"
+                BorderBrush="#27272a" BorderThickness="0,1,0,0"
+                Padding="12,10">
             <Grid ColumnDefinitions="*,Auto">
                 <TextBox Grid.Column="0"
+                         x:Name="MessageInput"
                          Text="{Binding InputText}"
-                         Watermark="Type a message..."
-                         MinHeight="44"
+                         Watermark="Message Ollama..."
+                         MinHeight="40" MaxHeight="120"
+                         AcceptsReturn="True"
+                         TextWrapping="Wrap"
                          Background="#27272a"
                          Foreground="#fafafa"
-                         BorderThickness="0"
-                         Padding="12,8"
-                         FontSize="14"/>
-
+                         BorderThickness="1"
+                         BorderBrush="#3f3f46"
+                         CornerRadius="8"
+                         Padding="12,10"
+                         FontSize="13"
+                         IsEnabled="{Binding IsConnected}"/>
+                <!-- Send (idle) -->
                 <Button Grid.Column="1"
                         Command="{Binding SendMessageCommand}"
+                        IsEnabled="{Binding IsConnected}"
+                        IsVisible="{Binding !IsLoading}"
                         Margin="8,0,0,0"
-                        Width="44" Height="44"
-                        Padding="0">
-                    <Path Data="M2,21L23,12L2,3V10L17,12L2,14V21Z"
-                          Fill="#6366f1"
-                          Width="20" Height="20"
-                          Stretch="Uniform"/>
+                        Width="40" Height="40"
+                        CornerRadius="8"
+                        Padding="0"
+                        ToolTip.Tip="Send (Enter)">
+                    <Path Width="18" Height="18" Stretch="Uniform" Fill="#6366f1"
+                          Data="M2,21L23,12L2,3V10L17,12L2,14V21Z"/>
+                </Button>
+                <!-- Stop (while streaming) -->
+                <Button Grid.Column="1"
+                        Command="{Binding CancelStreamCommand}"
+                        IsVisible="{Binding IsLoading}"
+                        Margin="8,0,0,0"
+                        Width="40" Height="40"
+                        CornerRadius="8"
+                        Padding="0"
+                        Background="#ef4444"
+                        ToolTip.Tip="Stop generating">
+                    <Rectangle Width="14" Height="14" Fill="#fafafa" RadiusX="2" RadiusY="2"/>
                 </Button>
             </Grid>
         </Border>

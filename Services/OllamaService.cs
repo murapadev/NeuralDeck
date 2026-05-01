@@ -22,7 +22,16 @@ public class OllamaService : IDisposable
     {
         _httpClient = new HttpClient();
         _httpClient.Timeout = TimeSpan.FromSeconds(60);
-        _baseUrl = Constants.DefaultOllamaUrl;
+        _baseUrl = ConfigService.Instance.GetConfig().OllamaUrl?.TrimEnd('/')
+                   ?? AppConstants.DefaultOllamaUrl;
+
+        // Live-update the base URL whenever the user changes it in Settings.
+        ConfigService.Instance.ConfigChanged += (_, cfg) =>
+        {
+            var url = cfg.OllamaUrl?.TrimEnd('/');
+            if (!string.IsNullOrEmpty(url) && url != _baseUrl)
+                _baseUrl = url!;
+        };
     }
 
     public string BaseUrl
@@ -33,11 +42,14 @@ public class OllamaService : IDisposable
 
     public async Task<bool> HealthCheckAsync(CancellationToken cancellationToken = default)
     {
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeoutCts.CancelAfter(AppConstants.OllamaHealthTimeoutMs);
+
         try
         {
             var response = await _httpClient.GetAsync(
                 $"{_baseUrl}/api/tags",
-                cancellationToken);
+                timeoutCts.Token);
             return response.IsSuccessStatusCode;
         }
         catch
@@ -58,7 +70,7 @@ public class OllamaService : IDisposable
                 return new List<OllamaModel>();
 
             var json = await response.Content.ReadAsStringAsync(cancellationToken);
-            var doc = JsonDocument.Parse(json);
+            using var doc = JsonDocument.Parse(json);
 
             var models = new List<OllamaModel>();
             if (doc.RootElement.TryGetProperty("models", out var modelsArray))
@@ -89,17 +101,23 @@ public class OllamaService : IDisposable
         Func<string, Task> onChunk,
         CancellationToken cancellationToken = default)
     {
-        var request = new
+        var payload = new
         {
             model,
             messages = messages.Select(m => new { role = m.Role, content = m.Content }),
             stream = true
         };
 
-        var json = JsonSerializer.Serialize(request);
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        var json = JsonSerializer.Serialize(payload);
+        using var request = new HttpRequestMessage(HttpMethod.Post, $"{_baseUrl}/api/chat")
+        {
+            Content = new StringContent(json, Encoding.UTF8, "application/json")
+        };
 
-        using var response = await _httpClient.PostAsync($"{_baseUrl}/api/chat", content, cancellationToken);
+        using var response = await _httpClient.SendAsync(
+            request,
+            HttpCompletionOption.ResponseHeadersRead,
+            cancellationToken);
 
         if (!response.IsSuccessStatusCode)
         {
@@ -110,14 +128,15 @@ public class OllamaService : IDisposable
         using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         using var reader = new StreamReader(stream);
 
-        while (!reader.EndOfStream && !cancellationToken.IsCancellationRequested)
+        while (!cancellationToken.IsCancellationRequested)
         {
             var line = await reader.ReadLineAsync(cancellationToken);
+            if (line == null) break; // End of stream
             if (string.IsNullOrWhiteSpace(line)) continue;
 
             try
             {
-                var doc = JsonDocument.Parse(line);
+                using var doc = JsonDocument.Parse(line);
                 var root = doc.RootElement;
 
                 if (root.TryGetProperty("message", out var msg) &&

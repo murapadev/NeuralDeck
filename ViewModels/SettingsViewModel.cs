@@ -1,3 +1,4 @@
+using System;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -13,6 +14,9 @@ public partial class SettingsViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _debugMode;
+
+    [ObservableProperty]
+    private string _ollamaUrl = "http://localhost:11434";
 
     [ObservableProperty]
     private string _theme = "dark";
@@ -53,14 +57,35 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty]
     private double _windowOpacity = 1.0;
 
-    [ObservableProperty]
-    private string _appVersion = "0.4.5";
+    public string AppVersion { get; } = ResolveAppVersion();
+
+    private static string ResolveAppVersion()
+    {
+        // Read from the assembly version attribute (mirrors <Version> in NeuralDeck.csproj),
+        // so the About tab can never drift from the actual build number again.
+        var asm = typeof(SettingsViewModel).Assembly;
+        var info = asm.GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), false);
+        if (info.Length > 0 && info[0] is System.Reflection.AssemblyInformationalVersionAttribute infoAttr)
+        {
+            // Strip the "+commit-hash" suffix if present
+            var v = infoAttr.InformationalVersion;
+            var plus = v.IndexOf('+');
+            return plus > 0 ? v[..plus] : v;
+        }
+        return asm.GetName().Version?.ToString(3) ?? "0.0.0";
+    }
+
+    [ObservableProperty] private bool _isAddingProvider = false;
+    [ObservableProperty] private string _newProviderName = "";
+    [ObservableProperty] private string _newProviderUrl = "";
+    [ObservableProperty] private string _newProviderColor = "#6366f1";
 
     public ObservableCollection<ProviderConfig> Providers { get; } = new();
     public ObservableCollection<string> ThemeOptions { get; } = new() { "dark", "light", "system" };
     public ObservableCollection<string> LanguageOptions { get; } = new() { "en", "es" };
     public ObservableCollection<string> FontSizeOptions { get; } = new() { "small", "medium", "large" };
     public ObservableCollection<string> PositionOptions { get; } = new() { "near-tray", "top-left", "top-right", "bottom-left", "bottom-right", "center", "remember" };
+    public ObservableCollection<string> ColorOptions { get; } = new(AppConstants.AccentColorOptions);
 
     public SettingsViewModel()
     {
@@ -72,6 +97,7 @@ public partial class SettingsViewModel : ViewModelBase
         var config = ConfigService.Instance.GetConfig();
 
         DebugMode = config.Debug;
+        OllamaUrl = string.IsNullOrWhiteSpace(config.OllamaUrl) ? "http://localhost:11434" : config.OllamaUrl;
         Theme = config.Appearance.Theme;
         Language = config.Appearance.Language;
         ShowProviderNames = config.Appearance.ShowProviderNames;
@@ -89,8 +115,6 @@ public partial class SettingsViewModel : ViewModelBase
         WindowPosition = config.Window.Position;
         WindowOpacity = config.Window.Opacity;
 
-        AppVersion = config.Version;
-
         Providers.Clear();
         foreach (var p in config.Providers)
         {
@@ -101,7 +125,7 @@ public partial class SettingsViewModel : ViewModelBase
     [RelayCommand]
     private void SaveGeneral()
     {
-        ConfigService.Instance.UpdateGeneral(debug: DebugMode);
+        ConfigService.Instance.UpdateGeneral(debug: DebugMode, ollamaUrl: OllamaUrl);
     }
 
     [RelayCommand]
@@ -116,6 +140,14 @@ public partial class SettingsViewModel : ViewModelBase
             a.AccentColor = AccentColor;
         });
     }
+
+    // Live preview of theme and accent color as the user tweaks them,
+    // even before clicking Save. The save path only persists to disk.
+    partial void OnThemeChanged(string value)
+        => ThemeService.Instance.Apply(value, AccentColor);
+
+    partial void OnAccentColorChanged(string value)
+        => ThemeService.Instance.Apply(Theme, value);
 
     [RelayCommand]
     private void SaveShortcuts()
@@ -163,6 +195,76 @@ public partial class SettingsViewModel : ViewModelBase
     {
         provider.Enabled = !provider.Enabled;
         SaveProviders();
+    }
+
+    [RelayCommand]
+    private void ShowAddProviderForm()
+    {
+        NewProviderName = "";
+        NewProviderUrl = "";
+        NewProviderColor = AppConstants.DefaultAccentColor;
+        IsAddingProvider = true;
+    }
+
+    [RelayCommand]
+    private void CancelAddProvider()
+    {
+        IsAddingProvider = false;
+    }
+
+    [RelayCommand]
+    private void ConfirmAddProvider()
+    {
+        var name = NewProviderName.Trim();
+        var url = NewProviderUrl.Trim();
+        if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(url)) return;
+
+        if (!url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
+            !url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            url = "https://" + url;
+
+        var provider = new ProviderConfig
+        {
+            Id = Guid.NewGuid().ToString("N")[..8],
+            Name = name,
+            Url = url,
+            Color = NewProviderColor,
+            Enabled = true,
+            Order = Providers.Count,
+            IsCustom = true
+        };
+
+        Providers.Add(provider);
+        SaveProviders();
+        IsAddingProvider = false;
+    }
+
+    [RelayCommand]
+    private void RemoveProvider(ProviderConfig provider)
+    {
+        if (!provider.IsCustom) return;
+        Providers.Remove(provider);
+        SaveProviders();
+    }
+
+    [RelayCommand]
+    private void SelectTab(string tab)
+    {
+        SelectedTab = tab;
+    }
+
+    [RelayCommand]
+    private void SaveCurrentTab()
+    {
+        switch (SelectedTab)
+        {
+            case "general": SaveGeneral(); break;
+            case "appearance": SaveAppearance(); break;
+            case "shortcuts": SaveShortcuts(); break;
+            case "privacy": SavePrivacy(); break;
+            case "window": SaveWindow(); break;
+            case "providers": SaveProviders(); break;
+        }
     }
 
     [RelayCommand]

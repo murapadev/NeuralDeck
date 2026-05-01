@@ -1,7 +1,11 @@
 using System;
+using System.Threading;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Threading;
 using NeuralDeck.Models;
+using NeuralDeck.ViewModels;
+using NeuralDeck.Views;
 
 namespace NeuralDeck.Services;
 
@@ -11,6 +15,8 @@ public class WindowService
     private Window? _mainWindow;
     private Window? _settingsWindow;
     private bool _isWindowVisible;
+    private bool _allowClose;
+    private Timer? _sizeDebounceTimer;
 
     public static WindowService Instance => _instance ??= new WindowService();
 
@@ -24,6 +30,12 @@ public class WindowService
         _mainWindow = window;
         _isWindowVisible = window.IsVisible;
 
+        window.Opened += (s, e) =>
+        {
+            _isWindowVisible = true;
+            WindowShown?.Invoke(this, EventArgs.Empty);
+        };
+
         window.PositionChanged += (s, e) =>
         {
             var config = ConfigService.Instance.GetConfig();
@@ -34,9 +46,32 @@ public class WindowService
             }
         };
 
+        window.SizeChanged += (s, e) =>
+        {
+            // Debounce: only save 350ms after the last resize event, not on every pixel change.
+            _sizeDebounceTimer?.Dispose();
+            var targetW = (int)e.NewSize.Width;
+            var targetH = (int)e.NewSize.Height;
+            _sizeDebounceTimer = new Timer(
+                _ => Dispatcher.UIThread.Post(() => SaveWindowSize(targetW, targetH)),
+                null, 350, Timeout.Infinite);
+        };
+
+        window.Deactivated += (s, e) =>
+        {
+            var config = ConfigService.Instance.GetConfig();
+            if (config.Window.HideOnBlur && _isWindowVisible)
+                HideWindow();
+        };
+
         window.Closing += (s, e) =>
         {
-            // Hide instead of close
+            if (_allowClose)
+            {
+                _isWindowVisible = false;
+                return;
+            }
+
             e.Cancel = true;
             HideWindow();
         };
@@ -142,29 +177,59 @@ public class WindowService
     {
         if (_settingsWindow != null)
         {
+            _settingsWindow.Show();
+            _settingsWindow.WindowState = WindowState.Normal;
             _settingsWindow.Activate();
             return;
         }
 
-        _settingsWindow = new Window
+        var settingsVm = new SettingsViewModel();
+        _settingsWindow = new SettingsWindow
         {
-            Width = 900,
-            Height = 700,
-            MinWidth = 800,
-            MinHeight = 600,
-            Title = "NeuralDeck Settings",
-            CanResize = true,
-            ShowInTaskbar = true
+            DataContext = settingsVm
         };
 
-        _settingsWindow.Closed += (s, e) => _settingsWindow = null;
-        _settingsWindow.Show();
+        _settingsWindow.Closed += (s, e) =>
+        {
+            if (_settingsWindow?.DataContext is IDisposable d) d.Dispose();
+            _settingsWindow = null;
+        };
+
+        // Make sure the settings window is centered and above the main window on first open.
+        if (_mainWindow != null && _mainWindow.IsVisible)
+            _settingsWindow.Show(_mainWindow);
+        else
+            _settingsWindow.Show();
+
+        _settingsWindow.Activate();
     }
 
     public void CloseSettingsWindow()
     {
         _settingsWindow?.Close();
         _settingsWindow = null;
+    }
+
+    public void PrepareForShutdown()
+    {
+        _allowClose = true;
+        _sizeDebounceTimer?.Dispose();
+        _sizeDebounceTimer = null;
+    }
+
+    public void ShutdownApplication()
+    {
+        PrepareForShutdown();
+
+        if (Application.Current?.ApplicationLifetime is
+            Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            desktop.Shutdown();
+        }
+        else
+        {
+            Environment.Exit(0);
+        }
     }
 
     public void SaveWindowSize(int width, int height)

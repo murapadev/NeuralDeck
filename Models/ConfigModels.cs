@@ -47,10 +47,12 @@ public class PrivacyConfig
 
 public class AppConfig
 {
-    public string Version { get; set; } = "0.4.5";
+    public string Version { get; set; } = "0.5.0";
     public bool Debug { get; set; } = false;
     public bool FirstRun { get; set; } = true;
     public string? LastProvider { get; set; }
+    public string? LastOllamaModel { get; set; }
+    public string OllamaUrl { get; set; } = "http://localhost:11434";
     public WindowConfig Window { get; set; } = new();
     public ShortcutConfig Shortcuts { get; set; } = new();
     public List<ProviderConfig> Providers { get; set; } = new();
