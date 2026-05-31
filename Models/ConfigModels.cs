@@ -41,8 +41,6 @@ public class ShortcutConfig
 public class PrivacyConfig
 {
     public bool ClearOnClose { get; set; } = false;
-    public bool BlockTrackers { get; set; } = false;
-    public List<string> IncognitoProviders { get; set; } = new();
 }
 
 public class AppConfig

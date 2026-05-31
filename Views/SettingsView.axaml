@@ -201,12 +201,6 @@
                                    FontSize="11" Foreground="#52525b" TextWrapping="Wrap" MaxWidth="460" Margin="24,0,0,0"/>
                     </StackPanel>
 
-                    <StackPanel Spacing="4">
-                        <CheckBox Content="Block trackers (web providers)" IsChecked="{Binding BlockTrackers}" Foreground="#d4d4d8"/>
-                        <TextBlock Text="Enables the system WebView's built-in content filtering when available. Effect depends on OS and WebKit version."
-                                   FontSize="11" Foreground="#52525b" TextWrapping="Wrap" MaxWidth="460" Margin="24,0,0,0"/>
-                    </StackPanel>
-
                     <Button Content="Save" Command="{Binding SavePrivacyCommand}"
                             Padding="16,8" Background="{DynamicResource AccentBrush}" Foreground="#fafafa"
                             CornerRadius="6" HorizontalAlignment="Left"/>

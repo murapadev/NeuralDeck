@@ -46,9 +46,6 @@ public partial class SettingsViewModel : ViewModelBase
     private bool _clearOnClose;
 
     [ObservableProperty]
-    private bool _blockTrackers;
-
-    [ObservableProperty]
     private bool _alwaysOnTop = true;
 
     [ObservableProperty]
@@ -112,7 +109,6 @@ public partial class SettingsViewModel : ViewModelBase
         OpenSettingsShortcut = config.Shortcuts.OpenSettings;
 
         ClearOnClose = config.Privacy.ClearOnClose;
-        BlockTrackers = config.Privacy.BlockTrackers;
 
         AlwaysOnTop = config.Window.AlwaysOnTop;
         HideOnBlur = config.Window.HideOnBlur;
@@ -173,7 +169,6 @@ public partial class SettingsViewModel : ViewModelBase
         ConfigService.Instance.UpdatePrivacy(p =>
         {
             p.ClearOnClose = ClearOnClose;
-            p.BlockTrackers = BlockTrackers;
         });
     }
 

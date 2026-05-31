@@ -4,90 +4,107 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-NeuralDeck is an Electron-based desktop app that provides a floating AI command center accessible from the system tray. It uses WebContentsView to embed AI provider websites (ChatGPT, Gemini, Claude, etc.) in isolated views, with a lightweight React sidebar for navigation and settings.
+NeuralDeck is a cross-platform desktop **AI command center** that lives in the system tray.
+It embeds AI provider websites (ChatGPT, Gemini, Claude, DeepSeek, Perplexity, plus custom
+providers) in a native WebView, and offers a native streaming chat client for local Ollama.
+`Ctrl+Shift+Space` toggles a frameless floating window.
+
+The project was ported from Electron/React/TypeScript to **.NET 10 + Avalonia/C#** in April 2026.
+Anything describing a Node/Electron/React/tRPC stack is obsolete — the codebase is now pure C#.
+
+## Stack
+
+- **.NET 10** (`net10.0`, `WinExe`, `Nullable` + `ImplicitUsings` enabled)
+- **Avalonia UI 11.2** (Fluent theme, Inter font, compiled bindings by default)
+- **Avalonia.Controls.WebView 11.4** (WebKitGTK on Linux) — embeds provider sites
+- **CommunityToolkit.Mvvm 8.2** — MVVM via source generators (`[ObservableProperty]`, `[RelayCommand]`)
+- **SharpHook 5.3** — global keyboard shortcuts
+- `Tmds.DBus.Protocol` is pinned to 0.21.3 to dodge GHSA-xrw6-gwf8-vvr9 (do not unpin).
 
 ## Commands
 
 ```bash
-npm run dev          # Start development mode (Vite + Electron)
-npm run build        # Build for current platform
-npm run build:win    # Build for Windows
-npm run build:linux  # Build for Linux
-npm run build:mac    # Build for macOS
-npm run lint         # Run ESLint
-npm run lint:fix     # Auto-fix ESLint issues
-npm run format       # Format with Prettier
-npm test             # Run unit tests (Vitest)
-npm run test:watch   # Watch mode for tests
-npm run test:coverage # Coverage report
+dotnet restore
+dotnet run                      # run debug
+dotnet build -c Release         # release build (expected: 0 warnings)
+dotnet test                     # xUnit tests (NeuralDeck.Tests, currently MarkdownParser only)
+
+# Self-contained single-file publish
+dotnet publish -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true
+dotnet publish -c Release -r win-x64   --self-contained true -p:PublishSingleFile=true
+dotnet publish -c Release -r osx-arm64 --self-contained true -p:PublishSingleFile=true
 ```
+
+Linux needs WebKitGTK 4.1 (`webkit2gtk-4.1` on Arch, `libwebkit2gtk-4.1-dev` on Debian/Ubuntu).
 
 ## Architecture
 
-### Process Model
+Single-process Avalonia app. There is **no DI container** — services are accessed through a
+`static Instance` singleton (`SPEC.md` planned `Microsoft.Extensions.DependencyInjection`, but
+it was never adopted). Layers: `Models/` → `Services/` (singletons, side effects) →
+`ViewModels/` (MVVM) → `Views/` (AXAML + code-behind).
 
-- **Main Process** (`electron/`): Manages window, tray, views, shortcuts, and system integration
-- **Renderer Process** (`src/`): React UI (sidebar, settings, chat interface for Ollama)
-- **Preload** (`electron/preload.ts`): Exposes safe IPC bridge via `window.electronTRPC`
+### Entry & startup
 
-### Main Process Services
+- `Program.cs` — `Main`; `AppBuilder.Configure<App>().UsePlatformDetect().WithInterFont()`.
+- `App.axaml.cs` — `OnFrameworkInitializationCompleted` wires everything: creates
+  `MainWindowViewModel` + `MainWindow`, initializes `ThemeService`, `WindowService`,
+  `TrayService`, `ShortcutService`, applies startup window config, and registers exit cleanup
+  (`OnExit` disposes services and clears Ollama history when `Privacy.ClearOnClose`).
+  `ShutdownMode = OnExplicitShutdown` — closing the window hides it; quit is via tray/`Ctrl+Q`.
 
-The main process uses a **ServiceManager** (`electron/services/ServiceManager.ts`) that initializes core services in dependency order:
+### Services (`Services/`, all singletons via `.Instance`)
 
-1. **WindowManager** (`electron/services/WindowManager.ts`): Creates the frameless main window, handles positioning (including tray proximity), and window events
-2. **ViewManager** (`electron/services/ViewManager.ts`): Manages WebContentsView instances per AI provider. Each provider gets an isolated session (incognito mode supported). Uses `contentView.addChildView()` to embed views alongside the sidebar
-3. **TrayManager** (`electron/services/TrayManager.ts`): System tray icon and context menu
-4. **ShortcutManager** (`electron/services/ShortcutManager.ts`): Global keyboard shortcuts (show/hide, provider switching)
-5. **IpcManager** (`electron/services/IpcManager.ts`): Legacy IPC handlers for window controls (back/forward/reload)
-6. **AutoUpdateManager** (`electron/services/AutoUpdateManager.ts`): electron-updater integration
+| Service | Responsibility |
+|---------|----------------|
+| `ConfigService` | Loads/saves `config.json` (System.Text.Json, camelCase). `GetConfig()`, `Update*` mutators, `NormalizeConfig` (migration/defaults), raises `ConfigChanged`. |
+| `OllamaService` | HTTP client for local Ollama. Streaming `ChatAsync` (`ResponseHeadersRead` + line-by-line, cancelable), model listing, connection polling. |
+| `ConversationStore` | Persists/loads Ollama chat history (`ollama-history.json`); `Clear()` on exit when enabled. |
+| `WindowService` | Owns `MainWindow`; positioning (`CalculateWindowPosition`, incl. tray proximity), show/hide, always-on-top, opacity, shutdown prep. |
+| `ShortcutService` | Global hotkeys via SharpHook; accelerator parsing/matching; `Refresh()` re-reads config. |
+| `ThemeService` | Applies theme (dark/light/system), accent color, font size. Live preview from settings. |
+| `TrayService` | Avalonia built-in `TrayIcon` + context menu (not `Avalonia.SystemTray`). |
 
-### IPC Communication
+### Models (`Models/`)
 
-tRPC is the primary IPC mechanism. The main process creates a tRPC router in `electron/router/index.ts` that merges:
-- `settingsRouter`: App configuration (providers, appearance, privacy, shortcuts)
-- `windowRouter`: Window controls (show/hide/minimize)
-- `viewsRouter`: View management (switch provider, navigation state)
-- `providersRouter`: Provider queries
-- `telemetryRouter`: Memory/performance stats
+- `ConfigModels.cs` — `AppConfig` and nested `WindowConfig`, `AppearanceConfig`,
+  `ShortcutConfig`, `PrivacyConfig`. **This is the live config schema** (plain mutable classes).
+- `ProviderConfig.cs`, `ChatModels.cs`, `Constants.cs` (`AppConstants`).
+- `ConfigRecords.cs` exists but is currently **dead** (record types unused; strings are used
+  instead). Don't add new dependencies on it without a reason.
 
-The renderer connects via a custom IPC link in `src/utils/electronLink.ts` that sends tRPC operations through `window.electronTRPC` (injected by preload).
+### ViewModels (`ViewModels/`)
 
-### Configuration
+`MainWindowViewModel` (root; picks chat vs WebView via `SelectedProviderId == "ollama"`),
+`ChatViewModel`, `SettingsViewModel`, `OnboardingViewModel`, `WebBrowserViewModel`, plus
+`ViewModelBase`. ViewModels read/write config through `ConfigService.Instance` and subscribe
+to `ConfigChanged`.
 
-Config is persisted via `electron-store` and managed by `electron/config/configManager.ts`. Uses Zod schema validation with migration support. The `DEFAULT_CONFIG` and `DEFAULT_PROVIDERS` constants are in `shared/types.ts`.
+### Views (`Views/`) & Controls
 
-### Renderer State
+AXAML + code-behind: `MainWindow`, `ChatView`, `SettingsView`/`SettingsWindow`,
+`OnboardingView`, `WebBrowserView`. WebView navigation lives in `WebBrowserView.axaml.cs`
+(CSS injection is idempotent via a `__nd_s` marker; external links open via `Process.Start`).
+`Controls/MarkdownParser.cs` is a **pure, Avalonia-free** parser (the one well-tested class);
+`MarkdownTextBlock.cs` renders it.
 
-- **Zustand store** (`src/store/appStore.ts`): Global state (currentProvider, config, theme)
-- **React Query**: Only for initial config fetch on mount; IPC listeners handle live updates
-- **tRPC** (`src/utils/trpc.ts`): Client configured with `ipcLink()` to communicate with main process
+### Configuration file
 
-### View Management
+`config.json` in `%APPDATA%\NeuralDeck\` (Windows) / `~/.config/NeuralDeck/` (Linux/macOS).
+`<Version>` in `NeuralDeck.csproj` is the source of truth for the app version (the About tab
+reads it from the assembly attribute).
 
-`ViewManager.switchView()` is the key method:
-1. Removes previous `WebContentsView` from `contentView`
-2. Adds new view for the selected provider
-3. Sets view bounds to account for sidebar width
-4. Sends `VIEW_CHANGED` and `NAVIGATION_STATE_CHANGED` events to renderer
+## Conventions
 
-Ollama is special-cased: it doesn't use WebContentsView because it's a local API, so the renderer shows a native React chat interface instead.
+- TypeScript-era files (`electron/`, `src/`, tRPC, Zustand, Vite) **no longer exist** — ignore
+  any reference to them in stale docs.
+- Comments explain *why*, not *what*. Keep `dotnet build -c Release` at **0 warnings**.
+- No hardcoded secrets/tokens (none currently — only public provider URLs and `localhost:11434`).
+- WebView provider sessions are **shared** (single `Browser` control, `Navigate()` only); there
+  is no per-provider session isolation or tracker blocking. Don't expose UI for privacy features
+  that aren't actually implemented (the old "Block trackers" ghost checkbox was removed).
 
-## Key Patterns
+## Known stale docs
 
-- **Service singleton pattern**: `serviceManager` is the global container; individual services are accessed via `serviceManager.windowManager`, etc.
-- **Lazy initialization**: Background services (auto-update checks, view preloading, GC) start 2 seconds after app ready
-- **Incognito isolation**: Providers in `privacy.incognitoProviders` get temp partitions that are cleared on view destruction
-- **Memory management**: `ViewManager.enforceMemoryLimit()` destroys views beyond the limit (default 5), preferring disabled providers
-
-## File Locations
-
-| Purpose | Path |
-|---------|------|
-| Main entry | `electron/main.ts` |
-| tRPC routers | `electron/router/*.ts` |
-| React App root | `src/App.tsx` |
-| State store | `src/store/appStore.ts` |
-| Config schema | `shared/schemas.ts` |
-| UI components | `src/components/` |
-| Settings pages | `src/components/settings/` |
-| i18n | `src/i18n/`, `electron/i18n/` |
+- `SPEC.md` is the port-planning doc and is partly stale (says .NET 8, DI, Markdig). Historical.
+- `README.md` and `CHANGELOG.md` are accurate.
