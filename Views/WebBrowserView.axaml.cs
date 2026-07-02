@@ -110,6 +110,16 @@ public partial class WebBrowserView : UserControl
 
     private static void OpenExternalBrowser(Uri uri)
     {
+        // The URI can come from the page itself (NewWindowRequested). UseShellExecute hands it
+        // to xdg-open, which dispatches any scheme (file://, mailto:, custom handlers). Only
+        // allow http/https so a page can't force opening arbitrary local files or handlers.
+        if (uri is null || !uri.IsAbsoluteUri ||
+            (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+        {
+            Console.WriteLine($"[WebBrowserView] Blocked external URI with disallowed scheme: {uri}");
+            return;
+        }
+
         try
         {
             Process.Start(new ProcessStartInfo { FileName = uri.ToString(), UseShellExecute = true });

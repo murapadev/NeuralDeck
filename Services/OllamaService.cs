@@ -21,7 +21,10 @@ public class OllamaService : IDisposable
     private OllamaService()
     {
         _httpClient = new HttpClient();
-        _httpClient.Timeout = TimeSpan.FromSeconds(60);
+        // No global timeout: HttpClient.Timeout covers the whole operation including stream
+        // reads, so a 60s cap silently truncated long generations. Duration is controlled by
+        // the per-request CancellationToken (user Stop) plus a per-read idle timeout below.
+        _httpClient.Timeout = Timeout.InfiniteTimeSpan;
         _baseUrl = ConfigService.Instance.GetConfig().OllamaUrl?.TrimEnd('/')
                    ?? AppConstants.DefaultOllamaUrl;
 
@@ -130,7 +133,22 @@ public class OllamaService : IDisposable
 
         while (!cancellationToken.IsCancellationRequested)
         {
-            var line = await reader.ReadLineAsync(cancellationToken);
+            string? line;
+            // Reset the idle window on every read: a healthy stream delivers chunks well
+            // within it; only a stalled connection trips the timeout.
+            using var idleCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            idleCts.CancelAfter(AppConstants.OllamaStreamIdleTimeoutMs);
+            try
+            {
+                line = await reader.ReadLineAsync(idleCts.Token);
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                // Idle timeout, not a user Stop: surface it instead of truncating silently.
+                await onChunk("\n\n⚠️ **Error**: Ollama stopped responding (stream idle timeout).");
+                break;
+            }
+
             if (line == null) break; // End of stream
             if (string.IsNullOrWhiteSpace(line)) continue;
 

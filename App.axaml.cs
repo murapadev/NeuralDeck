@@ -67,11 +67,53 @@ public partial class App : Application
             _mainWindowViewModel?.Dispose();
 
             if (ConfigService.Instance.GetConfig().Privacy.ClearOnClose)
+            {
                 ConversationStore.Clear();
+                ClearWebViewData();
+            }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"[App] Exit cleanup failed: {ex.Message}");
+        }
+    }
+
+    // ClearOnClose used to wipe only the Ollama history, leaving the WebView (cookies,
+    // localStorage, IndexedDB) logged into ChatGPT/Claude/etc. — a broken privacy promise.
+    // The WebKitGTK control exposes no programmatic clear API, so we delete its on-disk
+    // website-data and cache directories. WebKitGTK names them after the program (g_get_prgname,
+    // here "NeuralDeck") under the XDG data/cache roots. Config lives in a separate dir
+    // (ApplicationData/NeuralDeck), so it is never touched.
+    private static void ClearWebViewData()
+    {
+        if (!OperatingSystem.IsLinux()) return;
+
+        var appName = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name ?? "NeuralDeck";
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+
+        var dataHome = Environment.GetEnvironmentVariable("XDG_DATA_HOME");
+        if (string.IsNullOrEmpty(dataHome)) dataHome = System.IO.Path.Combine(home, ".local", "share");
+
+        var cacheHome = Environment.GetEnvironmentVariable("XDG_CACHE_HOME");
+        if (string.IsNullOrEmpty(cacheHome)) cacheHome = System.IO.Path.Combine(home, ".cache");
+
+        foreach (var dir in new[]
+                 {
+                     System.IO.Path.Combine(dataHome, appName),
+                     System.IO.Path.Combine(cacheHome, appName),
+                 })
+        {
+            try
+            {
+                if (System.IO.Directory.Exists(dir))
+                    System.IO.Directory.Delete(dir, recursive: true);
+            }
+            catch (Exception ex)
+            {
+                // Files may still be locked by the WebKit network process during shutdown;
+                // best-effort, log and move on rather than blocking exit.
+                Console.WriteLine($"[App] Failed to clear WebView data at {dir}: {ex.Message}");
+            }
         }
     }
 }

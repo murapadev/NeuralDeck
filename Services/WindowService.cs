@@ -17,6 +17,7 @@ public class WindowService
     private bool _isWindowVisible;
     private bool _allowClose;
     private Timer? _sizeDebounceTimer;
+    private Timer? _positionDebounceTimer;
 
     public static WindowService Instance => _instance ??= new WindowService();
 
@@ -39,11 +40,16 @@ public class WindowService
         window.PositionChanged += (s, e) =>
         {
             var config = ConfigService.Instance.GetConfig();
-            if (config.Window.Position == "remember")
-            {
-                var pos = window.Position;
-                ConfigService.Instance.UpdateWindow(w => { w.LastX = pos.X; w.LastY = pos.Y; });
-            }
+            if (config.Window.Position != "remember") return;
+
+            // Debounce: dragging fires PositionChanged on every pixel. Without this, each event
+            // wrote config.json + raised the global ConfigChanged (rebuilding sidebar/tray/
+            // shortcuts/theme), causing jank and disk churn. Persist 350ms after the last move.
+            var pos = window.Position;
+            _positionDebounceTimer?.Dispose();
+            _positionDebounceTimer = new Timer(
+                _ => Dispatcher.UIThread.Post(() => SaveWindowPosition(pos.X, pos.Y)),
+                null, 350, Timeout.Infinite);
         };
 
         window.SizeChanged += (s, e) =>
@@ -219,6 +225,8 @@ public class WindowService
         _allowClose = true;
         _sizeDebounceTimer?.Dispose();
         _sizeDebounceTimer = null;
+        _positionDebounceTimer?.Dispose();
+        _positionDebounceTimer = null;
     }
 
     public void ShutdownApplication()
@@ -239,5 +247,10 @@ public class WindowService
     public void SaveWindowSize(int width, int height)
     {
         ConfigService.Instance.UpdateWindow(w => { w.Width = width; w.Height = height; });
+    }
+
+    public void SaveWindowPosition(int x, int y)
+    {
+        ConfigService.Instance.UpdateWindow(w => { w.LastX = x; w.LastY = y; });
     }
 }
