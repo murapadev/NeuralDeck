@@ -7,7 +7,7 @@ using Avalonia.Threading;
 using NeuralDeck.Models;
 using NeuralDeck.ViewModels;
 using SharpHook;
-using SharpHook.Native;
+using SharpHook.Data;
 
 namespace NeuralDeck.Services;
 

@@ -57,7 +57,7 @@
                     <StackPanel Spacing="4">
                         <TextBlock Text="Ollama server URL" FontSize="12" Foreground="#71717a"/>
                         <TextBox Text="{Binding OllamaUrl}" Width="320" HorizontalAlignment="Left"
-                                 Watermark="http://localhost:11434"/>
+                                 PlaceholderText="http://localhost:11434"/>
                         <TextBlock Text="Where the local Ollama daemon listens. Leave default unless you've changed Ollama's bind address."
                                    FontSize="11" Foreground="#52525b" TextWrapping="Wrap" MaxWidth="420"/>
                     </StackPanel>
@@ -69,7 +69,7 @@
                                  MinHeight="72" MaxHeight="160"
                                  AcceptsReturn="True"
                                  TextWrapping="Wrap"
-                                 Watermark="You are a helpful assistant..."
+                                 PlaceholderText="You are a helpful assistant..."
                                  FontFamily="Consolas,Monospace"
                                  FontSize="11"/>
                         <TextBlock Text="Injected as the system role before every Ollama conversation. Leave blank to use the model's default."
@@ -293,10 +293,10 @@
                         <StackPanel Spacing="8">
                             <TextBlock Text="New provider" FontSize="13" FontWeight="Medium" Foreground="#fafafa"/>
                             <TextBox Text="{Binding NewProviderName}"
-                                     Watermark="Name (e.g. Mistral)"
+                                     PlaceholderText="Name (e.g. Mistral)"
                                      Height="32" FontSize="12"/>
                             <TextBox Text="{Binding NewProviderUrl}"
-                                     Watermark="URL (e.g. https://chat.mistral.ai)"
+                                     PlaceholderText="URL (e.g. https://chat.mistral.ai)"
                                      Height="32" FontSize="12"/>
                             <StackPanel Spacing="6">
                                 <TextBlock Text="Color" FontSize="11" Foreground="#71717a"/>

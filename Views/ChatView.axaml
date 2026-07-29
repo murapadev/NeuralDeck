@@ -277,7 +277,7 @@
                 <TextBox Grid.Column="0"
                          x:Name="MessageInput"
                          Text="{Binding InputText}"
-                         Watermark="Message Ollama..."
+                         PlaceholderText="Message Ollama..."
                          MinHeight="40" MaxHeight="120"
                          AcceptsReturn="True"
                          TextWrapping="Wrap"

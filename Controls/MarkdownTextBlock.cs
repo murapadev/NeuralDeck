@@ -3,6 +3,8 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Input.Platform;
 using Avalonia.Controls.Documents;
 // Avalonia.Controls.Shapes.Path is used via fully-qualified name to avoid ambiguity with System.IO.Path
 using Avalonia.Layout;
@@ -166,7 +168,7 @@ public sealed partial class MarkdownTextBlock : ContentControl
             var btn = (Button)s!;
             var clipboard = TopLevel.GetTopLevel(btn)?.Clipboard;
             if (clipboard == null) return;
-            await clipboard.SetTextAsync(capturedCode);
+            await clipboard.SetValueAsync(DataFormat.Text, capturedCode);
             btn.Opacity = 1.0;
             await Task.Delay(700);
             btn.Opacity = 0.65;

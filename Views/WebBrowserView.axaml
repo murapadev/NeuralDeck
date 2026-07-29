@@ -49,7 +49,7 @@
                          Height="28"
                          FontSize="11"
                          VerticalContentAlignment="Center"
-                         Watermark="Enter URL..."
+                         PlaceholderText="Enter URL..."
                          ToolTip.Tip="{Binding PageTitle}"/>
 
                 <Button Grid.Column="4" Width="28" Height="28" Padding="0" CornerRadius="6"

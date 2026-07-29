@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
@@ -192,7 +193,7 @@ public partial class ChatView : UserControl
         if (sender is not Button btn || btn.Tag is not string text) return;
         var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
         if (clipboard == null) return;
-        await clipboard.SetTextAsync(text);
+        await clipboard.SetValueAsync(DataFormat.Text, text);
         // Brief visual feedback: flash the button to full opacity then fade back.
         var prev = btn.Opacity;
         btn.Opacity = 1.0;
