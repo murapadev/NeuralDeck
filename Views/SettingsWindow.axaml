@@ -10,7 +10,6 @@
         MinWidth="720" MinHeight="520"
         Background="#09090b"
         ExtendClientAreaToDecorationsHint="True"
-        ExtendClientAreaChromeHints="PreferSystemChrome"
         ExtendClientAreaTitleBarHeightHint="32"
         WindowStartupLocation="CenterScreen"
         ShowInTaskbar="True">
