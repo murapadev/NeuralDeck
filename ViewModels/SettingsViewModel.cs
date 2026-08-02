@@ -74,6 +74,25 @@ public partial class SettingsViewModel : ViewModelBase
         return asm.GetName().Version?.ToString(3) ?? "0.0.0";
     }
 
+    [ObservableProperty] private string _saveStatusMessage = "";
+    private int _saveStatusToken;
+
+    // Save buttons gave zero feedback — clicking one looked identical whether it worked or
+    // silently no-op'd. Flash a short-lived confirmation instead.
+    private void ShowSavedFeedback()
+    {
+        SaveStatusMessage = "Saved";
+        var token = ++_saveStatusToken;
+        _ = ClearSaveStatusAfterDelay(token);
+    }
+
+    private async Task ClearSaveStatusAfterDelay(int token)
+    {
+        await Task.Delay(1500);
+        if (token == _saveStatusToken)
+            SaveStatusMessage = "";
+    }
+
     [ObservableProperty] private bool _isAddingProvider = false;
     [ObservableProperty] private string _newProviderName = "";
     [ObservableProperty] private string _newProviderUrl = "";
@@ -134,6 +153,7 @@ public partial class SettingsViewModel : ViewModelBase
             debug: DebugMode,
             ollamaUrl: normalizedUrl?.ToString(),
             ollamaSystemPrompt: OllamaSystemPrompt);
+        ShowSavedFeedback();
     }
 
     [RelayCommand]
@@ -147,6 +167,7 @@ public partial class SettingsViewModel : ViewModelBase
             a.FontSize = FontSize;
             a.AccentColor = AccentColor;
         });
+        ShowSavedFeedback();
     }
 
     // Live preview of theme and accent color as the user tweaks them,
@@ -175,6 +196,7 @@ public partial class SettingsViewModel : ViewModelBase
             s.OpenSettings = openSettings;
         });
         ShortcutService.Instance.Refresh();
+        ShowSavedFeedback();
     }
 
     [RelayCommand]
@@ -184,6 +206,7 @@ public partial class SettingsViewModel : ViewModelBase
         {
             p.ClearOnClose = ClearOnClose;
         });
+        ShowSavedFeedback();
     }
 
     [RelayCommand]
@@ -199,12 +222,14 @@ public partial class SettingsViewModel : ViewModelBase
         });
         WindowService.Instance.SetAlwaysOnTop(AlwaysOnTop);
         WindowService.Instance.SetOpacity(opacity);
+        ShowSavedFeedback();
     }
 
     [RelayCommand]
     private void SaveProviders()
     {
         ConfigService.Instance.UpdateProviders(Providers.ToList());
+        ShowSavedFeedback();
     }
 
     [RelayCommand]

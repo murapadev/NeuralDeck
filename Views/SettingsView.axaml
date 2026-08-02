@@ -349,10 +349,15 @@
         <Border Grid.Row="2" Background="#18181b"
                 BorderBrush="#27272a" BorderThickness="0,1,0,0"
                 Padding="16,8">
-            <TextBlock FontSize="11" Foreground="#52525b">
-                <Run Text="Config: "/>
-                <Run Text="{Binding AppVersion, Mode=OneWay, StringFormat='v{0}'}"/>
-            </TextBlock>
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" FontSize="11" Foreground="#52525b">
+                    <Run Text="Config: "/>
+                    <Run Text="{Binding AppVersion, Mode=OneWay, StringFormat='v{0}'}"/>
+                </TextBlock>
+                <TextBlock Grid.Column="1" Text="{Binding SaveStatusMessage}"
+                           FontSize="11" FontWeight="Medium" Foreground="#4ade80"
+                           IsVisible="{Binding SaveStatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+            </Grid>
         </Border>
     </Grid>
 </UserControl>

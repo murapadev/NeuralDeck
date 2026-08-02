@@ -192,6 +192,10 @@ public class WindowService : IDisposable
 
         _settingsWindow.Closed += (s, e) =>
         {
+            // Switching tabs already saves the tab you're leaving (SelectTab -> SaveCurrentTab),
+            // but closing the window directly from whichever tab you're on didn't — edits were
+            // silently lost unless you happened to hit Save first. Persist on close too.
+            settingsVm.SaveCurrentTabCommand.Execute(null);
             if (_settingsWindow?.DataContext is IDisposable d) d.Dispose();
             _settingsWindow = null;
             // Bring the main window back to the foreground so the user can keep working.
