@@ -1,6 +1,3 @@
-using System;
-using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -49,29 +46,32 @@ public class ConfigService
 
     public void LoadConfig()
     {
-        try
+        lock (_configLock)
         {
-            if (File.Exists(ConfigFilePath))
+            try
             {
-                var json = File.ReadAllText(ConfigFilePath);
-                var loaded = JsonSerializer.Deserialize<AppConfig>(json, JsonOptions);
-                if (loaded != null)
+                if (File.Exists(ConfigFilePath))
                 {
-                    _config = NormalizeConfig(loaded);
-                    SaveConfig();
+                    var json = File.ReadAllText(ConfigFilePath);
+                    var loaded = JsonSerializer.Deserialize<AppConfig>(json, JsonOptions);
+                    if (loaded != null)
+                    {
+                        _config = NormalizeConfig(loaded);
+                        SaveConfigLocked();
+                    }
+                }
+                else
+                {
+                    _config = CreateDefaultConfig();
+                    SaveConfigLocked();
                 }
             }
-            else
+            catch (Exception ex)
             {
+                Console.WriteLine($"[ConfigService] Failed to load config: {ex.Message}");
                 _config = CreateDefaultConfig();
-                SaveConfig();
+                SaveConfigLocked();
             }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[ConfigService] Failed to load config: {ex.Message}");
-            _config = CreateDefaultConfig();
-            SaveConfig();
         }
     }
 
@@ -98,15 +98,15 @@ public class ConfigService
             LastProvider = null,
             Window = new WindowConfig
             {
-                Width = AppConstants.DefaultWindowWidth,
-                Height = AppConstants.DefaultWindowHeight,
+                Width = WindowConstants.DefaultWindowWidth,
+                Height = WindowConstants.DefaultWindowHeight,
                 Position = "near-tray",
                 AlwaysOnTop = true,
                 HideOnBlur = true,
                 Opacity = 1.0
             },
             Shortcuts = new ShortcutConfig(),
-            Providers = AppConstants.DefaultProviders.Select(p => p.Clone()).ToList(),
+            Providers = ProviderDefaults.DefaultProviders.Select(p => p.Clone()).ToList(),
             Privacy = new PrivacyConfig(),
             Appearance = new AppearanceConfig()
         };
@@ -122,7 +122,7 @@ public class ConfigService
 
         // Ensure all required providers exist
         var existingIds = config.Providers.Select(p => p.Id).ToHashSet();
-        foreach (var defaultProvider in AppConstants.DefaultProviders)
+        foreach (var defaultProvider in ProviderDefaults.DefaultProviders)
         {
             if (!existingIds.Contains(defaultProvider.Id))
             {
@@ -137,8 +137,8 @@ public class ConfigService
             ollama.Color = "#1f2937";
 
         // Ensure window config has valid values
-        if (config.Window.Width < AppConstants.MinWindowWidth) config.Window.Width = AppConstants.DefaultWindowWidth;
-        if (config.Window.Height < AppConstants.MinWindowHeight) config.Window.Height = AppConstants.DefaultWindowHeight;
+        if (config.Window.Width < WindowConstants.MinWindowWidth) config.Window.Width = WindowConstants.DefaultWindowWidth;
+        if (config.Window.Height < WindowConstants.MinWindowHeight) config.Window.Height = WindowConstants.DefaultWindowHeight;
         if (config.Window.Opacity < 0.1 || config.Window.Opacity > 1.0) config.Window.Opacity = 1.0;
         if (!IsKnownWindowPosition(config.Window.Position)) config.Window.Position = "near-tray";
 
@@ -149,6 +149,16 @@ public class ConfigService
         position is "near-tray" or "top-left" or "top-right" or "bottom-left" or "bottom-right" or "center" or "remember";
 
     public void SaveConfig()
+    {
+        lock (_configLock)
+        {
+            SaveConfigLocked();
+        }
+    }
+
+    // Assumes the caller already holds _configLock. Used by LoadConfig/Update* to make
+    // mutate-then-persist a single atomic critical section instead of double-locking.
+    private void SaveConfigLocked()
     {
         try
         {
@@ -163,43 +173,61 @@ public class ConfigService
 
     public void UpdateConfig(Action<AppConfig> updateAction)
     {
-        updateAction(_config);
-        SaveConfig();
+        lock (_configLock)
+        {
+            updateAction(_config);
+            SaveConfigLocked();
+        }
         ConfigChanged?.Invoke(this, _config);
     }
 
     public void UpdateWindow(Action<WindowConfig> updateAction)
     {
-        updateAction(_config.Window);
-        SaveConfig();
+        lock (_configLock)
+        {
+            updateAction(_config.Window);
+            SaveConfigLocked();
+        }
         ConfigChanged?.Invoke(this, _config);
     }
 
     public void UpdateAppearance(Action<AppearanceConfig> updateAction)
     {
-        updateAction(_config.Appearance);
-        SaveConfig();
+        lock (_configLock)
+        {
+            updateAction(_config.Appearance);
+            SaveConfigLocked();
+        }
         ConfigChanged?.Invoke(this, _config);
     }
 
     public void UpdateShortcuts(Action<ShortcutConfig> updateAction)
     {
-        updateAction(_config.Shortcuts);
-        SaveConfig();
+        lock (_configLock)
+        {
+            updateAction(_config.Shortcuts);
+            SaveConfigLocked();
+        }
         ConfigChanged?.Invoke(this, _config);
     }
 
     public void UpdatePrivacy(Action<PrivacyConfig> updateAction)
     {
-        updateAction(_config.Privacy);
-        SaveConfig();
+        lock (_configLock)
+        {
+            updateAction(_config.Privacy);
+            SaveConfigLocked();
+        }
         ConfigChanged?.Invoke(this, _config);
     }
 
     public void UpdateProviders(List<ProviderConfig> providers)
     {
-        _config.Providers = providers;
-        SaveConfig();
+        lock (_configLock)
+        {
+            _config.Providers = providers;
+            SaveConfigLocked();
+        }
         ConfigChanged?.Invoke(this, _config);
     }
 
@@ -211,13 +239,16 @@ public class ConfigService
         string? ollamaUrl = null,
         string? ollamaSystemPrompt = null)
     {
-        if (firstRun.HasValue) _config.FirstRun = firstRun.Value;
-        if (lastProvider != null) _config.LastProvider = lastProvider;
-        if (debug.HasValue) _config.Debug = debug.Value;
-        if (lastOllamaModel != null) _config.LastOllamaModel = lastOllamaModel;
-        if (!string.IsNullOrWhiteSpace(ollamaUrl)) _config.OllamaUrl = ollamaUrl.Trim();
-        if (ollamaSystemPrompt != null) _config.OllamaSystemPrompt = ollamaSystemPrompt;
-        SaveConfig();
+        lock (_configLock)
+        {
+            if (firstRun.HasValue) _config.FirstRun = firstRun.Value;
+            if (lastProvider != null) _config.LastProvider = lastProvider;
+            if (debug.HasValue) _config.Debug = debug.Value;
+            if (lastOllamaModel != null) _config.LastOllamaModel = lastOllamaModel;
+            if (!string.IsNullOrWhiteSpace(ollamaUrl)) _config.OllamaUrl = ollamaUrl.Trim();
+            if (ollamaSystemPrompt != null) _config.OllamaSystemPrompt = ollamaSystemPrompt;
+            SaveConfigLocked();
+        }
         ConfigChanged?.Invoke(this, _config);
     }
 

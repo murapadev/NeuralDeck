@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using System.Globalization;
 using Avalonia;
 using Avalonia.Data.Converters;
@@ -92,6 +90,10 @@ public class FirstTwoConverter : IValueConverter
         if (value is string str && str.Length >= 2)
         {
             return str.Substring(0, 2).ToUpper();
+        }
+        if (value is string single && single.Length == 1)
+        {
+            return single.ToUpper();
         }
         return "??";
     }

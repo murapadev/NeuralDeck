@@ -1,4 +1,3 @@
-using System;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -85,7 +84,7 @@ public partial class SettingsViewModel : ViewModelBase
     public ObservableCollection<string> LanguageOptions { get; } = new() { "en", "es" };
     public ObservableCollection<string> FontSizeOptions { get; } = new() { "small", "medium", "large" };
     public ObservableCollection<string> PositionOptions { get; } = new() { "near-tray", "top-left", "top-right", "bottom-left", "bottom-right", "center", "remember" };
-    public ObservableCollection<string> ColorOptions { get; } = new(AppConstants.AccentColorOptions);
+    public ObservableCollection<string> ColorOptions { get; } = new(ProviderDefaults.AccentColorOptions);
 
     public SettingsViewModel()
     {
@@ -125,7 +124,16 @@ public partial class SettingsViewModel : ViewModelBase
     [RelayCommand]
     private void SaveGeneral()
     {
-        ConfigService.Instance.UpdateGeneral(debug: DebugMode, ollamaUrl: OllamaUrl, ollamaSystemPrompt: OllamaSystemPrompt);
+        var normalizedUrl = NormalizeUrl(OllamaUrl);
+        if (normalizedUrl == null && !string.IsNullOrWhiteSpace(OllamaUrl))
+            Console.WriteLine($"[SettingsViewModel] Ignoring invalid Ollama URL: '{OllamaUrl}'");
+
+        // UpdateGeneral leaves OllamaUrl untouched when passed null, so an invalid entry
+        // just doesn't overwrite the last known-good saved value.
+        ConfigService.Instance.UpdateGeneral(
+            debug: DebugMode,
+            ollamaUrl: normalizedUrl?.ToString(),
+            ollamaSystemPrompt: OllamaSystemPrompt);
     }
 
     [RelayCommand]
@@ -155,10 +163,16 @@ public partial class SettingsViewModel : ViewModelBase
     [RelayCommand]
     private void SaveShortcuts()
     {
+        // Reject blank shortcuts rather than persisting them and silently breaking the
+        // global hotkey — fall back to whatever was last saved.
+        var savedShortcuts = ConfigService.Instance.GetConfig().Shortcuts;
+        var toggleWindow = string.IsNullOrWhiteSpace(ToggleWindowShortcut) ? savedShortcuts.ToggleWindow : ToggleWindowShortcut;
+        var openSettings = string.IsNullOrWhiteSpace(OpenSettingsShortcut) ? savedShortcuts.OpenSettings : OpenSettingsShortcut;
+
         ConfigService.Instance.UpdateShortcuts(s =>
         {
-            s.ToggleWindow = ToggleWindowShortcut;
-            s.OpenSettings = OpenSettingsShortcut;
+            s.ToggleWindow = toggleWindow;
+            s.OpenSettings = openSettings;
         });
         ShortcutService.Instance.Refresh();
     }
@@ -175,15 +189,16 @@ public partial class SettingsViewModel : ViewModelBase
     [RelayCommand]
     private void SaveWindow()
     {
+        var opacity = Math.Clamp(WindowOpacity, 0.1, 1.0);
         ConfigService.Instance.UpdateWindow(w =>
         {
             w.AlwaysOnTop = AlwaysOnTop;
             w.HideOnBlur = HideOnBlur;
             w.Position = WindowPosition;
-            w.Opacity = WindowOpacity;
+            w.Opacity = opacity;
         });
         WindowService.Instance.SetAlwaysOnTop(AlwaysOnTop);
-        WindowService.Instance.SetOpacity(WindowOpacity);
+        WindowService.Instance.SetOpacity(opacity);
     }
 
     [RelayCommand]
@@ -204,7 +219,7 @@ public partial class SettingsViewModel : ViewModelBase
     {
         NewProviderName = "";
         NewProviderUrl = "";
-        NewProviderColor = AppConstants.DefaultAccentColor;
+        NewProviderColor = ProviderDefaults.DefaultAccentColor;
         IsAddingProvider = true;
     }
 
@@ -218,18 +233,14 @@ public partial class SettingsViewModel : ViewModelBase
     private void ConfirmAddProvider()
     {
         var name = NewProviderName.Trim();
-        var url = NewProviderUrl.Trim();
-        if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(url)) return;
-
-        if (!url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
-            !url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
-            url = "https://" + url;
+        var normalizedUrl = NormalizeUrl(NewProviderUrl);
+        if (string.IsNullOrEmpty(name) || normalizedUrl == null) return;
 
         var provider = new ProviderConfig
         {
             Id = Guid.NewGuid().ToString("N")[..8],
             Name = name,
-            Url = url,
+            Url = normalizedUrl.ToString(),
             Color = NewProviderColor,
             Enabled = true,
             Order = Providers.Count,
@@ -239,6 +250,16 @@ public partial class SettingsViewModel : ViewModelBase
         Providers.Add(provider);
         SaveProviders();
         IsAddingProvider = false;
+    }
+
+    private static Uri? NormalizeUrl(string? input)
+    {
+        if (string.IsNullOrWhiteSpace(input)) return null;
+        var text = input.Trim();
+        if (!text.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
+            !text.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            text = "https://" + text;
+        return Uri.TryCreate(text, UriKind.Absolute, out var uri) ? uri : null;
     }
 
     [RelayCommand]

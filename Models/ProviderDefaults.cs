@@ -1,31 +1,7 @@
 namespace NeuralDeck.Models;
 
-public static class AppConstants
+public static class ProviderDefaults
 {
-    // Window dimensions
-    public const int DefaultWindowWidth = 420;
-    public const int DefaultWindowHeight = 700;
-    public const int MinWindowWidth = 380;
-    public const int MinWindowHeight = 500;
-
-    // Sidebar dimensions
-    public const int SidebarCollapsedWidth = 72;
-    public const int SidebarExpandedWidth = 140;
-
-    // Ollama
-    public const string DefaultOllamaUrl = "http://localhost:11434";
-    public const int OllamaHealthTimeoutMs = 3000;
-    public const int OllamaPollIntervalMs = 30000;
-    // Per-read idle timeout for chat streaming. The HttpClient has no global timeout (long
-    // generations must not be cut), so this guards only against a dead/stalled stream: abort
-    // if no bytes arrive for this long between chunks.
-    public const int OllamaStreamIdleTimeoutMs = 120000;
-
-    // Animation
-    public const int AnimationFastMs = 150;
-    public const int AnimationNormalMs = 200;
-    public const int AnimationSlowMs = 300;
-
     // Default providers — first 6 enabled by default, extra providers disabled so they don't
     // overwhelm new users; they can be enabled in Settings → Providers.
     public static List<ProviderConfig> DefaultProviders { get; } = new()
@@ -42,7 +18,6 @@ public static class AppConstants
         new ProviderConfig { Id = "meta",      Name = "Meta AI",   Url = "https://www.meta.ai",             Icon = "meta",      Color = "#0082fb", Enabled = false, Order = 9, IsCustom = false },
     };
 
-    // Colors
     public const string DefaultAccentColor = "#6366f1";
     public static readonly string[] AccentColorOptions = new[]
     {

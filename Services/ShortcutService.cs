@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Threading;
@@ -137,10 +134,20 @@ public class ShortcutService : IDisposable
                (!needsMeta || hasMeta);
     }
 
-    private static KeyCode? MapToKeyCode(string key) => key.ToUpperInvariant() switch
+    internal static KeyCode? MapToKeyCode(string key) => key.ToUpperInvariant() switch
     {
         "SPACE" => KeyCode.VcSpace,
         "," => KeyCode.VcComma,
+        "." => KeyCode.VcPeriod,
+        ";" => KeyCode.VcSemicolon,
+        "/" => KeyCode.VcSlash,
+        "-" => KeyCode.VcMinus,
+        "=" => KeyCode.VcEquals,
+        "'" => KeyCode.VcQuote,
+        "`" => KeyCode.VcBackQuote,
+        "\\" => KeyCode.VcBackslash,
+        "[" => KeyCode.VcOpenBracket,
+        "]" => KeyCode.VcCloseBracket,
         "A" => KeyCode.VcA,
         "B" => KeyCode.VcB,
         "C" => KeyCode.VcC,
@@ -219,7 +226,7 @@ public class ShortcutService : IDisposable
                 var kb = new KeyBinding
                 {
                     Gesture = new KeyGesture(key, modifiers),
-                    Command = new HotKeyCommand(callback)
+                    Command = new CommunityToolkit.Mvvm.Input.RelayCommand(callback)
                 };
                 _keyBindings.Add(kb);
                 _window.KeyBindings.Add(kb);
@@ -227,13 +234,30 @@ public class ShortcutService : IDisposable
         }
     }
 
-    private static Key ParseAvaloniaKey(string accelerator)
+    internal static Key? MapPunctuationToKey(string token) => token switch
+    {
+        "," => Key.OemComma,
+        "." => Key.OemPeriod,
+        ";" => Key.OemSemicolon,
+        "/" => Key.OemQuestion,
+        "-" => Key.OemMinus,
+        "=" => Key.OemPlus,
+        "'" => Key.OemQuotes,
+        "`" => Key.OemTilde,
+        "\\" => Key.OemBackslash,
+        "[" => Key.OemOpenBrackets,
+        "]" => Key.OemCloseBrackets,
+        _ => null
+    };
+
+    internal static Key ParseAvaloniaKey(string accelerator)
     {
         foreach (var part in accelerator.Split('+'))
         {
             var t = part.Trim();
             if (IsModifierToken(t)) continue;
-            if (t == ",") return Key.OemComma;
+            var punctuationKey = MapPunctuationToKey(t);
+            if (punctuationKey != null) return punctuationKey.Value;
             if (Enum.TryParse<Key>(t, true, out var k)) return k;
         }
         return Key.None;
@@ -324,15 +348,4 @@ public class ShortcutService : IDisposable
         ConfigService.Instance.ConfigChanged -= OnConfigChanged;
         _window = null;
     }
-}
-
-internal class HotKeyCommand : System.Windows.Input.ICommand
-{
-    private readonly Action _execute;
-    public HotKeyCommand(Action execute) => _execute = execute;
-#pragma warning disable CS0067
-    public event EventHandler? CanExecuteChanged;
-#pragma warning restore CS0067
-    public bool CanExecute(object? parameter) => true;
-    public void Execute(object? parameter) => _execute();
 }

@@ -1,4 +1,3 @@
-using System;
 using Avalonia;
 using Avalonia.Media;
 using Avalonia.Styling;
@@ -62,11 +61,15 @@ public sealed class ThemeService
         var app = Application.Current;
         if (app == null) return;
 
-        if (string.IsNullOrWhiteSpace(hex)) hex = AppConstants.DefaultAccentColor;
+        if (string.IsNullOrWhiteSpace(hex)) hex = ProviderDefaults.DefaultAccentColor;
 
         Color color;
         try { color = Color.Parse(hex); }
-        catch { color = Color.Parse(AppConstants.DefaultAccentColor); }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ThemeService] Invalid accent color '{hex}', using default: {ex.Message}");
+            color = Color.Parse(ProviderDefaults.DefaultAccentColor);
+        }
 
         app.Resources["AccentColor"] = color;
         app.Resources["AccentBrush"] = new SolidColorBrush(color);

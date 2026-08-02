@@ -1,6 +1,4 @@
-using System;
 using System.Diagnostics;
-using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -155,7 +153,11 @@ public partial class WebBrowserView : UserControl
   document.head&&document.head.appendChild(s);
 })();";
         try { await Browser.InvokeScript(css); }
-        catch { /* silently skip if injection fails */ }
+        catch (Exception ex)
+        {
+            // Best-effort cosmetic tweak — page may not be ready yet. Log and move on.
+            Console.WriteLine($"[WebBrowserView] Style injection failed: {ex.Message}");
+        }
     }
 
     private async Task FetchPageTitleAsync()
@@ -171,7 +173,11 @@ public partial class WebBrowserView : UserControl
                 : raw;
             _viewModel.SetPageTitle(title);
         }
-        catch { /* ignore — page may not have loaded yet */ }
+        catch (Exception ex)
+        {
+            // Best-effort — page may not have loaded yet. Log and move on.
+            Console.WriteLine($"[WebBrowserView] Fetch title failed: {ex.Message}");
+        }
     }
 
     private void OnNewWindowRequested(object? sender, WebViewNewWindowRequestedEventArgs e)

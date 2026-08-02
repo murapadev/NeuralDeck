@@ -1,4 +1,3 @@
-using System;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -31,6 +30,8 @@ public partial class OnboardingViewModel : ViewModelBase
         UpdateNavigation();
     }
 
+    // Single source of truth for step-boundary checks below — matches the 2 hardcoded
+    // step sections in Views/OnboardingView.axaml (Welcome, Provider selection).
     public int TotalSteps => 2;
 
     private void LoadProviders()
@@ -46,7 +47,7 @@ public partial class OnboardingViewModel : ViewModelBase
     [RelayCommand]
     private void Next()
     {
-        if (CurrentStep < 1)
+        if (CurrentStep < TotalSteps - 1)
         {
             CurrentStep++;
             UpdateNavigation();
@@ -66,8 +67,8 @@ public partial class OnboardingViewModel : ViewModelBase
     private void UpdateNavigation()
     {
         CanGoBack = CurrentStep > 0;
-        CanGoNext = CurrentStep < 1;
-        ShowFinishButton = CurrentStep == 1;
+        CanGoNext = CurrentStep < TotalSteps - 1;
+        ShowFinishButton = CurrentStep == TotalSteps - 1;
     }
 
     [RelayCommand]

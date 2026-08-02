@@ -1,9 +1,4 @@
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using NeuralDeck.Models;
@@ -38,7 +33,7 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
     public bool CanRegenerate => !IsLoading && Messages.Count >= 1
                                  && Messages[^1].Role == "assistant";
 
-    public string OllamaBaseUrl => _configService.GetConfig().OllamaUrl ?? AppConstants.DefaultOllamaUrl;
+    public string OllamaBaseUrl => _configService.GetConfig().OllamaUrl ?? OllamaConstants.DefaultOllamaUrl;
 
     private readonly OllamaService _ollamaService;
     private readonly ConfigService _configService;
@@ -73,12 +68,15 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
         {
             try
             {
-                await Task.Delay(AppConstants.OllamaPollIntervalMs, cancellationToken);
+                await Task.Delay(OllamaConstants.OllamaPollIntervalMs, cancellationToken);
                 await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
                     await CheckConnectionAsync());
             }
             catch (OperationCanceledException) { break; }
-            catch { }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ChatViewModel] Poll error: {ex.Message}");
+            }
         }
     }
 
@@ -102,8 +100,9 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
                 IsConnected = false;
             }
         }
-        catch
+        catch (Exception ex)
         {
+            Console.WriteLine($"[ChatViewModel] Connection check failed: {ex.Message}");
             IsConnected = false;
             ConnectionStatus = "Connection error";
         }

@@ -35,10 +35,3 @@ public class OllamaModel
     // Strip the ":latest" tag for display — other version tags (":7b", ":q4") are kept.
     public string DisplayName => Name.EndsWith(":latest") ? Name[..^7] : Name;
 }
-
-public class NavigationState
-{
-    public bool CanGoBack { get; set; }
-    public bool CanGoForward { get; set; }
-    public string Url { get; set; } = string.Empty;
-}

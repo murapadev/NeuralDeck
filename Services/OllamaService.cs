@@ -1,10 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Net.Http;
 using System.Text;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 using NeuralDeck.Models;
 
 namespace NeuralDeck.Services;
@@ -26,7 +21,7 @@ public class OllamaService : IDisposable
         // the per-request CancellationToken (user Stop) plus a per-read idle timeout below.
         _httpClient.Timeout = Timeout.InfiniteTimeSpan;
         _baseUrl = ConfigService.Instance.GetConfig().OllamaUrl?.TrimEnd('/')
-                   ?? AppConstants.DefaultOllamaUrl;
+                   ?? OllamaConstants.DefaultOllamaUrl;
 
         // Live-update the base URL whenever the user changes it in Settings.
         ConfigService.Instance.ConfigChanged += (_, cfg) =>
@@ -46,7 +41,7 @@ public class OllamaService : IDisposable
     public async Task<bool> HealthCheckAsync(CancellationToken cancellationToken = default)
     {
         using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeoutCts.CancelAfter(AppConstants.OllamaHealthTimeoutMs);
+        timeoutCts.CancelAfter(OllamaConstants.OllamaHealthTimeoutMs);
 
         try
         {
@@ -55,8 +50,9 @@ public class OllamaService : IDisposable
                 timeoutCts.Token);
             return response.IsSuccessStatusCode;
         }
-        catch
+        catch (Exception ex)
         {
+            Console.WriteLine($"[OllamaService] Health check failed: {ex.Message}");
             return false;
         }
     }
@@ -137,7 +133,7 @@ public class OllamaService : IDisposable
             // Reset the idle window on every read: a healthy stream delivers chunks well
             // within it; only a stalled connection trips the timeout.
             using var idleCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            idleCts.CancelAfter(AppConstants.OllamaStreamIdleTimeoutMs);
+            idleCts.CancelAfter(OllamaConstants.OllamaStreamIdleTimeoutMs);
             try
             {
                 line = await reader.ReadLineAsync(idleCts.Token);
@@ -172,7 +168,7 @@ public class OllamaService : IDisposable
                     break;
                 }
             }
-            catch
+            catch (JsonException)
             {
                 // Ignore parse errors for incomplete JSON
             }

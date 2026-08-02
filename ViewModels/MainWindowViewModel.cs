@@ -1,6 +1,4 @@
-using System;
 using System.Collections.ObjectModel;
-using System.Linq;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -52,8 +50,9 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             if (SelectedProviderId != "ollama" && SelectedProvider != null)
                 WebBrowserViewModel?.NavigateTo(SelectedProvider.Url);
         }
-        catch
+        catch (Exception ex)
         {
+            Console.WriteLine($"[MainWindowViewModel] Failed to load config, falling back to onboarding: {ex.Message}");
             ShowOnboarding = true;
         }
     }
@@ -180,14 +179,4 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         ChatViewModel = null;
         WebBrowserViewModel = null;
     }
-}
-
-public partial class ProviderDisplay : ObservableObject
-{
-    [ObservableProperty] private bool _isSelected;
-    public string Name { get; set; } = "";
-    public string Color { get; set; } = "#6366f1";
-    public string Id { get; set; } = "";
-    public string ShortcutHint { get; set; } = "";
-    public ICommand SelectCommand { get; set; } = null!;
 }
