@@ -34,6 +34,14 @@ public partial class OnboardingViewModel : ViewModelBase
     // step sections in Views/OnboardingView.axaml (Welcome, Provider selection).
     public int TotalSteps => 2;
 
+    // The welcome step says the window is reachable "via a global shortcut" without ever
+    // saying what it is — a first-run user who dismisses/loses the window has no way to
+    // know how to bring it back. Show the actual configured accelerator.
+    public string ToggleShortcutDisplay =>
+        ConfigService.Instance.GetConfig().Shortcuts.ToggleWindow
+            .Replace("CommandOrControl", "Ctrl", StringComparison.OrdinalIgnoreCase)
+            .Replace("Control", "Ctrl", StringComparison.OrdinalIgnoreCase);
+
     private void LoadProviders()
     {
         var config = ConfigService.Instance.GetConfig();

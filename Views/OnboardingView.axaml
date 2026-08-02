@@ -32,6 +32,14 @@
                     <TextBlock FontSize="13" Foreground="#a1a1aa" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="320">
                         Access ChatGPT, Gemini, Claude, and more from a floating window that's always available via a global shortcut.
                     </TextBlock>
+                    <Border Background="#18181b" BorderBrush="#27272a" BorderThickness="1"
+                            CornerRadius="8" Padding="14,8" HorizontalAlignment="Center">
+                        <TextBlock FontSize="13" Foreground="#fafafa" HorizontalAlignment="Center">
+                            <Run Text="Press "/>
+                            <Run Text="{Binding ToggleShortcutDisplay}" FontWeight="Bold" Foreground="#a5b4fc"/>
+                            <Run Text=" anytime to show or hide it"/>
+                        </TextBlock>
+                    </Border>
                 </StackPanel>
             </StackPanel>
 
