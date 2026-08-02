@@ -18,9 +18,13 @@ public partial class WebBrowserView : UserControl
     }
 
     // A realistic desktop User-Agent so AI providers (Claude.ai etc.) don't reject the
-    // request as coming from an unknown embedded browser.
+    // request as coming from an unknown embedded browser. Chrome-on-Linux rather than
+    // Safari — real Safari never runs on X11/Linux, and that mismatch is exactly the kind
+    // of inconsistency fingerprinting checks look for. Chrome's AppleWebKit/537.36 token is
+    // fixed regardless of actual version (a long-standing WebKit legacy quirk), so only the
+    // Chrome/ version number below goes stale over time.
     private const string DesktopUserAgent =
-        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15";
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 
     protected override void OnLoaded(RoutedEventArgs e)
     {
@@ -136,7 +140,9 @@ public partial class WebBrowserView : UserControl
     private async void OnNavigationCompleted(object? sender, WebViewNavigationCompletedEventArgs e)
     {
         if (Browser == null) return;
-        _viewModel?.OnNavigationCompleted(Browser.Source, Browser.CanGoBack, Browser.CanGoForward);
+        _viewModel?.OnNavigationCompleted(Browser.Source, Browser.CanGoBack, Browser.CanGoForward, e.IsSuccess);
+        if (!e.IsSuccess) return;
+
         await InjectStylesAsync();
         await FetchPageTitleAsync();
     }
@@ -180,14 +186,33 @@ public partial class WebBrowserView : UserControl
         }
     }
 
+    // Providers open "Sign in with Google/Microsoft/GitHub/Apple" as a popup. Routing those to
+    // the system browser breaks the login: the popup completes there, but window.opener can't
+    // reach back into the embedded WebView to deliver the session. Navigating the same Browser
+    // in place instead keeps it within the shared cookie jar, so the OAuth redirect lands
+    // correctly. Everything else (docs links, citations, etc.) still opens externally.
+    private static readonly string[] AuthPopupHosts =
+    {
+        "accounts.google.com",
+        "login.microsoftonline.com",
+        "login.live.com",
+        "github.com",
+        "appleid.apple.com",
+        "www.facebook.com",
+        "facebook.com",
+    };
+
     private void OnNewWindowRequested(object? sender, WebViewNewWindowRequestedEventArgs e)
     {
-        // Route popup/new-window links to the external browser instead of creating a second window.
-        if (e is WebViewNavigationEventArgs navArgs && navArgs.Request != null)
-        {
-            OpenExternalBrowser(navArgs.Request);
-            e.Handled = true;
-        }
+        if (e is not WebViewNavigationEventArgs navArgs || navArgs.Request == null) return;
+        var uri = navArgs.Request;
+
+        if (Browser != null && Array.Exists(AuthPopupHosts, h => uri.Host.Equals(h, StringComparison.OrdinalIgnoreCase)))
+            Browser.Navigate(uri);
+        else
+            OpenExternalBrowser(uri);
+
+        e.Handled = true;
     }
 
     private void OnAddressKeyDown(object? sender, KeyEventArgs e)

@@ -82,6 +82,8 @@ public partial class WebBrowserViewModel : ViewModelBase
     public void OnNavigationStarted(Uri? url)
     {
         IsLoading = true;
+        // A fresh navigation attempt supersedes any stale failure banner from a previous one.
+        ShowFallback = false;
         if (url != null)
         {
             AddressBarText = url.ToString();
@@ -89,13 +91,22 @@ public partial class WebBrowserViewModel : ViewModelBase
         }
     }
 
-    public void OnNavigationCompleted(Uri? currentUrl, bool canGoBack, bool canGoForward)
+    public void OnNavigationCompleted(Uri? currentUrl, bool canGoBack, bool canGoForward, bool isSuccess = true)
     {
         IsLoading = false;
         if (currentUrl != null)
             AddressBarText = currentUrl.ToString();
         CanGoBack = canGoBack;
         CanGoForward = canGoForward;
+
+        if (!isSuccess)
+        {
+            ShowFallbackMessage(currentUrl != null
+                ? $"Couldn't load {currentUrl.Host}. Check your connection and try reloading."
+                : "Couldn't load this page. Check your connection and try reloading.");
+            return;
+        }
+
         StatusText = PageTitle.Length > 0 ? $"{PageTitle}  •  {currentUrl?.Host}" : (currentUrl?.Host ?? "");
     }
 
