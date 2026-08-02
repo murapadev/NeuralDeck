@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Threading;
@@ -246,6 +247,29 @@ public class WindowService : IDisposable
     }
 
     public void Dispose() => PrepareForShutdown();
+
+    // Shared by WebBrowserView's "Open in Browser" action and MainWindowViewModel (providers
+    // that can't run in the embedded WebView, e.g. Claude behind Cloudflare bot-protection).
+    // A single copy of the scheme allowlist matters here: it's what stops a page from forcing
+    // an arbitrary local file:// or handler:// open via UseShellExecute/xdg-open.
+    public static void OpenExternalUrl(Uri? uri)
+    {
+        if (uri is null || !uri.IsAbsoluteUri ||
+            (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+        {
+            Console.WriteLine($"[WindowService] Blocked external URI with disallowed scheme: {uri}");
+            return;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo { FileName = uri.ToString(), UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[WindowService] External browser failed: {ex.Message}");
+        }
+    }
 
     public void SaveWindowSize(int width, int height)
     {

@@ -26,6 +26,15 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     public bool ShowChatView => SelectedProviderId == "ollama";
     public bool ShowProviderView => SelectedProviderId != "ollama";
 
+    // claude.ai's Cloudflare bot-protection rejects the embedded WebKitGTK engine outright —
+    // confirmed still blocked even with a completely fresh WebView session/cookies. There's no
+    // in-app fix for that, so route it straight to the system browser instead of showing a
+    // permanently broken pane.
+    private static readonly HashSet<string> ExternalOnlyProviderIds = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "claude"
+    };
+
     public MainWindowViewModel()
     {
         ChatViewModel = new ChatViewModel();
@@ -43,6 +52,12 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             var config = ConfigService.Instance.GetConfig();
             ShowOnboarding = config.FirstRun;
             SelectedProviderId = config.LastProvider ?? "ollama";
+
+            // Don't "restore" a launch-externally provider into a permanently broken pane on
+            // every startup — fall back to Ollama, same as if it had been deleted.
+            if (ExternalOnlyProviderIds.Contains(SelectedProviderId))
+                SelectedProviderId = "ollama";
+
             IsPinned = config.Window.AlwaysOnTop;
             LoadProviders(config);
             UpdateSelectedProvider(config);
@@ -68,6 +83,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             var hint = shortcutIndex >= 0
                 ? BuildShortcutHint(captured.Name, config.Shortcuts.Providers[shortcutIndex])
                 : captured.Name;
+            if (ExternalOnlyProviderIds.Contains(captured.Id))
+                hint += "  ↗ opens in browser";
 
             EnabledProviders.Add(new ProviderDisplay
             {
@@ -112,6 +129,14 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     internal void SelectProvider(string providerId)
     {
+        if (ExternalOnlyProviderIds.Contains(providerId))
+        {
+            var provider = ConfigService.Instance.GetConfig().Providers.FirstOrDefault(p => p.Id == providerId);
+            if (provider != null && Uri.TryCreate(provider.Url, UriKind.Absolute, out var uri))
+                WindowService.OpenExternalUrl(uri);
+            return;
+        }
+
         SelectedProviderId = providerId;
         ConfigService.Instance.UpdateGeneral(lastProvider: providerId);
         UpdateSelectedProvider();

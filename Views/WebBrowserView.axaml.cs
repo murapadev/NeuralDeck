@@ -1,7 +1,7 @@
-using System.Diagnostics;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using NeuralDeck.Services;
 using NeuralDeck.ViewModels;
 
 namespace NeuralDeck.Views;
@@ -110,27 +110,7 @@ public partial class WebBrowserView : UserControl
         catch (Exception ex) { Console.WriteLine($"[WebBrowserView] Browser action failed: {ex.Message}"); }
     }
 
-    private static void OpenExternalBrowser(Uri uri)
-    {
-        // The URI can come from the page itself (NewWindowRequested). UseShellExecute hands it
-        // to xdg-open, which dispatches any scheme (file://, mailto:, custom handlers). Only
-        // allow http/https so a page can't force opening arbitrary local files or handlers.
-        if (uri is null || !uri.IsAbsoluteUri ||
-            (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
-        {
-            Console.WriteLine($"[WebBrowserView] Blocked external URI with disallowed scheme: {uri}");
-            return;
-        }
-
-        try
-        {
-            Process.Start(new ProcessStartInfo { FileName = uri.ToString(), UseShellExecute = true });
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[WebBrowserView] External browser failed: {ex.Message}");
-        }
-    }
+    private static void OpenExternalBrowser(Uri uri) => WindowService.OpenExternalUrl(uri);
 
     private void OnNavigationStarted(object? sender, WebViewNavigationStartingEventArgs e)
     {
