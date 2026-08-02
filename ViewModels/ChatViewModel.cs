@@ -244,6 +244,9 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private void ClearConversation()
     {
+        // Stop any in-flight generation first — otherwise it keeps streaming into a cleared
+        // conversation, wasting the request and leaving IsLoading stuck until it finishes.
+        _chatCts?.Cancel();
         Messages.Clear();
         ConversationStore.Clear();
     }

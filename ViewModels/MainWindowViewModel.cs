@@ -94,6 +94,16 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     {
         config ??= ConfigService.Instance.GetConfig();
         SelectedProvider = config.Providers.FirstOrDefault(p => p.Id == SelectedProviderId);
+
+        // The selected provider can vanish out from under us (deleted in Settings while
+        // active) — fall back to Ollama rather than leaving the view stuck on whatever the
+        // now-nonexistent provider last rendered.
+        if (SelectedProvider == null && SelectedProviderId != "ollama")
+        {
+            SelectProvider("ollama");
+            return;
+        }
+
         foreach (var p in EnabledProviders)
             p.IsSelected = p.Id == SelectedProviderId;
 

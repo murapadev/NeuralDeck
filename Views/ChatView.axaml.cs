@@ -180,9 +180,17 @@ public partial class ChatView : UserControl
             sb.AppendLine();
         }
 
-        await using var stream = await file.OpenWriteAsync();
-        await using var writer = new StreamWriter(stream, Encoding.UTF8);
-        await writer.WriteAsync(sb.ToString());
+        try
+        {
+            await using var stream = await file.OpenWriteAsync();
+            await using var writer = new StreamWriter(stream, Encoding.UTF8);
+            await writer.WriteAsync(sb.ToString());
+        }
+        catch (Exception ex)
+        {
+            // async void handler — an unhandled exception here would take down the app.
+            Console.WriteLine($"[ChatView] Export failed: {ex.Message}");
+        }
     }
 
     private async void OnCopyClick(object? sender, RoutedEventArgs e)
@@ -190,7 +198,18 @@ public partial class ChatView : UserControl
         if (sender is not Button btn || btn.Tag is not string text) return;
         var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
         if (clipboard == null) return;
-        await clipboard.SetValueAsync(DataFormat.Text, text);
+
+        try
+        {
+            await clipboard.SetValueAsync(DataFormat.Text, text);
+        }
+        catch (Exception ex)
+        {
+            // async void handler — an unhandled exception here would take down the app.
+            Console.WriteLine($"[ChatView] Copy to clipboard failed: {ex.Message}");
+            return;
+        }
+
         // Brief visual feedback: flash the button to full opacity then fade back.
         var prev = btn.Opacity;
         btn.Opacity = 1.0;
