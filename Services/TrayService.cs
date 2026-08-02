@@ -1,4 +1,3 @@
-using System;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Notifications;
@@ -14,6 +13,7 @@ public class TrayService : IDisposable
     private TrayIcon? _trayIcon;
     private Window? _mainWindow;
     private MainWindowViewModel? _mainViewModel;
+    private WindowNotificationManager? _notificationManager;
     private bool _isInitialized;
 
     public static TrayService Instance => _instance ??= new TrayService();
@@ -97,8 +97,8 @@ public class TrayService : IDisposable
         {
             if (_mainWindow != null)
             {
-                var notificationManager = new WindowNotificationManager(_mainWindow);
-                notificationManager.Show(new Notification(title, message, NotificationType.Information));
+                _notificationManager ??= new WindowNotificationManager(_mainWindow);
+                _notificationManager.Show(new Notification(title, message, NotificationType.Information));
             }
         }
         catch (Exception ex)
@@ -187,6 +187,7 @@ public class TrayService : IDisposable
             _trayIcon.Dispose();
             _trayIcon = null;
         }
+        _notificationManager = null;
         _mainWindow = null;
         _mainViewModel = null;
         _isInitialized = false;

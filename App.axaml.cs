@@ -64,6 +64,7 @@ public partial class App : Application
             OllamaService.Instance.Dispose();
             TrayService.Instance.Dispose();
             ShortcutService.Instance?.Dispose();
+            WindowService.Instance.Dispose();
             _mainWindowViewModel?.Dispose();
 
             if (ConfigService.Instance.GetConfig().Privacy.ClearOnClose)

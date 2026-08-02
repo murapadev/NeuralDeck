@@ -1,5 +1,3 @@
-using System;
-using System.Threading;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Threading;
@@ -9,7 +7,7 @@ using NeuralDeck.Views;
 
 namespace NeuralDeck.Services;
 
-public class WindowService
+public class WindowService : IDisposable
 {
     private static WindowService? _instance;
     private Window? _mainWindow;
@@ -128,33 +126,28 @@ public class WindowService
     public (int x, int y) CalculateWindowPosition()
     {
         var config = ConfigService.Instance.GetConfig();
-        var screen = _mainWindow?.Screens?.Primary;
-
-        int screenWidth, screenHeight, workingAreaX, workingAreaY;
-        if (screen != null)
-        {
-            screenWidth = screen.WorkingArea.Width;
-            screenHeight = screen.WorkingArea.Height;
-            workingAreaX = screen.WorkingArea.X;
-            workingAreaY = screen.WorkingArea.Y;
-        }
-        else
-        {
-            // Fallback to display primary metrics
-            screenWidth = 1920;
-            screenHeight = 1080;
-            workingAreaX = 0;
-            workingAreaY = 0;
-        }
-
-        var windowWidth = config.Window.Width;
-        var windowHeight = config.Window.Height;
-        var margin = 10;
 
         if (config.Window.Position == "remember" && config.Window.LastX.HasValue && config.Window.LastY.HasValue)
         {
             return (config.Window.LastX.Value, config.Window.LastY.Value);
         }
+
+        var margin = 10;
+        var screen = _mainWindow?.Screens?.Primary ?? _mainWindow?.Screens?.All?.FirstOrDefault();
+        if (screen == null)
+        {
+            // No screen info available yet (e.g. called before the window is attached to a
+            // compositor) — don't guess a resolution; a fixed top-left offset is safe
+            // regardless of the eventual display size.
+            return (margin, margin);
+        }
+
+        var screenWidth = screen.WorkingArea.Width;
+        var screenHeight = screen.WorkingArea.Height;
+        var workingAreaX = screen.WorkingArea.X;
+        var workingAreaY = screen.WorkingArea.Y;
+        var windowWidth = config.Window.Width;
+        var windowHeight = config.Window.Height;
 
         return config.Window.Position switch
         {
@@ -240,9 +233,15 @@ public class WindowService
         }
         else
         {
+            // Program.cs always configures a classic desktop lifetime, so this branch isn't
+            // expected to run — but if it ever does, a hard process exit skips App.OnExit's
+            // service disposal, so at least surface that instead of exiting silently.
+            Console.WriteLine("[WindowService] No classic desktop lifetime available — forcing exit without full cleanup.");
             Environment.Exit(0);
         }
     }
+
+    public void Dispose() => PrepareForShutdown();
 
     public void SaveWindowSize(int width, int height)
     {
