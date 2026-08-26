@@ -21,25 +21,22 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [ObservableProperty] private ChatViewModel? _chatViewModel;
     [ObservableProperty] private OnboardingViewModel? _onboardingViewModel;
     [ObservableProperty] private ProviderConfig? _selectedProvider;
-    [ObservableProperty] private WebBrowserViewModel? _webBrowserViewModel;
+
+    // Every non-Ollama provider gets its own ChromeProviderViewModel (own Chrome process, own
+    // profile dir), created lazily the first time it's selected and kept alive afterward —
+    // switching providers just flips IsSelected (see ChromeProviderView's IsVisible binding in
+    // MainWindow.axaml), so an already-visited provider switches back instantly and stays
+    // logged in. See ChromeProviderViewModel for why Chrome-embedding replaced the old
+    // WebKit-based WebBrowserView for every provider.
+    [ObservableProperty] private ObservableCollection<ChromeProviderViewModel> _browserViewModels = new();
 
     public bool ShowChatView => SelectedProviderId == "ollama";
     public bool ShowProviderView => SelectedProviderId != "ollama";
-
-    // claude.ai's Cloudflare bot-protection rejects the embedded WebKitGTK engine outright —
-    // confirmed still blocked even with a completely fresh WebView session/cookies. There's no
-    // in-app fix for that, so route it straight to the system browser instead of showing a
-    // permanently broken pane.
-    private static readonly HashSet<string> ExternalOnlyProviderIds = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "claude"
-    };
 
     public MainWindowViewModel()
     {
         ChatViewModel = new ChatViewModel();
         OnboardingViewModel = new OnboardingViewModel();
-        WebBrowserViewModel = new WebBrowserViewModel();
         OnboardingViewModel.OnboardingComplete += (_, _) => OnOnboardingComplete();
         ConfigService.Instance.ConfigChanged += OnConfigChanged;
         LoadConfig();
@@ -52,18 +49,10 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             var config = ConfigService.Instance.GetConfig();
             ShowOnboarding = config.FirstRun;
             SelectedProviderId = config.LastProvider ?? "ollama";
-
-            // Don't "restore" a launch-externally provider into a permanently broken pane on
-            // every startup — fall back to Ollama, same as if it had been deleted.
-            if (ExternalOnlyProviderIds.Contains(SelectedProviderId))
-                SelectedProviderId = "ollama";
-
             IsPinned = config.Window.AlwaysOnTop;
             LoadProviders(config);
             UpdateSelectedProvider(config);
-
-            if (SelectedProviderId != "ollama" && SelectedProvider != null)
-                WebBrowserViewModel?.NavigateTo(SelectedProvider.Url);
+            ActivateBrowserFor(SelectedProviderId);
         }
         catch (Exception ex)
         {
@@ -83,8 +72,6 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             var hint = shortcutIndex >= 0
                 ? BuildShortcutHint(captured.Name, config.Shortcuts.Providers[shortcutIndex])
                 : captured.Name;
-            if (ExternalOnlyProviderIds.Contains(captured.Id))
-                hint += "  ↗ opens in browser";
 
             EnabledProviders.Add(new ProviderDisplay
             {
@@ -127,22 +114,32 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         CurrentProviderName = SelectedProvider?.Name ?? "NeuralDeck";
     }
 
-    internal void SelectProvider(string providerId)
+    /// <summary>
+    /// Marks the given provider's ChromeProviderViewModel as the visible one (creating it on
+    /// first use), and every other one as not — never destroys/recreates an existing browser,
+    /// so its Chrome process and session keep running in the background.
+    /// </summary>
+    private void ActivateBrowserFor(string providerId)
     {
-        if (ExternalOnlyProviderIds.Contains(providerId))
+        if (providerId == "ollama" || SelectedProvider == null) return;
+
+        var target = BrowserViewModels.FirstOrDefault(b => b.ProviderId == providerId);
+        if (target == null)
         {
-            var provider = ConfigService.Instance.GetConfig().Providers.FirstOrDefault(p => p.Id == providerId);
-            if (provider != null && Uri.TryCreate(provider.Url, UriKind.Absolute, out var uri))
-                WindowService.OpenExternalUrl(uri);
-            return;
+            target = new ChromeProviderViewModel(providerId, SelectedProvider.Url);
+            BrowserViewModels.Add(target);
         }
 
+        foreach (var b in BrowserViewModels)
+            b.IsSelected = b == target;
+    }
+
+    internal void SelectProvider(string providerId)
+    {
         SelectedProviderId = providerId;
         ConfigService.Instance.UpdateGeneral(lastProvider: providerId);
         UpdateSelectedProvider();
-
-        if (providerId != "ollama" && SelectedProvider != null)
-            WebBrowserViewModel?.NavigateTo(SelectedProvider.Url);
+        ActivateBrowserFor(providerId);
     }
 
     [RelayCommand]
@@ -171,23 +168,13 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         WindowService.Instance.HideWindow();
     }
 
-    internal void ReloadCurrentView()
-    {
-        if (SelectedProviderId == "ollama") return;
-        WebBrowserViewModel?.ReloadAction?.Invoke();
-    }
-
-    internal void GoBackInView()
-    {
-        if (SelectedProviderId == "ollama") return;
-        WebBrowserViewModel?.GoBackAction?.Invoke();
-    }
-
-    internal void GoForwardInView()
-    {
-        if (SelectedProviderId == "ollama") return;
-        WebBrowserViewModel?.GoForwardAction?.Invoke();
-    }
+    // Reload/back/forward have no hook into the embedded Chrome process from here — it has its
+    // own navigation via its own keyboard shortcuts (Ctrl+R, Alt+Left/Right) once focused. Kept
+    // as no-ops (rather than removed) so ShortcutService's existing bindings don't need to
+    // special-case "current provider is a browser pane".
+    internal void ReloadCurrentView() { }
+    internal void GoBackInView() { }
+    internal void GoForwardInView() { }
 
     private void OnConfigChanged(object? sender, AppConfig config)
     {
@@ -205,6 +192,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         var config = ConfigService.Instance.GetConfig();
         LoadProviders(config);
         UpdateSelectedProvider(config);
+        ActivateBrowserFor(SelectedProviderId);
     }
 
     public void Dispose()
@@ -212,6 +200,5 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         ConfigService.Instance.ConfigChanged -= OnConfigChanged;
         ChatViewModel?.Dispose();
         ChatViewModel = null;
-        WebBrowserViewModel = null;
     }
 }

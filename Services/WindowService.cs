@@ -17,6 +17,8 @@ public class WindowService : IDisposable
     private bool _allowClose;
     private Timer? _sizeDebounceTimer;
     private Timer? _positionDebounceTimer;
+    private Timer? _blurHideTimer;
+    private nint _x11Display;
 
     public static WindowService Instance => _instance ??= new WindowService();
 
@@ -66,9 +68,24 @@ public class WindowService : IDisposable
         {
             var config = ConfigService.Instance.GetConfig();
             // Don't hide while the settings window has focus — it's an owned dialog.
-            if (config.Window.HideOnBlur && _isWindowVisible
-                && (_settingsWindow == null || !_settingsWindow.IsVisible))
-                HideWindow();
+            if (!config.Window.HideOnBlur || !_isWindowVisible
+                || (_settingsWindow != null && _settingsWindow.IsVisible))
+                return;
+
+            // Each embedded provider is a genuinely separate X11 top-level client (real Chrome,
+            // reparented in — see ChromeEmbedHost), so X11 tracks input focus on it separately
+            // from our own window even though it's visually nested inside. Clicking into an
+            // embedded browser therefore fires Deactivated here too. Debounce briefly (X11's
+            // FocusOut/FocusIn pair isn't guaranteed to have settled yet) then only actually
+            // hide if focus really left our own window tree.
+            _blurHideTimer?.Dispose();
+            _blurHideTimer = new Timer(
+                _ => Dispatcher.UIThread.Post(() =>
+                {
+                    if (_isWindowVisible && !FocusIsWithinOwnWindow())
+                        HideWindow();
+                }),
+                null, 80, Timeout.Infinite);
         };
 
         window.Closing += (s, e) =>
@@ -225,6 +242,45 @@ public class WindowService : IDisposable
         _sizeDebounceTimer = null;
         _positionDebounceTimer?.Dispose();
         _positionDebounceTimer = null;
+        _blurHideTimer?.Dispose();
+        _blurHideTimer = null;
+        if (_x11Display != 0)
+        {
+            X11Interop.XCloseDisplay(_x11Display);
+            _x11Display = 0;
+        }
+    }
+
+    /// <summary>
+    /// True if X11's input focus is currently somewhere inside our own main window's tree
+    /// (itself or a descendant — e.g. one of the embedded Chrome panes reparented into it by
+    /// ChromeEmbedHost). Used to tell a real blur (some other app got focus) apart from focus
+    /// simply moving into an embedded provider, which X11 also reports as this window
+    /// deactivating even though nothing actually left it.
+    /// </summary>
+    private bool FocusIsWithinOwnWindow()
+    {
+        if (!OperatingSystem.IsLinux() || _mainWindow == null) return false;
+
+        var ownHandle = _mainWindow.TryGetPlatformHandle()?.Handle ?? 0;
+        if (ownHandle == 0) return false;
+
+        if (_x11Display == 0)
+            _x11Display = X11Interop.XOpenDisplay(0);
+        if (_x11Display == 0) return false;
+
+        X11Interop.XGetInputFocus(_x11Display, out var current, out _);
+
+        for (var i = 0; i < 32 && current != 0; i++)
+        {
+            if (current == ownHandle) return true;
+            if (X11Interop.XQueryTree(_x11Display, current, out var root, out var parent, out var children, out _) == 0)
+                break;
+            if (children != 0) X11Interop.XFree(children);
+            if (parent == 0 || parent == root) break;
+            current = parent;
+        }
+        return false;
     }
 
     public void ShutdownApplication()
@@ -247,29 +303,6 @@ public class WindowService : IDisposable
     }
 
     public void Dispose() => PrepareForShutdown();
-
-    // Shared by WebBrowserView's "Open in Browser" action and MainWindowViewModel (providers
-    // that can't run in the embedded WebView, e.g. Claude behind Cloudflare bot-protection).
-    // A single copy of the scheme allowlist matters here: it's what stops a page from forcing
-    // an arbitrary local file:// or handler:// open via UseShellExecute/xdg-open.
-    public static void OpenExternalUrl(Uri? uri)
-    {
-        if (uri is null || !uri.IsAbsoluteUri ||
-            (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
-        {
-            Console.WriteLine($"[WindowService] Blocked external URI with disallowed scheme: {uri}");
-            return;
-        }
-
-        try
-        {
-            Process.Start(new ProcessStartInfo { FileName = uri.ToString(), UseShellExecute = true });
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[WindowService] External browser failed: {ex.Message}");
-        }
-    }
 
     public void SaveWindowSize(int width, int height)
     {
