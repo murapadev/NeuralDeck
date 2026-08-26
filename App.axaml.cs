@@ -61,6 +61,10 @@ public partial class App : Application
     {
         try
         {
+            // Embedded providers are separate OS processes (see ChromeEmbedHost) — normal
+            // process exit doesn't kill them, so without this every visited provider's Chrome
+            // instance is orphaned and keeps running (and consuming RAM/CPU) after quit.
+            ChromeEmbedHost.KillAllEmbeddedChrome();
             OllamaService.Instance.Dispose();
             TrayService.Instance.Dispose();
             ShortcutService.Instance?.Dispose();
