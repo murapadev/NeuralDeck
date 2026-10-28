@@ -22,8 +22,8 @@
     <!-- Transitive dep via Avalonia.X11; kept explicit so it can never resolve
          back to 0.20.0, which has high-severity GHSA-xrw6-gwf8-vvr9. -->
     <PackageReference Include="Tmds.DBus.Protocol" Version="0.95.2" />
-    <!-- Transitive dep via Avalonia (DBus/IPC support); pinned so it resolves to the
-         latest patch instead of the Avalonia floor. -->
+    <!-- Direct dependency of the Avalonia package (COM interop codegen runtime);
+         pinned so it resolves to the latest patch instead of the Avalonia floor. -->
     <PackageReference Include="MicroCom.Runtime" Version="0.11.7" />
   </ItemGroup>
 

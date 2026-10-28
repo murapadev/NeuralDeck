@@ -21,8 +21,9 @@ Anything describing a Node/Electron/React/tRPC stack is obsolete — the codebas
 - **SharpHook 7.1** — global keyboard shortcuts (types live in `SharpHook.Data`, not `SharpHook.Native`)
 - `Tmds.DBus.Protocol` is referenced explicitly (0.95.2) so it can never resolve back to
   0.20.0 / GHSA-xrw6-gwf8-vvr9. Keep the explicit reference; bumping it forward is fine.
-- `MicroCom.Runtime` is also referenced explicitly (0.11.7) — transitive via Avalonia's
-  DBus/IPC support. Keep the explicit reference so it resolves to the latest patch.
+- `MicroCom.Runtime` is also referenced explicitly (0.11.7) — it is a *direct* dependency of
+  the `Avalonia` package (COM interop codegen runtime, not DBus). Pinned so it resolves to the
+  latest patch instead of the Avalonia floor (0.11.6). Patch bump only; keep it forward-only.
 
 ## Commands
 
