@@ -18,7 +18,11 @@ Anything describing a Node/Electron/React/tRPC stack is obsolete — the codebas
 - **Avalonia UI 12.1.4** (Fluent theme, Inter font, compiled bindings by default)
 - **Avalonia.Controls.WebView 12.1.1** (WebKitGTK on Linux) — embeds provider sites
 - **CommunityToolkit.Mvvm 8.4** — MVVM via source generators (`[ObservableProperty]`, `[RelayCommand]`)
-- **SharpHook 7.1** — global keyboard shortcuts (types live in `SharpHook.Data`, not `SharpHook.Native`)
+- **SharpHook 8.0** — global keyboard shortcuts (types live in `SharpHook.Data`). SharpHook 8
+  renumbered every `KeyCode` value: only ever use the symbolic names. On Linux the hook is
+  forced to `LinuxMode.XRecord` (pre-8 behaviour; the Wayland backend needs root/uinput) and
+  runs keyboard-only. The global hotkey can't be exercised in CI — test it by hand after any
+  SharpHook bump (toggle, `Ctrl+Shift+1..5`, `Ctrl+,`).
 - `Tmds.DBus.Protocol` is referenced explicitly (0.95.2) so it can never resolve back to
   0.20.0 / GHSA-xrw6-gwf8-vvr9. Keep the explicit reference; bumping it forward is fine.
 - `MicroCom.Runtime` is also referenced explicitly (0.11.7) — it is a *direct* dependency of

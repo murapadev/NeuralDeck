@@ -5,6 +5,7 @@ using NeuralDeck.Models;
 using NeuralDeck.ViewModels;
 using SharpHook;
 using SharpHook.Data;
+using SharpHook.Providers;
 
 namespace NeuralDeck.Services;
 
@@ -47,12 +48,20 @@ public class ShortcutService : IDisposable
     {
         try
         {
+            // SharpHook 8 switched Wayland sessions to a libinput/uinput backend that needs
+            // elevated privileges. Keep the pre-8 behaviour (XRecord through X11/XWayland),
+            // which works unprivileged for X11 sessions and XWayland-focused windows.
+            if (OperatingSystem.IsLinux())
+                UioHookProvider.Instance.SetLinuxMode(LinuxMode.XRecord);
+
             _hook = new TaskPoolGlobalHook();
             _hook.KeyPressed += OnGlobalKeyPressed;
             _hook.KeyReleased += OnGlobalKeyReleased;
+            var hook = _hook;
             _ = Task.Run(() =>
             {
-                try { _hook.Run(); }
+                // Keyboard only: shortcuts never need the (very chatty) mouse events.
+                try { hook.Run(GlobalHookType.Keyboard); }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"[ShortcutService] Global hook stopped: {ex.Message}");
@@ -96,42 +105,53 @@ public class ShortcutService : IDisposable
         }
     }
 
-    private bool MatchesAccelerator(string accelerator)
-    {
-        var parts = accelerator.Split('+');
-        KeyCode? mainKey = null;
-        bool needsCtrl = false, needsShift = false, needsAlt = false, needsMeta = false;
+    private bool MatchesAccelerator(string accelerator) => MatchesAccelerator(accelerator, _pressedKeys);
 
-        foreach (var part in parts)
+    internal readonly record struct Accelerator(KeyCode? Key, bool Ctrl, bool Shift, bool Alt, bool Meta);
+
+    // Pure parsing of Electron-style accelerators ("CommandOrControl+Shift+Space") into the
+    // SharpHook key code + required modifiers. Kept separate from the hook so it is testable.
+    internal static Accelerator ParseAccelerator(string accelerator)
+    {
+        KeyCode? mainKey = null;
+        bool ctrl = false, shift = false, alt = false, meta = false;
+
+        foreach (var part in accelerator.Split('+'))
         {
             var t = part.Trim();
             if (t.Equals("CommandOrControl", StringComparison.OrdinalIgnoreCase) ||
                 t.Equals("Control", StringComparison.OrdinalIgnoreCase) ||
                 t.Equals("Ctrl", StringComparison.OrdinalIgnoreCase))
-                needsCtrl = true;
+                ctrl = true;
             else if (t.Equals("Shift", StringComparison.OrdinalIgnoreCase))
-                needsShift = true;
+                shift = true;
             else if (t.Equals("Alt", StringComparison.OrdinalIgnoreCase))
-                needsAlt = true;
+                alt = true;
             else if (t.Equals("Meta", StringComparison.OrdinalIgnoreCase) ||
                      t.Equals("Super", StringComparison.OrdinalIgnoreCase) ||
                      t.Equals("Win", StringComparison.OrdinalIgnoreCase))
-                needsMeta = true;
+                meta = true;
             else
                 mainKey = MapToKeyCode(t);
         }
 
-        if (mainKey == null || !_pressedKeys.Contains(mainKey.Value)) return false;
+        return new Accelerator(mainKey, ctrl, shift, alt, meta);
+    }
 
-        bool hasCtrl = _pressedKeys.Contains(KeyCode.VcLeftControl) || _pressedKeys.Contains(KeyCode.VcRightControl);
-        bool hasShift = _pressedKeys.Contains(KeyCode.VcLeftShift) || _pressedKeys.Contains(KeyCode.VcRightShift);
-        bool hasAlt = _pressedKeys.Contains(KeyCode.VcLeftAlt) || _pressedKeys.Contains(KeyCode.VcRightAlt);
-        bool hasMeta = _pressedKeys.Contains(KeyCode.VcLeftMeta) || _pressedKeys.Contains(KeyCode.VcRightMeta);
+    internal static bool MatchesAccelerator(string accelerator, IReadOnlySet<KeyCode> pressed)
+    {
+        var a = ParseAccelerator(accelerator);
+        if (a.Key == null || !pressed.Contains(a.Key.Value)) return false;
 
-        return (!needsCtrl || hasCtrl) &&
-               (!needsShift || hasShift) &&
-               (!needsAlt || hasAlt) &&
-               (!needsMeta || hasMeta);
+        bool hasCtrl = pressed.Contains(KeyCode.VcLeftControl) || pressed.Contains(KeyCode.VcRightControl);
+        bool hasShift = pressed.Contains(KeyCode.VcLeftShift) || pressed.Contains(KeyCode.VcRightShift);
+        bool hasAlt = pressed.Contains(KeyCode.VcLeftAlt) || pressed.Contains(KeyCode.VcRightAlt);
+        bool hasMeta = pressed.Contains(KeyCode.VcLeftMeta) || pressed.Contains(KeyCode.VcRightMeta);
+
+        return (!a.Ctrl || hasCtrl) &&
+               (!a.Shift || hasShift) &&
+               (!a.Alt || hasAlt) &&
+               (!a.Meta || hasMeta);
     }
 
     internal static KeyCode? MapToKeyCode(string key) => key.ToUpperInvariant() switch
@@ -263,7 +283,7 @@ public class ShortcutService : IDisposable
         return Key.None;
     }
 
-    private static KeyModifiers ParseAvaloniaModifiers(string accelerator)
+    internal static KeyModifiers ParseAvaloniaModifiers(string accelerator)
     {
         var m = KeyModifiers.None;
         var lower = accelerator.ToLowerInvariant();
