@@ -6,8 +6,9 @@ namespace NeuralDeck.Tests;
 
 public class WebProfilesTests
 {
-    private const string DataRoot = "/data/WebProfiles";
-    private const string CacheRoot = "/cache/WebProfiles";
+    // Built with Path so the assertions hold with Windows separators too.
+    private static readonly string DataRoot = Path.Combine(Path.GetTempPath(), "nd-data", "WebProfiles");
+    private static readonly string CacheRoot = Path.Combine(Path.GetTempPath(), "nd-cache", "WebProfiles");
 
     [Fact]
     public void For_GivesEachProviderItsOwnDirectoriesAndStore()
