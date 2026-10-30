@@ -14,6 +14,13 @@ public partial class WebBrowserViewModel : ViewModelBase
     [ObservableProperty] private bool _showFallback;
     [ObservableProperty] private string _fallbackMessage = "";
 
+    // Only the active provider's browser is shown; the others stay alive (hidden) so their
+    // page state and session survive switching providers.
+    [ObservableProperty] private bool _isActive;
+
+    // Identifies the isolated browser profile this view's WebView is created with.
+    public string ProviderId { get; }
+
     public Action<Uri>? NavigateAction { get; set; }
     public Action? GoBackAction { get; set; }
     public Action? GoForwardAction { get; set; }
@@ -22,8 +29,9 @@ public partial class WebBrowserViewModel : ViewModelBase
 
     private string? _pendingUrl;
 
-    public WebBrowserViewModel(string initialUrl = "")
+    public WebBrowserViewModel(string providerId = "default", string initialUrl = "")
     {
+        ProviderId = providerId;
         _addressBarText = initialUrl;
         _pendingUrl = string.IsNullOrEmpty(initialUrl) ? null : initialUrl;
     }
@@ -123,7 +131,7 @@ public partial class WebBrowserViewModel : ViewModelBase
         FallbackMessage = message;
     }
 
-    private static Uri? NormalizeUrl(string? input)
+    internal static Uri? NormalizeUrl(string? input)
     {
         if (string.IsNullOrWhiteSpace(input)) return null;
         var text = input.Trim();
