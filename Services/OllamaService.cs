@@ -6,12 +6,14 @@ namespace NeuralDeck.Services;
 
 public class OllamaService : IDisposable
 {
-    private static OllamaService? _instance;
+    private static readonly Lazy<OllamaService> _instance = new(() => new OllamaService());
     private HttpClient _httpClient;
-    private string _baseUrl;
+    // Written from the ConfigChanged callback and read by in-flight HTTP calls on other
+    // threads; volatile guarantees readers see the latest reference (string writes are atomic).
+    private volatile string _baseUrl;
     private bool _disposed;
 
-    public static OllamaService Instance => _instance ??= new OllamaService();
+    public static OllamaService Instance => _instance.Value;
 
     private OllamaService()
     {

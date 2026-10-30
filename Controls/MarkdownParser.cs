@@ -120,6 +120,25 @@ public static class MarkdownParser
         return blocks;
     }
 
+    /// <summary>
+    /// Resolves the target of a <c>[text](target)</c> link to a clickable URI, or null when it
+    /// is not an absolute http/https URL (relative paths, file://, javascript:, custom schemes).
+    /// Accepts the CommonMark forms <c>&lt;url&gt;</c> and <c>url "title"</c>.
+    /// </summary>
+    public static Uri? TryParseLinkTarget(string? target)
+    {
+        if (string.IsNullOrWhiteSpace(target)) return null;
+        var t = target.Trim();
+        if (t.StartsWith('<') && t.EndsWith('>')) t = t[1..^1].Trim();
+        var space = t.IndexOfAny(new[] { ' ', '\t' });
+        if (space > 0) t = t[..space];
+
+        return Uri.TryCreate(t, UriKind.Absolute, out var uri) &&
+               (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps)
+            ? uri
+            : null;
+    }
+
     private static bool IsBulletLine(string line) =>
         line.StartsWith("- ") || line.StartsWith("* ") || line.StartsWith("+ ");
 

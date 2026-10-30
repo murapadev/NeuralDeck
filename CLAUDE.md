@@ -73,9 +73,8 @@ it was never adopted). Layers: `Models/` → `Services/` (singletons, side effec
 
 - `ConfigModels.cs` — `AppConfig` and nested `WindowConfig`, `AppearanceConfig`,
   `ShortcutConfig`, `PrivacyConfig`. **This is the live config schema** (plain mutable classes).
-- `ProviderConfig.cs`, `ChatModels.cs`, `Constants.cs` (`AppConstants`).
-- `ConfigRecords.cs` exists but is currently **dead** (record types unused; strings are used
-  instead). Don't add new dependencies on it without a reason.
+- `ProviderConfig.cs`, `ProviderDefaults.cs`, `ChatModels.cs`, `OllamaConstants.cs`,
+  `WindowConstants.cs`. Enum-like settings (theme, position, font size) are plain strings.
 
 ### ViewModels (`ViewModels/`)
 
@@ -88,7 +87,10 @@ to `ConfigChanged`.
 
 AXAML + code-behind: `MainWindow`, `ChatView`, `SettingsView`/`SettingsWindow`,
 `OnboardingView`, `WebBrowserView`. WebView navigation lives in `WebBrowserView.axaml.cs`
-(CSS injection is idempotent via a `__nd_s` marker; external links open via `Process.Start`).
+(CSS injection is idempotent via a `__nd_s` marker). **Every** external open goes through
+`WindowService.OpenExternalUrl`, which only lets absolute `http`/`https` URIs reach
+`Process.Start` — never call `Process.Start` with a URL directly. Markdown links in the chat are
+clickable and use the same helper.
 `Controls/MarkdownParser.cs` is a **pure, Avalonia-free** parser (the one well-tested class);
 `MarkdownTextBlock.cs` renders it.
 

@@ -119,12 +119,21 @@ public partial class WebBrowserView : UserControl
 
     private async void OnNavigationCompleted(object? sender, WebViewNavigationCompletedEventArgs e)
     {
-        if (Browser == null) return;
-        _viewModel?.OnNavigationCompleted(Browser.Source, Browser.CanGoBack, Browser.CanGoForward, e.IsSuccess);
-        if (!e.IsSuccess) return;
+        // async void event handler: anything escaping here would be an unhandled exception
+        // on the UI thread and take the whole app down, so close it with a catch-all.
+        try
+        {
+            if (Browser == null) return;
+            _viewModel?.OnNavigationCompleted(Browser.Source, Browser.CanGoBack, Browser.CanGoForward, e.IsSuccess);
+            if (!e.IsSuccess) return;
 
-        await InjectStylesAsync();
-        await FetchPageTitleAsync();
+            await InjectStylesAsync();
+            await FetchPageTitleAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[WebBrowserView] Navigation-completed handler failed: {ex.Message}");
+        }
     }
 
     private async Task InjectStylesAsync()
