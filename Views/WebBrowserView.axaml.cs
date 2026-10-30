@@ -15,6 +15,44 @@ public partial class WebBrowserView : UserControl
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
+        // Must be wired before the control is attached: NativeWebView requests its environment
+        // exactly once, when it first joins the visual tree, and never again.
+        Browser.EnvironmentRequested += OnEnvironmentRequested;
+        Browser.AdapterCreated += OnAdapterCreated;
+    }
+
+    private WebProfile? _profile;
+
+    private void OnEnvironmentRequested(object? sender, WebViewEnvironmentRequestedEventArgs e)
+    {
+        try
+        {
+            var providerId = (DataContext as WebBrowserViewModel)?.ProviderId;
+            var ephemeral = ConfigService.Instance.GetConfig().Privacy.ClearOnClose;
+            _profile = WebProfiles.For(providerId, ephemeral);
+            WebProfiles.Apply(e, _profile);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[WebBrowserView] Failed to configure isolated profile: {ex.Message}");
+        }
+    }
+
+    private async void OnAdapterCreated(object? sender, WebViewAdapterEventArgs e)
+    {
+        try
+        {
+            if (_profile is { Ephemeral: false } profile &&
+                e.TryGetPlatformHandle() is Avalonia.Platform.IGtkWebViewPlatformHandle gtk)
+            {
+                await WebKitGtkCookies.EnablePersistenceAsync(
+                    gtk.WebKitWebView, Path.Combine(profile.DataDirectory, "cookies.sqlite"));
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[WebBrowserView] Failed to enable persistent cookies: {ex.Message}");
+        }
     }
 
     // A realistic desktop User-Agent so AI providers (Claude.ai etc.) don't reject the
