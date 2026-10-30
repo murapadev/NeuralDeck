@@ -5,6 +5,61 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-10-30
+
+### Added
+- **Isolated sessions per web provider** — each provider gets its own WebView and browser
+  profile, so logging into one is never visible to another (WebKitGTK/WPE: separate data and
+  cache directories; Windows WebView2: a named profile per provider; macOS 14+: a separate
+  WKWebView data store). Visited providers stay alive in the background, so switching back
+  keeps the page and session. Clicking the active provider in the sidebar goes back home.
+- **Persistent logins on Linux** — WebKitGTK kept cookies in memory only, so every restart
+  logged out of every provider; cookies are now stored per provider (`cookies.sqlite`)
+- **Clickable markdown links** in the Ollama chat (0.7.0 only rendered them as styled text);
+  only `http`/`https` targets open, in the system browser
+- Chat: message timestamps, suggested prompts, copy buttons (messages and code blocks),
+  "Regenerate", animated loading dots, Markdown/text export, custom system prompt
+- 162 unit tests (from 18): URI allowlist, link targets, shortcut parsing/matching,
+  web profiles, Ollama formatting, converters
+
+### Changed
+- **Avalonia 12.1.4**, Avalonia.Controls.WebView 12.1.1, CommunityToolkit.Mvvm 8.4.2,
+  Tmds.DBus.Protocol 0.95.2 (still pinned explicitly), MicroCom.Runtime 0.11.7
+- **SharpHook 8.0.1** — every `KeyCode` value changed upstream; the mapping is symbolic and
+  covered by tests. On Linux the hook keeps the pre-8 XRecord backend (the new Wayland backend
+  needs elevated privileges) and listens to the keyboard only
+- **Tests on xUnit v3** (`xunit.v3` 4.0.2) running on Microsoft.Testing.Platform
+  (`global.json`); VSTest-only test packages removed
+- `Privacy → Clear on close` now covers web sessions as well: providers run in private,
+  non-persistent sessions and leftover profile data is wiped at exit and at startup
+- Claude opens in the system browser (Cloudflare blocks embedded WebKit engines)
+- Settings are saved when the settings window is closed, with a save confirmation
+- The 30 s Ollama connection poll no longer flashes "Connecting…" or rebuilds the model list
+  unless the connection state actually changed
+- Dragging the window no longer writes `config.json` on every pixel (debounced)
+- Dependabot tracks NuGet and GitHub Actions instead of the Electron-era npm
+
+### Fixed
+- Linux: crash (`free(): invalid pointer`) as soon as a web provider loaded — HarfBuzzSharp's
+  bundled library and the system libharfbuzz pulled in by WebKitGTK were both in the process;
+  HarfBuzzSharp now binds to the system library when it is recent enough
+- Linux + NVIDIA proprietary driver: blank provider pages (WebKitGTK DMA-BUF renderer)
+- Long Ollama generations were cut off after 60 s; streams now only stop on a real stall
+  (idle timeout, reported in the chat)
+- Pages could open arbitrary schemes (`file://`, custom handlers) through `window.open`; every
+  external open now goes through a single http/https allowlist
+- OAuth popups (Google, Microsoft, GitHub, Apple) now complete inside the provider view
+- Failed page loads show an error with Reload / Open in Browser instead of a blank view, and the
+  banner clears on the next navigation
+- `config.json` writes are serialized; singletons are created thread-safely
+- `async void` UI handlers can no longer crash the app on an unexpected exception
+- Shortcuts with punctuation (`Ctrl+.`, `Ctrl+;`…) register correctly
+- Leaked notification managers, window placement without screen info, onboarding shortcut text
+
+### Removed
+- Ghost "Block trackers" setting (never applied) and unused `IncognitoProviders`
+- Dead code: `ConfigRecords`, `NavigationState`
+
 ## [0.7.0] - 2026-04-26
 
 ### Added
