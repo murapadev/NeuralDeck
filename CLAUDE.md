@@ -16,7 +16,9 @@ Anything describing a Node/Electron/React/tRPC stack is obsolete — the codebas
 
 - **.NET 10** (`net10.0`, `WinExe`, `Nullable` + `ImplicitUsings` enabled)
 - **Avalonia UI 12.1.4** (Fluent theme, Inter font, compiled bindings by default)
-- **Avalonia.Controls.WebView 12.1.1** (WebKitGTK on Linux) — embeds provider sites
+- **Avalonia.Controls.WebView 12.1.1** — WebKitGTK (Linux), WebView2 (Windows), WKWebView (macOS).
+  Claude is opened in the system browser instead (`ExternalOnlyProviderIds`): Cloudflare rejects
+  embedded WebKit.
 - **CommunityToolkit.Mvvm 8.4** — MVVM via source generators (`[ObservableProperty]`, `[RelayCommand]`)
 - **SharpHook 8.0** — global keyboard shortcuts (types live in `SharpHook.Data`). SharpHook 8
   renumbered every `KeyCode` value: only ever use the symbolic names. On Linux the hook is
@@ -55,6 +57,11 @@ it was never adopted). Layers: `Models/` → `Services/` (singletons, side effec
 ### Entry & startup
 
 - `Program.cs` — `Main`; `AppBuilder.Configure<App>().UsePlatformDetect().WithInterFont()`.
+  Before that, two Linux-only workarounds: HarfBuzzSharp is bound to the system
+  `libharfbuzz.so.0` (≥ 8.3.1) — otherwise the bundled copy and the one WebKitGTK loads collide
+  and the app aborts with `free(): invalid pointer` when a web provider loads — and
+  `WEBKIT_DISABLE_DMABUF_RENDERER=1` is set via libc `setenv` on the NVIDIA proprietary driver
+  (blank pages otherwise). Don't remove either without re-testing a web provider on Linux.
 - `App.axaml.cs` — `OnFrameworkInitializationCompleted` wires everything: creates
   `MainWindowViewModel` + `MainWindow`, initializes `ThemeService`, `WindowService`,
   `TrayService`, `ShortcutService`, applies startup window config, and registers exit cleanup
@@ -96,7 +103,7 @@ AXAML + code-behind: `MainWindow`, `ChatView`, `SettingsView`/`SettingsWindow`,
 `WindowService.OpenExternalUrl`, which only lets absolute `http`/`https` URIs reach
 `Process.Start` — never call `Process.Start` with a URL directly. Markdown links in the chat are
 clickable and use the same helper.
-`Controls/MarkdownParser.cs` is a **pure, Avalonia-free** parser (the one well-tested class);
+`Controls/MarkdownParser.cs` is a **pure, Avalonia-free** parser;
 `MarkdownTextBlock.cs` renders it.
 
 ### Configuration file
@@ -110,6 +117,10 @@ reads it from the assembly attribute).
 - TypeScript-era files (`electron/`, `src/`, tRPC, Zustand, Vite) **no longer exist** — ignore
   any reference to them in stale docs.
 - Comments explain *why*, not *what*. Keep `dotnet build -c Release` at **0 warnings**.
+- Tests (`NeuralDeck.Tests`, xUnit v3) cover pure logic only: markdown parsing and link targets,
+  shortcut parsing/matching, URI allowlist, web profiles, converters, Ollama formatting.
+  Services are `static Instance` singletons with side effects, so new testable logic should be
+  extracted into `internal static` pure functions (`InternalsVisibleTo` is set).
 - No hardcoded secrets/tokens (none currently — only public provider URLs and `localhost:11434`).
 - Web provider sessions are **isolated per provider**: `MainWindowViewModel.Browsers` holds one
   `WebBrowserViewModel` (and so one `NativeWebView`) per visited provider, and
@@ -129,4 +140,8 @@ reads it from the assembly attribute).
 ## Known stale docs
 
 - `SPEC.md` is the port-planning doc and is partly stale (says .NET 8, DI, Markdig). Historical.
-- `README.md` and `CHANGELOG.md` are accurate.
+- `README.md` and `CHANGELOG.md` are accurate. `AUDITORIA.md` (2026-05-31) carries a status
+  table per finding; `docs/AUDITORIA.md` (2026-06-08) is a second, historical audit.
+- Git tags: `v1.0.0` (and `v0.4.x`) are from the Electron era; the .NET app is versioned from
+  0.5.0 in `NeuralDeck.csproj`. Releases are cut by pushing a `v*` tag (release.yml) — that
+  decision is the maintainer's.

@@ -243,3 +243,41 @@ desinforma activamente) y de **honestidad de la UI** (features de privacidad exp
 implementadas). Ninguno bloquea el uso; todos son abordables en una tarde de limpieza.
 
 **Calificación global: 7.5/10** — código 8.5, documentación 4, higiene de repo 6.
+
+---
+
+## 11. Estado de los hallazgos (revisión 2026-10-30, versión 0.8.0)
+
+Comprobado contra `main` después de las PRs #108, #109, #111, #112 y #113. **Resuelto** = corregido y
+verificado; **Aceptado** = se decide no cambiarlo, con el motivo; **Pendiente** = sigue abierto.
+
+| # | Estado | Detalle |
+|---|--------|---------|
+| C1 `_configLock` sin uso | ✅ Resuelto | Desde `c969117`, `LoadConfig`, `SaveConfig` y todos los `Update*` mutan y persisten bajo el lock. `GetConfig()` sigue devolviendo la referencia viva: las mutaciones van por los `Update*` desde el hilo de UI, así que se acepta. |
+| C2 `async void` | ✅ Resuelto (#108) | Los tres handlers (`OnNavigationCompleted`, exportar y copiar) tienen un try/catch de cierre que cubre también el selector de ficheros. Los dos nuevos de #109 (`OnAdapterCreated`) ya nacen así. |
+| C3 `ConfigureAwait(false)` | ⚪ Aceptado | En `OllamaService.ChatAsync` la continuación invoca `onChunk`, que modifica `ObservableCollection` y propiedades enlazadas. Sacarla del hilo de UI introduciría un bug real. |
+| C4 `_baseUrl` | ✅ Resuelto (#108) | Ahora es `volatile string`. |
+| C5 Singletons sin DI | ⚪ Aceptado | Se mantiene `Instance`, ahora con `Lazy<T>` y creación thread-safe (#108). La testabilidad se consigue extrayendo funciones puras `internal static`: atajos, allowlist, perfiles web y enlaces. |
+| S1 `Process.Start` sin allowlist | ✅ Resuelto | Hay un único punto de entrada, `WindowService.OpenExternalUrl`, que solo deja pasar `http`/`https` absolutos. Lo usan el WebView, Claude (externo), "Open in Browser", `OpenGitHub` y los enlaces del chat (#108). Tiene tests. |
+| S2 Sesiones compartidas | ✅ Resuelto (#109) | Un `NativeWebView` con perfil propio por proveedor: WebKitGTK/WPE con directorios de datos y caché, WebView2 con `ProfileName` y WKWebView con `DataStoreIdentifier`. En Linux las cookies persisten por proveedor. **No se aísla** en macOS < 14 ni en Windows con un runtime de WebView2 sin perfiles o con WebView1: ahí se comparte un único almacén. |
+| S3 Historial en claro | ⚪ Aceptado | Documentado en el README. `ClearOnClose` lo borra. |
+| S4 Inyección JS | 🟢 Sin cambios | Solo CSS de scrollbar. |
+| S5 Enlaces no clicables | ✅ Resuelto (#108) | Los enlaces son clicables. El destino, que es salida del modelo y por tanto no fiable, pasa por la allowlist de S1. |
+| S6 Pin de `Tmds.DBus.Protocol` | ✅ Vigente | Fijado en 0.95.2. |
+| §5 Skew Avalonia/WebView | ✅ Resuelto | Avalonia 12.1.4 y WebView 12.1.1, de la misma línea 12.1 (#107). SharpHook 8.0.1 (#112) y xUnit v3 (#113). |
+| §5 `dependabot.yml` en npm | ✅ Resuelto (#108) | Ahora vigila `nuget` (raíz y tests) y `github-actions`. |
+| §6 Cobertura | 🟡 Mejorada | De 18 tests se pasa a 162 (parser, enlaces, allowlist, atajos, perfiles, conversores y formato Ollama). Siguen sin tests `NormalizeConfig` y el cálculo de posición. |
+| §7.1 `CLAUDE.md` y `SPEC.md` | ✅ Resuelto | `CLAUDE.md` está reescrito y al día. `SPEC.md` lleva una marca de documento histórico. |
+| §7.2 Código muerto | ✅ Resuelto | `NavigationState` se eliminó en `c969117` y `ConfigRecords.cs` en #108. |
+| §7.3 Features fantasma | ✅ Resuelto | "Block trackers" e `IncognitoProviders` se eliminaron en `8f7dc6d`. `ClearOnClose` ahora sí cubre las sesiones web: sesiones privadas, más borrado al salir y al arrancar. |
+| §7.4 Tags | 🔵 Decisión de Pablo | `v1.0.0` y `v0.4.x` son de la época Electron. El csproj va por 0.8.0. No se ha creado ningún tag ni release. |
+| §8 Ramas | 🔵 Decisión de Pablo | En el remoto solo quedan 8 ramas además de `main`, todas superadas. Ver el informe de la revisión. No se ha borrado ninguna. |
+| §2 Artefactos en disco | 🟡 Local | `.codex` salió del repo (#108). `dist-electron/`, `coverage/`, `bin/Debug/net8.0`, etc. están en `.gitignore` y no se tocan. |
+
+**`docs/AUDITORIA.md` (2026-06-08), resumen:**
+- Resueltos: A1 (debounce de posición), A2 (sin timeout global, con timeout de inactividad), A3 (`ClearOnClose` y aislamiento, #109), A4 (allowlist), M2 (`Lazy<T>`), M4 (el poll solo actúa cuando cambia el estado) y B4.
+- Parciales: M1 (hay lock, pero falta la escritura atómica `.tmp` + `Move`) y M5 (tests).
+- Pendientes: M3 (multimonitor y clamp de "remember"), M6 (log a fichero), B1, B3, B5 y B6.
+- Aceptado: B2 (DI).
+
+**Hallazgo nuevo durante la revisión (resuelto en #111):** en Linux la app abortaba con `free(): invalid pointer` en cuanto cargaba cualquier proveedor web. Ocurre porque `libHarfBuzzSharp.so` y el `libharfbuzz.so.0` del sistema, que carga WebKitGTK, conviven en el mismo proceso. Además, con el driver propietario de NVIDIA las páginas se veían en blanco por el renderer DMA-BUF.

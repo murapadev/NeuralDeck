@@ -1,5 +1,9 @@
 # NeuralDeck Avalonia Port - Technical Specification
 
+> **Historical document (April 2026 port plan).** Several decisions here were not followed
+> (.NET 10 instead of 8, no DI container, own Markdown parser instead of Markdig, built-in
+> `TrayIcon`). See `CLAUDE.md` and `README.md` for the current architecture.
+
 ## Overview
 
 NeuralDeck is being ported from TypeScript/Electron to C#/.NET 8 with Avalonia UI for cross-platform desktop support.
