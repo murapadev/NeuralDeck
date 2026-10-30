@@ -18,7 +18,11 @@ Anything describing a Node/Electron/React/tRPC stack is obsolete — the codebas
 - **Avalonia UI 12.1.4** (Fluent theme, Inter font, compiled bindings by default)
 - **Avalonia.Controls.WebView 12.1.1** (WebKitGTK on Linux) — embeds provider sites
 - **CommunityToolkit.Mvvm 8.4** — MVVM via source generators (`[ObservableProperty]`, `[RelayCommand]`)
-- **SharpHook 7.1** — global keyboard shortcuts (types live in `SharpHook.Data`, not `SharpHook.Native`)
+- **SharpHook 8.0** — global keyboard shortcuts (types live in `SharpHook.Data`). SharpHook 8
+  renumbered every `KeyCode` value: only ever use the symbolic names. On Linux the hook is
+  forced to `LinuxMode.XRecord` (pre-8 behaviour; the Wayland backend needs root/uinput) and
+  runs keyboard-only. The global hotkey can't be exercised in CI — test it by hand after any
+  SharpHook bump (toggle, `Ctrl+Shift+1..5`, `Ctrl+,`).
 - `Tmds.DBus.Protocol` is referenced explicitly (0.95.2) so it can never resolve back to
   0.20.0 / GHSA-xrw6-gwf8-vvr9. Keep the explicit reference; bumping it forward is fine.
 - `MicroCom.Runtime` is also referenced explicitly (0.11.7) — it is a *direct* dependency of
@@ -78,7 +82,8 @@ it was never adopted). Layers: `Models/` → `Services/` (singletons, side effec
 
 ### ViewModels (`ViewModels/`)
 
-`MainWindowViewModel` (root; picks chat vs WebView via `SelectedProviderId == "ollama"`),
+`MainWindowViewModel` (root; picks chat vs WebView via `SelectedProviderId == "ollama"`, and
+owns one `WebBrowserViewModel` per visited provider in `Browsers`),
 `ChatViewModel`, `SettingsViewModel`, `OnboardingViewModel`, `WebBrowserViewModel`, plus
 `ViewModelBase`. ViewModels read/write config through `ConfigService.Instance` and subscribe
 to `ConfigChanged`.
@@ -106,9 +111,20 @@ reads it from the assembly attribute).
   any reference to them in stale docs.
 - Comments explain *why*, not *what*. Keep `dotnet build -c Release` at **0 warnings**.
 - No hardcoded secrets/tokens (none currently — only public provider URLs and `localhost:11434`).
-- WebView provider sessions are **shared** (single `Browser` control, `Navigate()` only); there
-  is no per-provider session isolation or tracker blocking. Don't expose UI for privacy features
-  that aren't actually implemented (the old "Block trackers" ghost checkbox was removed).
+- Web provider sessions are **isolated per provider**: `MainWindowViewModel.Browsers` holds one
+  `WebBrowserViewModel` (and so one `NativeWebView`) per visited provider, and
+  `WebBrowserView` maps `WebProfiles.For(providerId)` onto the platform environment in
+  `EnvironmentRequested` (WebKitGTK/WPE data+cache dirs, WebView2 `ProfileName`, WKWebView
+  `DataStoreIdentifier`). The WebView requests its environment **once, on attach** — isolation
+  only works with one control per provider; never reuse a single `NativeWebView` across
+  providers. Profiles live in `WebProfiles.DataRoot` (`~/.local/share/NeuralDeck/WebProfiles`,
+  `%LOCALAPPDATA%\NeuralDeck\WebProfiles`). `WebKitGtkCookies` turns on persistent cookies
+  on Linux (WebKitGTK keeps them in memory otherwise). `Privacy.ClearOnClose` makes the views
+  ephemeral and wipes the profile roots at exit and startup.
+- Not isolated: macOS < 14 (WKWebView ignores the identifier) and Windows without a
+  WebView2 runtime that supports profiles (or the WebView1 fallback) share one store.
+- There is no tracker blocking. Don't expose UI for privacy features that aren't actually
+  implemented (the old "Block trackers" ghost checkbox was removed).
 
 ## Known stale docs
 
