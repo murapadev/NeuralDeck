@@ -21,7 +21,12 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [ObservableProperty] private ChatViewModel? _chatViewModel;
     [ObservableProperty] private OnboardingViewModel? _onboardingViewModel;
     [ObservableProperty] private ProviderConfig? _selectedProvider;
-    [ObservableProperty] private WebBrowserViewModel? _webBrowserViewModel;
+
+    // One browser per visited web provider, each with its own isolated profile (cookies,
+    // storage). Created lazily on first selection and kept alive while the provider stays
+    // enabled, so switching back is instant and keeps the page/session where it was.
+    public ObservableCollection<WebBrowserViewModel> Browsers { get; } = new();
+    [ObservableProperty] private WebBrowserViewModel? _activeBrowser;
 
     public bool ShowChatView => SelectedProviderId == "ollama";
     public bool ShowProviderView => SelectedProviderId != "ollama";
@@ -39,7 +44,6 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     {
         ChatViewModel = new ChatViewModel();
         OnboardingViewModel = new OnboardingViewModel();
-        WebBrowserViewModel = new WebBrowserViewModel();
         OnboardingViewModel.OnboardingComplete += (_, _) => OnOnboardingComplete();
         ConfigService.Instance.ConfigChanged += OnConfigChanged;
         LoadConfig();
@@ -62,8 +66,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             LoadProviders(config);
             UpdateSelectedProvider(config);
 
-            if (SelectedProviderId != "ollama" && SelectedProvider != null)
-                WebBrowserViewModel?.NavigateTo(SelectedProvider.Url);
+            ActivateBrowser();
         }
         catch (Exception ex)
         {
@@ -93,7 +96,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
                 Id = captured.Id,
                 IsSelected = captured.Id == SelectedProviderId,
                 ShortcutHint = hint,
-                SelectCommand = new RelayCommand(() => SelectProvider(captured.Id))
+                SelectCommand = new RelayCommand(() => SelectProvider(captured.Id, goHomeIfActive: true))
             });
         }
     }
@@ -112,10 +115,10 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         config ??= ConfigService.Instance.GetConfig();
         SelectedProvider = config.Providers.FirstOrDefault(p => p.Id == SelectedProviderId);
 
-        // The selected provider can vanish out from under us (deleted in Settings while
+        // The selected provider can vanish out from under us (deleted or disabled in Settings while
         // active) — fall back to Ollama rather than leaving the view stuck on whatever the
         // now-nonexistent provider last rendered.
-        if (SelectedProvider == null && SelectedProviderId != "ollama")
+        if ((SelectedProvider == null || !SelectedProvider.Enabled) && SelectedProviderId != "ollama")
         {
             SelectProvider("ollama");
             return;
@@ -127,7 +130,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         CurrentProviderName = SelectedProvider?.Name ?? "NeuralDeck";
     }
 
-    internal void SelectProvider(string providerId)
+    internal void SelectProvider(string providerId, bool goHomeIfActive = false)
     {
         if (ExternalOnlyProviderIds.Contains(providerId))
         {
@@ -137,12 +140,44 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             return;
         }
 
+        var reselected = providerId == SelectedProviderId;
         SelectedProviderId = providerId;
         ConfigService.Instance.UpdateGeneral(lastProvider: providerId);
         UpdateSelectedProvider();
 
-        if (providerId != "ollama" && SelectedProvider != null)
-            WebBrowserViewModel?.NavigateTo(SelectedProvider.Url);
+        // Clicking the sidebar entry of the provider already showing acts as "home". Hotkeys
+        // don't (they are also used just to bring the window back).
+        if (goHomeIfActive && reselected && ActiveBrowser != null && SelectedProvider != null)
+            ActiveBrowser.NavigateTo(SelectedProvider.Url);
+        else
+            ActivateBrowser();
+    }
+
+    private void ActivateBrowser()
+    {
+        WebBrowserViewModel? target = null;
+        if (SelectedProviderId != "ollama" && SelectedProvider != null)
+        {
+            target = Browsers.FirstOrDefault(b => b.ProviderId == SelectedProvider.Id);
+            if (target == null)
+            {
+                target = new WebBrowserViewModel(SelectedProvider.Id, SelectedProvider.Url);
+                Browsers.Add(target);
+            }
+        }
+
+        foreach (var b in Browsers)
+            b.IsActive = b == target;
+        ActiveBrowser = target;
+    }
+
+    // Removing a browser detaches its NativeWebView, which tears down the provider's web
+    // process; its on-disk profile stays so re-enabling the provider keeps the login.
+    private void PruneBrowsers(AppConfig config)
+    {
+        var live = config.Providers.Where(p => p.Enabled).Select(p => p.Id).ToHashSet();
+        foreach (var b in Browsers.Where(b => !live.Contains(b.ProviderId)).ToList())
+            Browsers.Remove(b);
     }
 
     [RelayCommand]
@@ -174,19 +209,19 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     internal void ReloadCurrentView()
     {
         if (SelectedProviderId == "ollama") return;
-        WebBrowserViewModel?.ReloadAction?.Invoke();
+        ActiveBrowser?.ReloadAction?.Invoke();
     }
 
     internal void GoBackInView()
     {
         if (SelectedProviderId == "ollama") return;
-        WebBrowserViewModel?.GoBackAction?.Invoke();
+        ActiveBrowser?.GoBackAction?.Invoke();
     }
 
     internal void GoForwardInView()
     {
         if (SelectedProviderId == "ollama") return;
-        WebBrowserViewModel?.GoForwardAction?.Invoke();
+        ActiveBrowser?.GoForwardAction?.Invoke();
     }
 
     private void OnConfigChanged(object? sender, AppConfig config)
@@ -194,6 +229,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
             LoadProviders(config);
+            PruneBrowsers(config);
             UpdateSelectedProvider(config);
         });
     }
@@ -212,6 +248,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         ConfigService.Instance.ConfigChanged -= OnConfigChanged;
         ChatViewModel?.Dispose();
         ChatViewModel = null;
-        WebBrowserViewModel = null;
+        Browsers.Clear();
+        ActiveBrowser = null;
     }
 }

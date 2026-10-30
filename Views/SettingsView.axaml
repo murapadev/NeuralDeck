@@ -196,9 +196,14 @@
                     <TextBlock Text="Privacy" FontSize="16" FontWeight="SemiBold" Foreground="#fafafa"/>
 
                     <StackPanel Spacing="4">
-                        <CheckBox Content="Clear Ollama history on close" IsChecked="{Binding ClearOnClose}" Foreground="#d4d4d8"/>
-                        <TextBlock Text="Deletes the local Ollama conversation history file (~/.config/NeuralDeck/ollama-history.json) when the app exits. Web provider sessions (cookies, cache) are managed by the OS WebView and are not affected."
+                        <CheckBox Content="Clear Ollama history and web sessions on close" IsChecked="{Binding ClearOnClose}" Foreground="#d4d4d8"/>
+                        <TextBlock Text="Deletes the Ollama conversation history when the app exits, and runs web providers in private (non-persistent) sessions so their logins, cookies and storage are discarded too. Web views opened before saving keep their current mode until restart."
                                    FontSize="11" Foreground="#52525b" TextWrapping="Wrap" MaxWidth="460" Margin="24,0,0,0"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Each web provider has its own isolated session: logging into one provider is never visible to another."
+                                   FontSize="11" Foreground="#52525b" TextWrapping="Wrap" MaxWidth="460"/>
                     </StackPanel>
 
                     <Button Content="Save" Command="{Binding SavePrivacyCommand}"

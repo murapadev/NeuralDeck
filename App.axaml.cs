@@ -23,6 +23,12 @@ public partial class App : Application
         {
             desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
 
+            // With ClearOnClose the web views run ephemeral, but anything a previous session
+            // left behind (files still locked at exit, or data from before the option was
+            // enabled) is removed here, before any WebView can open the profile directories.
+            if (ConfigService.Instance.GetConfig().Privacy.ClearOnClose)
+                ClearWebViewData();
+
             _mainWindowViewModel = new MainWindowViewModel();
             var mainWindow = new MainWindow
             {
@@ -79,14 +85,14 @@ public partial class App : Application
         }
     }
 
-    // ClearOnClose used to wipe only the Ollama history, leaving the WebView (cookies,
-    // localStorage, IndexedDB) logged into ChatGPT/Claude/etc. — a broken privacy promise.
-    // The WebKitGTK control exposes no programmatic clear API, so we delete its on-disk
-    // website-data and cache directories. WebKitGTK names them after the program (g_get_prgname,
-    // here "NeuralDeck") under the XDG data/cache roots. Config lives in a separate dir
-    // (ApplicationData/NeuralDeck), so it is never touched.
+    // ClearOnClose must also drop provider sessions (cookies, localStorage, IndexedDB), not just
+    // the Ollama history. Per-provider profiles live under WebProfiles.DataRoot/CacheRoot. On
+    // Linux, builds before per-provider isolation used WebKitGTK's default context, which stores
+    // data under the program name in the XDG data/cache roots — wipe that legacy location too.
+    // Config lives in a separate dir (ApplicationData/NeuralDeck), so it is never touched.
     private static void ClearWebViewData()
     {
+        WebProfiles.WipeAll();
         if (!OperatingSystem.IsLinux()) return;
 
         var appName = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name ?? "NeuralDeck";

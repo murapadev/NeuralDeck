@@ -167,10 +167,21 @@
                         <views:ChatView DataContext="{Binding ChatViewModel}"/>
                     </Grid>
 
-                    <!-- Embedded web browser for non-Ollama providers -->
-                    <Grid IsVisible="{Binding ShowProviderView}">
-                        <views:WebBrowserView DataContext="{Binding WebBrowserViewModel}"/>
-                    </Grid>
+                    <!-- One embedded browser per visited web provider (isolated profiles),
+                         stacked in the same cell; only the active one is visible. -->
+                    <ItemsControl IsVisible="{Binding ShowProviderView}"
+                                  ItemsSource="{Binding Browsers}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <Grid/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:WebBrowserViewModel">
+                                <views:WebBrowserView IsVisible="{Binding IsActive}"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                 </Grid>
             </Grid>
         </Grid>
