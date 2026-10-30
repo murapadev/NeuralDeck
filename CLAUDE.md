@@ -35,7 +35,7 @@ Anything describing a Node/Electron/React/tRPC stack is obsolete — the codebas
 dotnet restore
 dotnet run                      # run debug
 dotnet build -c Release         # release build (expected: 0 warnings)
-dotnet test                     # xUnit tests (NeuralDeck.Tests, currently MarkdownParser only)
+dotnet test                     # xUnit v3 on Microsoft.Testing.Platform (runner set in global.json)
 
 # Self-contained single-file publish
 dotnet publish -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true
