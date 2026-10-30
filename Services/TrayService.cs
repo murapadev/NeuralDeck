@@ -9,14 +9,14 @@ namespace NeuralDeck.Services;
 
 public class TrayService : IDisposable
 {
-    private static TrayService? _instance;
+    private static readonly Lazy<TrayService> _instance = new(() => new TrayService());
     private TrayIcon? _trayIcon;
     private Window? _mainWindow;
     private MainWindowViewModel? _mainViewModel;
     private WindowNotificationManager? _notificationManager;
     private bool _isInitialized;
 
-    public static TrayService Instance => _instance ??= new TrayService();
+    public static TrayService Instance => _instance.Value;
 
     public event EventHandler? TrayLeftClick;
 

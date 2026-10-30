@@ -12,8 +12,8 @@ namespace NeuralDeck.Services;
 /// </summary>
 public sealed class ThemeService
 {
-    private static ThemeService? _instance;
-    public static ThemeService Instance => _instance ??= new ThemeService();
+    private static readonly Lazy<ThemeService> _instance = new(() => new ThemeService());
+    public static ThemeService Instance => _instance.Value;
 
     private ThemeService() { }
 

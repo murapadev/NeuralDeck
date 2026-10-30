@@ -317,19 +317,6 @@ public partial class SettingsViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void OpenGitHub()
-    {
-        try
-        {
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-            {
-                FileName = "https://github.com/murapadev/NeuralDeck",
-                UseShellExecute = true
-            });
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[SettingsViewModel] Failed to open GitHub: {ex.Message}");
-        }
-    }
+    private void OpenGitHub() =>
+        WindowService.OpenExternalUrl(new Uri("https://github.com/murapadev/NeuralDeck"));
 }

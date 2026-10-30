@@ -22,9 +22,11 @@ public class ConfigService
 
     private AppConfig _config = new();
     private readonly object _configLock = new();
-    private static ConfigService? _instance;
+    // Lazy<T> (ExecutionAndPublication) instead of `_instance ??= new()`: the latter can build
+    // two instances if first touched from two threads (Ollama poll, global-hook thread).
+    private static readonly Lazy<ConfigService> _instance = new(() => new ConfigService());
 
-    public static ConfigService Instance => _instance ??= new ConfigService();
+    public static ConfigService Instance => _instance.Value;
 
     public event EventHandler<AppConfig>? ConfigChanged;
 

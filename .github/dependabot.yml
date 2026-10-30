@@ -1,24 +1,23 @@
 version: 2
 updates:
-  # Enable version updates for npm
-  - package-ecosystem: 'npm'
-    directory: '/'
+  # NuGet packages (main project + NeuralDeck.Tests). Minor/patch bumps are grouped into a
+  # single weekly PR; majors (e.g. SharpHook, xUnit) arrive as individual PRs for review.
+  - package-ecosystem: 'nuget'
+    directories:
+      - '/'
+      - '/NeuralDeck.Tests'
     schedule:
       interval: 'weekly'
     open-pull-requests-limit: 10
     groups:
-      development-dependencies:
-        dependency-type: 'development'
-        update-types:
-          - 'minor'
-          - 'patch'
-      production-dependencies:
-        dependency-type: 'production'
+      avalonia:
+        patterns:
+          - 'Avalonia*'
+      minor-and-patch:
         update-types:
           - 'minor'
           - 'patch'
 
-  # Enable version updates for GitHub Actions
   - package-ecosystem: 'github-actions'
     directory: '/'
     schedule:

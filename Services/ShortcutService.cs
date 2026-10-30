@@ -10,7 +10,7 @@ namespace NeuralDeck.Services;
 
 public class ShortcutService : IDisposable
 {
-    private static ShortcutService? _instance;
+    private static readonly Lazy<ShortcutService> _instance = new(() => new ShortcutService());
     private readonly Dictionary<string, Action> _registeredShortcuts = new();
     private readonly List<KeyBinding> _keyBindings = new();
     private readonly HashSet<KeyCode> _pressedKeys = new();
@@ -22,7 +22,7 @@ public class ShortcutService : IDisposable
     private bool _isInitialized;
     private bool _disposed;
 
-    public static ShortcutService Instance => _instance ??= new ShortcutService();
+    public static ShortcutService Instance => _instance.Value;
 
     private ShortcutService() { }
 

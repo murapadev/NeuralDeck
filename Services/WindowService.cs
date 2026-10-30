@@ -10,7 +10,7 @@ namespace NeuralDeck.Services;
 
 public class WindowService : IDisposable
 {
-    private static WindowService? _instance;
+    private static readonly Lazy<WindowService> _instance = new(() => new WindowService());
     private Window? _mainWindow;
     private Window? _settingsWindow;
     private bool _isWindowVisible;
@@ -18,7 +18,7 @@ public class WindowService : IDisposable
     private Timer? _sizeDebounceTimer;
     private Timer? _positionDebounceTimer;
 
-    public static WindowService Instance => _instance ??= new WindowService();
+    public static WindowService Instance => _instance.Value;
 
     public event EventHandler? WindowShown;
     public event EventHandler? WindowHidden;
@@ -252,10 +252,13 @@ public class WindowService : IDisposable
     // that can't run in the embedded WebView, e.g. Claude behind Cloudflare bot-protection).
     // A single copy of the scheme allowlist matters here: it's what stops a page from forcing
     // an arbitrary local file:// or handler:// open via UseShellExecute/xdg-open.
+    internal static bool IsAllowedExternalUri([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Uri? uri) =>
+        uri is not null && uri.IsAbsoluteUri &&
+        (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
+
     public static void OpenExternalUrl(Uri? uri)
     {
-        if (uri is null || !uri.IsAbsoluteUri ||
-            (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+        if (!IsAllowedExternalUri(uri))
         {
             Console.WriteLine($"[WindowService] Blocked external URI with disallowed scheme: {uri}");
             return;

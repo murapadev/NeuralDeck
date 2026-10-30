@@ -296,15 +296,39 @@ public sealed partial class MarkdownTextBlock : ContentControl
             else if (m.Groups[3].Success)               // *italic*
                 tb.Inlines!.Add(new Run(m.Groups[3].Value) { FontStyle = FontStyle.Italic });
             else if (m.Groups[4].Success)               // [text](url)
-                tb.Inlines!.Add(new Run(m.Groups[4].Value)
-                {
-                    Foreground = new SolidColorBrush(Color.Parse("#818cf8")),
-                    TextDecorations = TextDecorations.Underline
-                });
+                tb.Inlines!.Add(BuildLink(m.Groups[4].Value, m.Groups[5].Value, size));
 
             last = m.Index + m.Length;
         }
         if (last < text.Length)
             tb.Inlines!.Add(new Run(text[last..]));
+    }
+
+    // A Run can't receive pointer input, so clickable links are hosted in an InlineUIContainer.
+    // The target comes from model output (untrusted): it goes through WindowService.OpenExternalUrl,
+    // whose http/https allowlist blocks file://, custom protocol handlers, etc.
+    private static Inline BuildLink(string label, string target, double size)
+    {
+        var linkBrush = new SolidColorBrush(Color.Parse("#818cf8"));
+        var uri = MarkdownParser.TryParseLinkTarget(target);
+        if (uri == null)
+            return new Run(label) { Foreground = linkBrush, TextDecorations = TextDecorations.Underline };
+
+        var link = new TextBlock
+        {
+            Text = label,
+            FontSize = size,
+            Foreground = linkBrush,
+            TextDecorations = TextDecorations.Underline,
+            Cursor = new Cursor(StandardCursorType.Hand)
+        };
+        ToolTip.SetTip(link, uri.ToString());
+        link.PointerReleased += (_, e) =>
+        {
+            if (e.InitialPressMouseButton != MouseButton.Left) return;
+            Services.WindowService.OpenExternalUrl(uri);
+            e.Handled = true;
+        };
+        return new InlineUIContainer(link) { BaselineAlignment = BaselineAlignment.TextBottom };
     }
 }

@@ -69,6 +69,10 @@ public partial class ChatViewModel : ViewModelBase, IDisposable
             try
             {
                 await Task.Delay(OllamaConstants.OllamaPollIntervalMs, cancellationToken);
+                // Lightweight health probe; only run the full check (which flashes
+                // "Connecting..." and rebuilds the model list) when the state actually changed.
+                var connected = await _ollamaService.HealthCheckAsync(cancellationToken);
+                if (connected == IsConnected) continue;
                 await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
                     await CheckConnectionAsync());
             }

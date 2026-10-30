@@ -149,6 +149,20 @@ public partial class ChatView : UserControl
 
     private async void OnExportClick(object? sender, RoutedEventArgs e)
     {
+        try
+        {
+            await ExportConversationAsync();
+        }
+        catch (Exception ex)
+        {
+            // async void handler — an unhandled exception here would take down the app.
+            // Covers the file picker too (it can throw on platforms without a portal).
+            Console.WriteLine($"[ChatView] Export failed: {ex.Message}");
+        }
+    }
+
+    private async Task ExportConversationAsync()
+    {
         if (DataContext is not ChatViewModel vm || vm.Messages.Count == 0) return;
         var topLevel = TopLevel.GetTopLevel(this);
         if (topLevel == null) return;
@@ -180,40 +194,31 @@ public partial class ChatView : UserControl
             sb.AppendLine();
         }
 
-        try
-        {
-            await using var stream = await file.OpenWriteAsync();
-            await using var writer = new StreamWriter(stream, Encoding.UTF8);
-            await writer.WriteAsync(sb.ToString());
-        }
-        catch (Exception ex)
-        {
-            // async void handler — an unhandled exception here would take down the app.
-            Console.WriteLine($"[ChatView] Export failed: {ex.Message}");
-        }
+        await using var stream = await file.OpenWriteAsync();
+        await using var writer = new StreamWriter(stream, Encoding.UTF8);
+        await writer.WriteAsync(sb.ToString());
     }
 
     private async void OnCopyClick(object? sender, RoutedEventArgs e)
     {
         if (sender is not Button btn || btn.Tag is not string text) return;
-        var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
-        if (clipboard == null) return;
 
         try
         {
+            var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
+            if (clipboard == null) return;
             await clipboard.SetValueAsync(DataFormat.Text, text);
+
+            // Brief visual feedback: flash the button to full opacity then fade back.
+            var prev = btn.Opacity;
+            btn.Opacity = 1.0;
+            await Task.Delay(600);
+            btn.Opacity = prev;
         }
         catch (Exception ex)
         {
             // async void handler — an unhandled exception here would take down the app.
             Console.WriteLine($"[ChatView] Copy to clipboard failed: {ex.Message}");
-            return;
         }
-
-        // Brief visual feedback: flash the button to full opacity then fade back.
-        var prev = btn.Opacity;
-        btn.Opacity = 1.0;
-        await Task.Delay(600);
-        btn.Opacity = prev;
     }
 }
