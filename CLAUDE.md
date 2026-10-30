@@ -15,12 +15,15 @@ Anything describing a Node/Electron/React/tRPC stack is obsolete — the codebas
 ## Stack
 
 - **.NET 10** (`net10.0`, `WinExe`, `Nullable` + `ImplicitUsings` enabled)
-- **Avalonia UI 12.1** (Fluent theme, Inter font, compiled bindings by default)
-- **Avalonia.Controls.WebView 12.0** (WebKitGTK on Linux) — embeds provider sites
+- **Avalonia UI 12.1.4** (Fluent theme, Inter font, compiled bindings by default)
+- **Avalonia.Controls.WebView 12.1.1** (WebKitGTK on Linux) — embeds provider sites
 - **CommunityToolkit.Mvvm 8.4** — MVVM via source generators (`[ObservableProperty]`, `[RelayCommand]`)
 - **SharpHook 7.1** — global keyboard shortcuts (types live in `SharpHook.Data`, not `SharpHook.Native`)
-- `Tmds.DBus.Protocol` is referenced explicitly (0.94.2) so it can never resolve back to
+- `Tmds.DBus.Protocol` is referenced explicitly (0.95.2) so it can never resolve back to
   0.20.0 / GHSA-xrw6-gwf8-vvr9. Keep the explicit reference; bumping it forward is fine.
+- `MicroCom.Runtime` is also referenced explicitly (0.11.7) — it is a *direct* dependency of
+  the `Avalonia` package (COM interop codegen runtime, not DBus). Pinned so it resolves to the
+  latest patch instead of the Avalonia floor (0.11.6). Patch bump only; keep it forward-only.
 
 ## Commands
 
