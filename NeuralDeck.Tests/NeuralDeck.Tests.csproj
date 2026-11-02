@@ -4,6 +4,10 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <IsTestProject>true</IsTestProject>
+    <!-- Never publish the test executable into the release artifacts.
+         release.yml publishes the whole solution; without this the tarball/zip
+         shipped to users carries a ~107 MB self-contained test runner. -->
+    <IsPublishable>false</IsPublishable>
     <!-- xUnit v3 test projects are self-hosting executables running on Microsoft.Testing.Platform
          (see global.json: `dotnet test` uses the MTP runner, not VSTest). -->
     <OutputType>Exe</OutputType>
