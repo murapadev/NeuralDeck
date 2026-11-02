@@ -42,3 +42,103 @@ jobs:
 
       - name: Test
         run: dotnet test --no-build -c Release
+
+  global-hotkey-smoke:
+    name: Global hotkey smoke (Xvfb)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.x'
+
+      - name: Install WebKitGTK + Xvfb tooling (Linux)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y libwebkit2gtk-4.1-dev xvfb xdotool x11-utils
+
+      - name: Restore
+        run: dotnet restore
+
+      # Same flags as release.yml: the single-file bundle is what actually exercises
+      # the native uiohook loader (it dlopen()s libuiohook-xrecord.so from the
+      # extracted bundle directory), so the smoke must run on the published binary.
+      - name: Publish self-contained single-file (linux-x64)
+        run: >
+          dotnet publish NeuralDeck.csproj
+          -c Release
+          -r linux-x64
+          --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -o publish/linux-x64
+
+      # Ctrl+Shift+Space must hide/show the real window and Ctrl+, must open the
+      # settings window — both through the *global* (system-wide) hook, not through
+      # an in-window accelerator. Covers the X11/XRecord backend only; the
+      # Wayland/uinput backend needs root and is disabled on purpose.
+      - name: Exercise the global hotkey under Xvfb
+        env:
+          APP_BIN: ${{ github.workspace }}/publish/linux-x64/NeuralDeck
+          APP_LOG: ${{ runner.temp }}/neuraldeck-smoke.log
+        run: bash scripts/smoke-global-hotkey.sh
+
+      - name: Upload smoke logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: global-hotkey-smoke-logs
+          path: ${{ runner.temp }}/neuraldeck-smoke*.log
+          if-no-files-found: ignore
+
+  global-hotkey-smoke-negative:
+    name: Global hotkey smoke must fail when the hook is broken
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    # Guard against a smoke test that can never fail: publish a build with the
+    # global hook disabled and assert the smoke script reports the failure.
+    # If the smoke passes without a hook, this job fails on purpose.
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.x'
+
+      - name: Install WebKitGTK + Xvfb tooling (Linux)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y libwebkit2gtk-4.1-dev xvfb xdotool x11-utils
+
+      - name: Restore
+        run: dotnet restore
+
+      # Publish the real app with the global hook disabled, so the only thing that
+      # can satisfy the smoke assertions is a working system-wide hook.
+      - name: Publish a build with the global hook disabled
+        run: |
+          sed -i 's/^\([[:space:]]*\)TryStartGlobalHook();$/\1\/\/ TryStartGlobalHook(); \/\/ disabled for the negative smoke test/' Services/ShortcutService.cs
+          grep -n "TryStartGlobalHook();" Services/ShortcutService.cs
+          dotnet publish NeuralDeck.csproj \
+            -c Release -r linux-x64 --self-contained true \
+            -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true \
+            -o publish/no-hook
+
+      - name: The smoke test must fail without a global hook
+        run: |
+          set +e
+          APP_BIN="${{ github.workspace }}/publish/no-hook/NeuralDeck" \
+            bash scripts/smoke-global-hotkey.sh
+          rc=$?
+          set -e
+          if [[ $rc -eq 0 ]]; then
+            echo "::error::the smoke test passed without a working global hook — it cannot detect regressions"
+            exit 1
+          fi
+          echo "ok: the smoke test correctly failed (exit $rc) without a global hook"
