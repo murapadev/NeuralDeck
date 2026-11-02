@@ -52,6 +52,23 @@ jobs:
           -p:IncludeNativeLibrariesForSelfExtract=true
           -o publish/${{ matrix.rid }}
 
+      - name: Strip native debug symbols (Linux / macOS)
+        if: runner.os != 'Windows'
+        run: |
+          cd publish/${{ matrix.rid }}
+          # SkiaSharp / HarfBuzz drop their own .pdb next to the app (up to ~105 MB).
+          # Keep only the app's own symbol file; the rest is debug-only noise
+          # for end users and bloats the release artifact.
+          find . -maxdepth 1 -type f -name '*.pdb' ! -name 'NeuralDeck.pdb' -delete
+
+      - name: Strip native debug symbols (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Get-ChildItem publish/${{ matrix.rid }} -Filter '*.pdb' |
+            Where-Object { $_.Name -ne 'NeuralDeck.pdb' } |
+            Remove-Item -Force
+
       - name: Archive (Linux / macOS)
         if: runner.os != 'Windows'
         run: |
