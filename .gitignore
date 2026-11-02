@@ -28,3 +28,9 @@ dist/
 dist-electron/
 release/
 coverage/
+
+# Local publish output (the release tarball is built by CI, not committed)
+publish/
+
+# Runtime config written by a locally launched app
+NeuralDeck/config.json

@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- **El fallo del hook global ya no es silencioso.** En Linux el hook está fijado a
+  `LinuxMode.XRecord`, que solo captura el tráfico de XWayland: en una sesión **Wayland nativa**
+  los atajos globales no responden, y hasta ahora la app arrancaba con normalidad sin decir nada
+  (la excepción se perdía en un `Console.WriteLine`). Ahora `ShortcutService` detecta la sesión
+  (`XDG_SESSION_TYPE` / `WAYLAND_DISPLAY`), escribe el fallo en el log **y en stderr**, lanza el
+  evento `GlobalHookFailed`, muestra una notificación en la bandeja y un banner rojo en
+  Ajustes → Atajos explicando la limitación y que el soporte real de Wayland requiere el backend
+  uinput (root)
+- `docs/RELEASE-CHECKLIST.md` — checklist de release con la comprobación manual del hook en
+  Wayland nativo y en X11 (toggle, `Ctrl+Shift+1..5`, `Ctrl+,`)
+
+### Added
+- 12 tests de detección de sesión Wayland y de construcción del aviso de atajos globales
+  (174 en total)
+
 ## [0.8.0] - 2026-10-30
 
 ### Added

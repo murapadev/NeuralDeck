@@ -161,6 +161,19 @@
                     <TextBlock Text="Modifiers: CommandOrControl, Shift, Alt, Meta. Separate with +."
                                FontSize="11" Foreground="#71717a" TextWrapping="Wrap"/>
 
+                    <!-- Visible warning: the global hook can be dead (or useless) while the app
+                         works fine. Without this the hotkeys are just dead keys. -->
+                    <Border Background="#3f1d1d" BorderBrush="#ef4444" BorderThickness="1"
+                            CornerRadius="6" Padding="12,8"
+                            IsVisible="{Binding ShowGlobalShortcutWarning}">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="{Binding GlobalShortcutWarningTitle}"
+                                       FontSize="12" FontWeight="SemiBold" Foreground="#fecaca"/>
+                            <TextBlock Text="{Binding GlobalShortcutWarning}"
+                                       FontSize="11" Foreground="#fca5a5" TextWrapping="Wrap" MaxWidth="460"/>
+                        </StackPanel>
+                    </Border>
+
                     <StackPanel Spacing="4">
                         <TextBlock Text="Toggle window" FontSize="12" Foreground="#71717a"/>
                         <TextBox Text="{Binding ToggleWindowShortcut}" Width="280" HorizontalAlignment="Left"/>
