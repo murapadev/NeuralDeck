@@ -1,6 +1,19 @@
---- CLAUDE.md	2026-10-30 23:07:14.213863911 +0100
-+++ /tmp/CLAUDE.md.new	2026-11-02 02:31:21.118226672 +0100
-@@ -23,8 +23,19 @@
+Fix the false claim in CLAUDE.md about the global hotkey not being testable in CI.
+
+The current wording says the global hotkey "can't be exercised in CI - test it by
+hand after any SharpHook bump". That is wrong: scripts/smoke-global-hotkey.sh
+publishes the real single-file bundle, runs it under Xvfb and drives it with
+xdotool, so CI does exercise the global hook. What genuinely stays manual is the
+Wayland/uinput backend, which needs root and which the app disables on purpose
+with SetLinuxMode(LinuxMode.XRecord).
+
+Apply with:
+
+    git apply docs/patches/claude-md-wayland.patch
+
+--- a/CLAUDE.md
++++ b/CLAUDE.md
+@@ -23,8 +23,24 @@
  - **SharpHook 8.0** — global keyboard shortcuts (types live in `SharpHook.Data`). SharpHook 8
    renumbered every `KeyCode` value: only ever use the symbolic names. On Linux the hook is
    forced to `LinuxMode.XRecord` (pre-8 behaviour; the Wayland backend needs root/uinput) and
@@ -9,7 +22,11 @@
 +  runs keyboard-only. The global hotkey **is** exercised in CI: `scripts/smoke-global-hotkey.sh`
 +  runs the published single-file bundle under `Xvfb` and drives it with `xdotool`
 +  (`Ctrl+Shift+Space` must hide/show the main window, `Ctrl+,` must open the settings window).
-+  Run it locally with `APP_BIN=publish/linux-x64/NeuralDeck bash scripts/smoke-global-hotkey.sh`.
++  It runs in the `global-hotkey-smoke` job of `.github/workflows/ci.yml`, next to a
++  `global-hotkey-smoke-negative` job that publishes a build with the hook disabled and asserts
++  the smoke *fails* — a smoke that cannot fail is worthless.
++  Run it locally with `APP_BIN=publish/linux-x64/NeuralDeck bash scripts/smoke-global-hotkey.sh`
++  (needs `xvfb`, `xdotool`, `x11-utils`).
 +  **Known limitation — native Wayland:** `XRecord` only captures the traffic that goes through
 +  XWayland. In a *native Wayland* session (`XDG_SESSION_TYPE=wayland`) the global hotkeys are
 +  therefore dead for keys pressed in native Wayland apps, and the app looks perfectly healthy.
@@ -18,7 +35,8 @@
 +  `ShortcutService.GlobalHookFailed`, shows a tray notification and a warning banner in
 +  Settings → Shortcuts. Real Wayland support requires the uinput backend (`LinuxMode.UInput`),
 +  which needs root — a deliberate trade-off, so don't "fix" it by switching the mode.
-+  See `docs/RELEASE-CHECKLIST.md` for the manual checks.
++  See `docs/RELEASE-CHECKLIST.md` for the manual checks that CI cannot cover
++  (`Ctrl+Shift+1..5` provider switching, native Wayland sessions).
  - `Tmds.DBus.Protocol` is referenced explicitly (0.95.2) so it can never resolve back to
    0.20.0 / GHSA-xrw6-gwf8-vvr9. Keep the explicit reference; bumping it forward is fine.
  - `MicroCom.Runtime` is also referenced explicitly (0.11.7) — it is a *direct* dependency of
