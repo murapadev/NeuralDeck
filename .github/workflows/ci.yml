@@ -124,6 +124,12 @@ jobs:
       - name: Publish a build with the global hook disabled
         run: |
           sed -i 's/^\([[:space:]]*\)TryStartGlobalHook();$/\1\/\/ TryStartGlobalHook(); \/\/ disabled for the negative smoke test/' Services/ShortcutService.cs
+          # The sed must have hit the call site, otherwise this job would silently
+          # publish a working build and the assertion below would be meaningless.
+          if grep -q '^[[:space:]]*TryStartGlobalHook();$' Services/ShortcutService.cs; then
+            echo "::error::could not disable the global hook — the call site moved"
+            exit 1
+          fi
           grep -n "TryStartGlobalHook();" Services/ShortcutService.cs
           dotnet publish NeuralDeck.csproj \
             -c Release -r linux-x64 --self-contained true \
