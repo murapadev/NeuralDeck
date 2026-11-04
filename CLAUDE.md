@@ -15,7 +15,7 @@ Anything describing a Node/Electron/React/tRPC stack is obsolete — the codebas
 ## Stack
 
 - **.NET 10** (`net10.0`, `WinExe`, `Nullable` + `ImplicitUsings` enabled)
-- **Avalonia UI 12.1.4** (Fluent theme, Inter font, compiled bindings by default)
+- **Avalonia UI 12.1.5** (Fluent theme, Inter font, compiled bindings by default)
 - **Avalonia.Controls.WebView 12.1.1** — WebKitGTK (Linux), WebView2 (Windows), WKWebView (macOS).
   Claude is opened in the system browser instead (`ExternalOnlyProviderIds`): Cloudflare rejects
   embedded WebKit.
