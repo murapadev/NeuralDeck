@@ -68,6 +68,11 @@ dotnet publish -c Release -r osx-arm64 --self-contained true -p:PublishSingleFil
 | Salir | `Ctrl+Q` |
 | Cerrar ajustes | `Esc` o `Ctrl+W` |
 
+**Limitación en Linux/Wayland:** el hook global usa el backend XRecord, que solo captura el tráfico
+que pasa por XWayland. En una sesión **Wayland nativa** los atajos globales no responden a las
+teclas pulsadas en aplicaciones Wayland nativas. La app lo avisa: notificación en la bandeja y
+banner rojo en Ajustes → Atajos. El soporte real de Wayland requiere el backend uinput (root).
+
 ## Configuración
 
 La configuración se guarda en `~/.config/NeuralDeck/config.json` (Linux/macOS) o `%APPDATA%\NeuralDeck\config.json` (Windows).

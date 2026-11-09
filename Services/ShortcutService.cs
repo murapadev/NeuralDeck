@@ -25,7 +25,36 @@ public class ShortcutService : IDisposable
 
     public static ShortcutService Instance => _instance.Value;
 
+    // True when the app runs in a native Wayland session (not plain X11, not XWayland-only).
+    // On those sessions the XRecord backend only sees the traffic that goes through XWayland,
+    // so the global hotkeys can be dead while the app itself looks perfectly healthy.
+    public static bool IsWaylandSession { get; } = DetectWaylandSession();
+
+    // False once the global hook failed to start (or died). The settings UI reads this so the
+    // failure is not a silent no-op: the user must be told the hotkeys are not available.
+    public bool GlobalHookAvailable { get; private set; } = true;
+
+    // Human-readable reason of the last global-hook failure (null while everything is fine).
+    public string? GlobalHookError { get; private set; }
+
     private ShortcutService() { }
+
+    internal static bool DetectWaylandSession()
+        => DetectWaylandSession(
+            Environment.GetEnvironmentVariable("XDG_SESSION_TYPE"),
+            Environment.GetEnvironmentVariable("WAYLAND_DISPLAY"));
+
+    // Pure detection so it can be unit-tested: the session type wins when it is set,
+    // otherwise the compositor socket is the fallback.
+    internal static bool DetectWaylandSession(string? sessionType, string? waylandDisplay)
+    {
+        if (!string.IsNullOrWhiteSpace(sessionType))
+            return sessionType.Equals("wayland", StringComparison.OrdinalIgnoreCase);
+
+        // WAYLAND_DISPLAY is set in every Wayland session, including ones that also
+        // expose XWayland — which is exactly the case we want to warn about.
+        return !string.IsNullOrWhiteSpace(waylandDisplay);
+    }
 
     public void Initialize(Window window, MainWindowViewModel? mainViewModel = null)
     {
@@ -43,6 +72,10 @@ public class ShortcutService : IDisposable
     {
         Dispatcher.UIThread.Post(Refresh);
     }
+
+    // Raised when the global hook fails to start or dies at runtime. The settings UI
+    // listens to it so the user sees a warning instead of pressing dead hotkeys.
+    public event EventHandler<string>? GlobalHookFailed;
 
     private void TryStartGlobalHook()
     {
@@ -64,14 +97,62 @@ public class ShortcutService : IDisposable
                 try { hook.Run(GlobalHookType.Keyboard); }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[ShortcutService] Global hook stopped: {ex.Message}");
+                    // The hook dying used to be invisible: the app kept running and the
+                    // global hotkeys simply did nothing. Report it like a startup failure.
+                    ReportGlobalHookFailure($"Global hook stopped: {ex.Message}");
                 }
             });
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[ShortcutService] Global hook unavailable: {ex.Message}");
             _hook = null;
+            ReportGlobalHookFailure($"Global hook unavailable: {ex.Message}");
+        }
+    }
+
+    private void ReportGlobalHookFailure(string reason)
+    {
+        GlobalHookAvailable = false;
+        GlobalHookError = reason;
+
+        var hint = IsWaylandSession
+            ? " This is a native Wayland session: the XRecord backend only sees XWayland traffic. Real Wayland support needs the uinput backend (root)."
+            : string.Empty;
+
+        Console.WriteLine($"[ShortcutService] {reason}{hint}");
+        Console.Error.WriteLine($"[ShortcutService] Global shortcuts are not available. {reason}{hint}");
+
+        // Surface it where the user actually looks: a tray notification plus the settings UI.
+        // The hook failure can come from the hook thread, and the notification manager
+        // touches UI objects, so hop to the UI thread first.
+        try
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                try
+                {
+                    TrayService.Instance.ShowNotification(
+                        "Global shortcuts unavailable",
+                        $"{reason} NeuralDeck keeps working, but the global hotkeys won't respond.{hint}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[ShortcutService] Failed to notify about the hook failure: {ex.Message}");
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ShortcutService] Failed to notify about the hook failure: {ex.Message}");
+        }
+
+        try
+        {
+            GlobalHookFailed?.Invoke(this, reason);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ShortcutService] GlobalHookFailed handler threw: {ex.Message}");
         }
     }
 

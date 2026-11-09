@@ -6,7 +6,7 @@ using NeuralDeck.Services;
 
 namespace NeuralDeck.ViewModels;
 
-public partial class SettingsViewModel : ViewModelBase
+public partial class SettingsViewModel : ViewModelBase, IDisposable
 {
     [ObservableProperty]
     private string _selectedTab = "general";
@@ -77,6 +77,73 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty] private string _saveStatusMessage = "";
     private int _saveStatusToken;
 
+    // The global hook can fail (or be useless in a native Wayland session) while the app
+    // keeps working perfectly. The user must be able to see that in the settings UI —
+    // otherwise the hotkeys are just dead keys with no explanation.
+    [ObservableProperty] private bool _globalShortcutsAvailable = true;
+
+    [ObservableProperty] private string _globalShortcutWarning = "";
+
+    // Drives the visibility of the warning banner in the shortcuts tab.
+    [ObservableProperty] private bool _showGlobalShortcutWarning = false;
+
+    // The banner title depends on the case: a dead hook and a live-but-useless
+    // hook (native Wayland) are different problems and the user must not confuse them.
+    [ObservableProperty] private string _globalShortcutWarningTitle = "Global shortcuts are not working";
+
+    public SettingsViewModel()
+    {
+        LoadSettings();
+        RefreshGlobalShortcutStatus();
+        ShortcutService.Instance.GlobalHookFailed += OnGlobalHookFailed;
+    }
+
+    private void OnGlobalHookFailed(object? sender, string reason)
+    {
+        // The hook thread is not the UI thread.
+        Avalonia.Threading.Dispatcher.UIThread.Post(() => RefreshGlobalShortcutStatus(reason));
+    }
+
+    private void RefreshGlobalShortcutStatus(string? reason = null)
+    {
+        var service = ShortcutService.Instance;
+        GlobalShortcutsAvailable = service.GlobalHookAvailable;
+        GlobalShortcutWarning = BuildGlobalShortcutWarning(reason);
+        GlobalShortcutWarningTitle = service.GlobalHookAvailable
+            ? "Global shortcuts may not work on this session"
+            : "Global shortcuts are not working";
+        ShowGlobalShortcutWarning = !string.IsNullOrEmpty(GlobalShortcutWarning);
+    }
+
+    internal static string BuildGlobalShortcutWarning(string? reason)
+        => BuildGlobalShortcutWarning(
+            ShortcutService.Instance.GlobalHookAvailable,
+            ShortcutService.Instance.GlobalHookError,
+            ShortcutService.IsWaylandSession,
+            reason);
+
+    // Pure version: the state is passed in so the message can be unit-tested without
+    // a real hook failure.
+    internal static string BuildGlobalShortcutWarning(
+        bool hookAvailable, string? hookError, bool isWaylandSession, string? reason)
+    {
+        if (!hookAvailable)
+        {
+            var detail = reason ?? hookError ?? "unknown error";
+            var tail = isWaylandSession
+                ? " Native Wayland session: the XRecord backend only captures XWayland traffic. Real Wayland support needs the uinput backend, which requires root."
+                : "";
+            return $"Global shortcuts are not available ({detail}). NeuralDeck works, but the global hotkeys won't respond.{tail}";
+        }
+
+        if (isWaylandSession)
+        {
+            return "Native Wayland session detected: the global hook uses XRecord, so it only captures keys sent through XWayland. Hotkeys pressed in native Wayland applications may not trigger. Real Wayland support needs the uinput backend (root).";
+        }
+
+        return "";
+    }
+
     // Save buttons gave zero feedback — clicking one looked identical whether it worked or
     // silently no-op'd. Flash a short-lived confirmation instead.
     private void ShowSavedFeedback()
@@ -104,11 +171,6 @@ public partial class SettingsViewModel : ViewModelBase
     public ObservableCollection<string> FontSizeOptions { get; } = new() { "small", "medium", "large" };
     public ObservableCollection<string> PositionOptions { get; } = new() { "near-tray", "top-left", "top-right", "bottom-left", "bottom-right", "center", "remember" };
     public ObservableCollection<string> ColorOptions { get; } = new(ProviderDefaults.AccentColorOptions);
-
-    public SettingsViewModel()
-    {
-        LoadSettings();
-    }
 
     public void LoadSettings()
     {
@@ -319,4 +381,11 @@ public partial class SettingsViewModel : ViewModelBase
     [RelayCommand]
     private void OpenGitHub() =>
         WindowService.OpenExternalUrl(new Uri("https://github.com/murapadev/NeuralDeck"));
+
+    public void Dispose()
+    {
+        // The settings window disposes its DataContext on close; unsubscribe so the
+        // service doesn't keep this view model alive.
+        ShortcutService.Instance.GlobalHookFailed -= OnGlobalHookFailed;
+    }
 }
