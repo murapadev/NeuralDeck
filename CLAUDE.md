@@ -32,6 +32,10 @@ Anything describing a Node/Electron/React/tRPC stack is obsolete — the codebas
 - `MicroCom.Runtime` is also referenced explicitly (0.11.7) — it is a *direct* dependency of
   the `Avalonia` package (COM interop codegen runtime, not DBus). Pinned so it resolves to the
   latest patch instead of the Avalonia floor (0.11.6). Patch bump only; keep it forward-only.
+- The four `Microsoft.Testing.*` packages (`Platform`, `Platform.MSBuild`,
+  `Extensions.Telemetry`, `Extensions.TrxReport.Abstractions`) are pinned explicitly to 2.5.3
+  in the test project so they resolve to the latest patch instead of the xunit.v3 4.0.3 floor
+  (2.5.2). They move as one set — the runner and its extensions must share a version.
 
 ## Commands
 
