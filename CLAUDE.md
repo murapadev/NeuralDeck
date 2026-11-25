@@ -15,21 +15,27 @@ Anything describing a Node/Electron/React/tRPC stack is obsolete — the codebas
 ## Stack
 
 - **.NET 10** (`net10.0`, `WinExe`, `Nullable` + `ImplicitUsings` enabled)
-- **Avalonia UI 12.1.5** (Fluent theme, Inter font, compiled bindings by default)
-- **Avalonia.Controls.WebView 12.1.1** — WebKitGTK (Linux), WebView2 (Windows), WKWebView (macOS).
+- **Avalonia UI 12.1.6** (Fluent theme, Inter font, compiled bindings by default)
+- **Avalonia.Controls.WebView 12.1.2** — WebKitGTK (Linux), WebView2 (Windows), WKWebView (macOS).
   Claude is opened in the system browser instead (`ExternalOnlyProviderIds`): Cloudflare rejects
   embedded WebKit.
 - **CommunityToolkit.Mvvm 8.4** — MVVM via source generators (`[ObservableProperty]`, `[RelayCommand]`)
-- **SharpHook 8.0** — global keyboard shortcuts (types live in `SharpHook.Data`). SharpHook 8
+- **SharpHook 8.0.3** — global keyboard shortcuts (types live in `SharpHook.Data`). SharpHook 8
   renumbered every `KeyCode` value: only ever use the symbolic names. On Linux the hook is
   forced to `LinuxMode.XRecord` (pre-8 behaviour; the Wayland backend needs root/uinput) and
   runs keyboard-only. The global hotkey can't be exercised in CI — test it by hand after any
   SharpHook bump (toggle, `Ctrl+Shift+1..5`, `Ctrl+,`).
+  SharpHook 8.0.2/8.0.3 also ship libuiohook 2.0.2/2.0.3, i.e. they change the *native* hook
+  backend (`libuiohook-xrecord.so`), not just the managed API.
 - `Tmds.DBus.Protocol` is referenced explicitly (0.95.2) so it can never resolve back to
   0.20.0 / GHSA-xrw6-gwf8-vvr9. Keep the explicit reference; bumping it forward is fine.
 - `MicroCom.Runtime` is also referenced explicitly (0.11.7) — it is a *direct* dependency of
   the `Avalonia` package (COM interop codegen runtime, not DBus). Pinned so it resolves to the
   latest patch instead of the Avalonia floor (0.11.6). Patch bump only; keep it forward-only.
+- The four `Microsoft.Testing.*` packages (`Platform`, `Platform.MSBuild`,
+  `Extensions.Telemetry`, `Extensions.TrxReport.Abstractions`) are pinned explicitly to 2.5.3
+  in the test project so they resolve to the latest patch instead of the xunit.v3 4.0.3 floor
+  (2.5.2). They move as one set — the runner and its extensions must share a version.
 
 ## Commands
 

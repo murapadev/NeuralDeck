@@ -13,7 +13,15 @@
     <OutputType>Exe</OutputType>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="xunit.v3" Version="4.0.2" />
+    <PackageReference Include="xunit.v3" Version="4.0.3" />
+    <!-- Transitive deps via xunit.v3; pinned explicitly so they resolve to the
+         latest patch instead of the xunit.v3 4.0.3 floor (2.5.2). The four
+         Microsoft.Testing.* packages move as one set — mixing 2.5.2 and 2.5.3
+         leaves the runner and its extensions on different versions. -->
+    <PackageReference Include="Microsoft.Testing.Platform" Version="2.5.3" />
+    <PackageReference Include="Microsoft.Testing.Platform.MSBuild" Version="2.5.3" />
+    <PackageReference Include="Microsoft.Testing.Extensions.Telemetry" Version="2.5.3" />
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport.Abstractions" Version="2.5.3" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../NeuralDeck.csproj" />
